@@ -1,0 +1,6 @@
+#Roxygen build
+#https://www.youtube.com/watch?v=DWkIbk_HE9o
+#https://cran.r-project.org/web/packages/roxygen2/vignettes/roxygen2.html
+
+#Speedup
+#http://rstudio-pubs-static.s3.amazonaws.com/5526_83e42f97a07141e88b75f642dbae8b1b.html

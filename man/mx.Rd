@@ -1,12 +1,12 @@
-\name{Mxa}
-\alias{Mxa}
-\title{Mean flow index!}
+\name{mx}
+\alias{Mx}
+\title{Mean flow velocity index}
 \description{
 Calculates Mxa, and further described in following publication ...
 [Unifiying methodogy of calculation of Mxa (2019)]
 }
 \usage{
-Mxa(data, deleter, trigger, blocksize, epochsize, freq, cyclic_mean,
+mx(data, deleter, trigger, blocksize, epochsize, freq, cyclic_mean,
   cyclic_w, cyclic_span, draw_trigger, draw_peaks, measurementmin, blockmin,
   epochmin, gather, interpolate, firstlast, outsidedeleter)
 }
@@ -31,5 +31,5 @@ Mxa(data, deleter, trigger, blocksize, epochsize, freq, cyclic_mean,
   \item{outsidedeleter}{Activates removal of data peak-periods with missing data, default is TRUE (boolian)}
 }
 \examples{
-\donttest{Mxa(data, deleter = deleter, trigger = triggers)}
+\donttest{mx(data, deleter = deleter, trigger = triggers)}
 }

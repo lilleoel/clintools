@@ -1,4 +1,4 @@
-Package: brainmoni
+Package: clinmon
 Type: Package
 Title: Calculation of Hemodynamic indices
 Version: 0.1.0
