@@ -1,12 +1,12 @@
-\name{hello}
-\alias{hello}
+\name{cm_prx}
+\alias{prx}
 \title{Hello, World!}
 \usage{
-hello()
+cm_prx()
 }
 \description{
 Prints 'Hello, world!'.
 }
 \examples{
-hello()
+cm_prx()
 }

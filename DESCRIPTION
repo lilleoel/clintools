@@ -5,6 +5,6 @@ Version: 0.1.0
 Author: Markus Harboe Olsen and Christian Riberholt
 Maintainer: Markus Harboe Olsen <oel@oelfam.com>
 Description: This initial version calculates Mxa. It is awesome.
-License:  CC BY-NC-SA 4.0
+License:  CC BY-NC-SA 4.0 + file LICENSE
 Encoding: UTF-8
 LazyData: true

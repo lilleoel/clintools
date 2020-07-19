@@ -1,12 +1,12 @@
-\name{hello}
-\alias{hello}
+\name{cm_tfa}
+\alias{tfa}
 \title{Hello, World!}
 \usage{
-hello()
+cm_tfa()
 }
 \description{
 Prints 'Hello, world!'.
 }
 \examples{
-hello()
+cm_tfa()
 }

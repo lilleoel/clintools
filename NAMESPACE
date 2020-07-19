@@ -1,3 +1,17 @@
 exportPattern("^[[:alpha:]]+")
-importFrom("stats", "aggregate", "cor")
-export(mx)
+importFrom("stats", "aggregate", "cor","ave")
+
+#Functional
+export(cm_mx)
+
+#todo
+export(cm_co)
+export(cm_cppopt)
+export(cm_cvr)
+export(cm_dx)
+export(cm_pi)
+export(cm_prx)
+export(cm_pwa)
+export(cm_ri)
+export(cm_sx)
+export(cm_tfa)

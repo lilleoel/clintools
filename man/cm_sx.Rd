@@ -1,12 +1,12 @@
-\name{hello}
-\alias{hello}
+\name{cm_sx}
+\alias{sx}
 \title{Hello, World!}
 \usage{
-hello()
+cm_sx()
 }
 \description{
 Prints 'Hello, world!'.
 }
 \examples{
-hello()
+cm_sx()
 }

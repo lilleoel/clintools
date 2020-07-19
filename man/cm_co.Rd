@@ -1,12 +1,12 @@
-\name{hello}
-\alias{hello}
+\name{cm_co}
+\alias{co}
 \title{Hello, World!}
 \usage{
-hello()
+cm_co()
 }
 \description{
 Prints 'Hello, world!'.
 }
 \examples{
-hello()
+cm_co()
 }

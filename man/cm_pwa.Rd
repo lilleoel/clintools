@@ -1,12 +1,12 @@
-\name{hello}
-\alias{hello}
+\name{cm_pwa}
+\alias{pwa}
 \title{Hello, World!}
 \usage{
-hello()
+cm_pwa()
 }
 \description{
 Prints 'Hello, world!'.
 }
 \examples{
-hello()
+cm_pwa()
 }

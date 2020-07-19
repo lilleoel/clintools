@@ -1,10 +1,12 @@
-mx <- function(
+globalVariables(c("block","epoch","n","period"))
+
+cm_mx <- function(
    #Dataframes
    df, del_pres = NULL, del_mcav = NULL, trigger = NULL,
    #Calculation settings
    blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
-   blockmin = 0.5, epochmin = 0.5,
+   blockmin = 0.99, epochmin = 0.5,
    #Overlapping
    overlapping = FALSE,
    #Output
@@ -76,7 +78,7 @@ mx <- function(
       }
       if(!is.null(del_pres) & !is.null(del_mcav)) {
          df <- df[!is.na(df[,2]) & !is.na(df[,3]),]
-         cat(paste0("Deleter periods (n=", nrow(del_mcav)+nrow(del_pres),") are removed (converted to NA) (", runtime(time)," s)...\n"))
+         cat(paste0("Deleter periods (n=", nrow(del_mcav)+nrow(del_pres),") are removed (", runtime(time)," s)...\n"))
       }else{
          cat(paste0("Deleters are empty, no data is deleted...\n"))
       }
@@ -88,14 +90,8 @@ mx <- function(
    func_blocks <- function(df,freq,blocksize){
       cat("..."); time <- Sys.time()
 
-      temp <- NULL
-      for(i in unique(df$period)){
-         temp_df <- df[df$time >= min(df$time[df$period == i]) & df$time <= max(df$time[df$period == i]),]
-         temp_df$block <- temp_df$n-min(temp_df$n)+1
-         temp_df$block <- ceiling(temp_df$block/(blocksize*freq))
-         temp <- rbind(temp,temp_df[,c("n","block")])
-      }
-      df <- merge(df,temp,by="n",all.x=T)
+      df <- within(df, block <- ave(n,period,FUN = function(x) x-min(x)+1))
+      df <- within(df,block <- ave(block,period,FUN = function(x) ceiling(x/(blocksize*freq))))
 
       cat(paste0("Blocks created (", runtime(time)," s)...\n"))
       return(df)
@@ -136,24 +132,23 @@ mx <- function(
       #Quality control of blocks
       if(!is.null(blockmin)){
          cat("..."); time <- Sys.time()
-         temp <- aggregate(df$n,by=list(df$period,df$block),length)
-         temp$del <- (temp$x<(freq*blocksize*blockmin))*1
-         colnames(temp) <- c("period","block","n","del")
-         df <- merge(df,temp[,c("period","block","del")], all.x=T)
+
+         df <- within(df,del <- ave(n,period,block, FUN = function(x) (length(x)<(freq*blocksize*blockmin))*1))
+         del <- length(unique(df$block[df$del == 1]))
          df <- df[df$del != "1",-c(ncol(df))]
-         cat(paste0("Quality control - ", sum(temp$del), " block(s) deleted (", runtime(time)," s)...\n"))
+         cat(paste0("Quality control - ", del, " block(s) deleted (", runtime(time)," s)...\n"))
       }
 
       #Quality control of epochs
       if(!is.null(epochmin)){
          cat("..."); time <- Sys.time()
          if(!overlapping){
-            temp <- aggregate(df$block,by=list(df$period,df$epoch),function(x) length(unique(x)))
-            temp$del <- (temp$x<(epochsize*epochmin))*1
-            colnames(temp) <- c("period","epoch","n","del")
-            df <- merge(df,temp[,c("period","epoch","del")], all.x=T)
+
+            df <- within(df,del <- ave(block,period,epoch, FUN = function(x) (length(unique(x))<(epochsize*epochmin))*1))
+            del <- length(unique(df$epoch[df$del == 1]))
             df <- df[df$del != "1",-c(ncol(df))]
-            cat(paste0("Quality control - ", sum(temp$del), " epoch(s) deleted (", runtime(time)," s)...\n"))
+
+            cat(paste0("Quality control - ", del, " epoch(s) deleted (", runtime(time)," s)...\n"))
          }else{
             temp_del <- 0
             for(i in unique(df$period)){

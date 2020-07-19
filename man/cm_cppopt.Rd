@@ -1,12 +1,12 @@
-\name{hello}
-\alias{hello}
+\name{cm_cppopt}
+\alias{cppopt}
 \title{Hello, World!}
 \usage{
-hello()
+cm_cppopt()
 }
 \description{
 Prints 'Hello, world!'.
 }
 \examples{
-hello()
+cm_cppopt()
 }
