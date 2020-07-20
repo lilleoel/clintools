@@ -2,7 +2,7 @@ globalVariables(c("block","epoch","n","period","overlapping"))
 
 cm_mx <- function(
    #Dataframes
-   df, del_pres = NULL, del_mcav = NULL, trigger = NULL,
+   df, del_pres = NULL, del_vel = NULL, trigger = NULL,
    #Calculation settings
    blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
@@ -106,9 +106,9 @@ cm_mx <- function(
 
    #RUNNING SCRIPTS ----
 
-   df <- z_validation(df,trigger,del_pres,del_mcav)
+   df <- z_validation(df,trigger,del_pres,del_vel)
    df <- z_trigger(df,trigger)
-   df <- z_deleter(df,del_pres,del_mcav)
+   df <- z_deleter(df,del_pres,del_vel)
    df <- z_blocks(df,freq,blocksize)
    df <- z_epochs(df,epochsize,overlapping)
    df <- z_quality(df, freq, blocksize, blockmin, epochsize, epochmin, overlapping)

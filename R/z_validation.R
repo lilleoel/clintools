@@ -1,10 +1,6 @@
-# 'runtime' counts how long the script was to execute.
-runtime <- function(x){
-   round(as.numeric(difftime(Sys.time(),x, units="secs")),digits=2)
-}
 
 #Validation of dataframes
-z_validation <- function(df, trigger, del_pres, del_mcav){
+z_validation <- function(df, trigger, del_pres, del_vel){
    cat("..."); time <- Sys.time()
 
    #Validation of number of columns in 'df'
@@ -17,7 +13,7 @@ z_validation <- function(df, trigger, del_pres, del_mcav){
    if(!is.null(del_pres)) if(ncol(del_pres) != 2){ stop("Pressure deleter does not have the required columns, data must be two columns with start and end time for periodes which should be deleted") }
    if(!is.null(trigger)) if(sum((sapply(trigger,class) != "numeric")*1) > 0){ stop("At least one of the columns in the pressure deleter dataframe is not numeric") }
    #Validation of number of columns in 'deleter_p'
-   if(!is.null(del_mcav)) if(ncol(del_mcav) != 2){ stop("Velocity deleter does not have the required columns, data must be two columns with start and end time for periodes which should be deleted") }
+   if(!is.null(del_vel)) if(ncol(del_vel) != 2){ stop("Velocity deleter does not have the required columns, data must be two columns with start and end time for periodes which should be deleted") }
    if(!is.null(trigger)) if(sum((sapply(trigger,class) != "numeric")*1) > 0){ stop(" At least one of the columns in the velocity deleter dataframe is not numeric") }
 
    #Define data
