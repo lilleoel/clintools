@@ -3,6 +3,8 @@ z_trigger <- function(df, trigger){
    cat("..."); time <- Sys.time()
    if(!is.null(trigger)) {
       #Name periods
+      
+      #might ave work here???? 
       for(i in c(1:nrow(trigger))){
          start <- trigger[i,1]
          end <- trigger[i,2]
@@ -20,6 +22,8 @@ z_trigger <- function(df, trigger){
 }
 
 #Remove deleted measurements
+#change to only one deleter!!!!??!!?!!?! 
+#can ave also work here? 
 z_deleter <- function(df,del_pres,del_mcav){
    cat("..."); time <- Sys.time()
 

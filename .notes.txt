@@ -5,3 +5,9 @@
 #Speedup
 #http://rstudio-pubs-static.s3.amazonaws.com/5526_83e42f97a07141e88b75f642dbae8b1b.html
 jek
+
+ekstra
+
+no export
+https://community.rstudio.com/t/how-to-include-internal-functions/38654
+

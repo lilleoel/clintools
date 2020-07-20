@@ -1,5 +1,14 @@
 
 #Validation of dataframes
+
+z_validation <- function(df, name, cols){
+  #cols eg. c("start" , "end") 
+  #ncol = length(cols)
+  #check all numeric, check number of columns
+  #remove colnames adding + and n-creation <- insert into code
+  #
+}
+
 z_validation <- function(df, trigger, del_pres, del_vel){
    cat("..."); time <- Sys.time()
 

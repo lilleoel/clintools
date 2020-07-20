@@ -8,3 +8,5 @@ z_blocks <- function(df,freq,blocksize){
    cat(paste0("Blocks created (", runtime(time)," s)...\n"))
    return(df)
 }
+
+#add quality into this function as default!!! 
