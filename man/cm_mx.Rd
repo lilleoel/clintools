@@ -1,5 +1,5 @@
 \name{cm_mx}
-\alias{Mx}
+\alias{cm_mx}
 \title{Mean flow velocity index}
 \description{
 Calculates Mxa, and further described in following publication ...
@@ -23,5 +23,7 @@ blockmin, epochmin, overlapping, output)
   \item{output}{select the resolution of output, either 'period' or 'epoch' (boolian)}
 }
 \examples{
-\donttest{cm_mx(df=data)}
+data <- data.frame(time=seq(7, 918, 0.001), pres=rnorm(911001),
+                    mcav=rnorm(911001))
+cm_mx(df=data)
 }
