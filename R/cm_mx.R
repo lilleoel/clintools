@@ -6,9 +6,9 @@ cm_mx <- function(
    #Calculation settings
    blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
-   blockmin = 0.99, epochmin = 0.5,
+   blockmin = 0.99, epochmin = 0.99,
    #Overlapping
-   overlapping = FALSE,
+   overlapping = 10,
    #Output
    output = "period"
 ){
@@ -18,15 +18,22 @@ cm_mx <- function(
    z_validation(del_pres, "pressure deleter", 2)
    z_validation(del_vel, "velocity deleter", 2)
    z_validation(trigger, "trigger", 2)
+
    colnames(df) <- c("time","pres","mcav")
    df$n <- c(1:nrow(df))
+
+   df <- z_trigger(df,trigger)
+   df <- z_deleter(df,del_pres)
+   df <- z_deleter(df,del_vel)
+
+   df <- z_blocks(df,freq,blocksize,blockmin)
+   df <- z_epochs(df,epochsize,epochmin,overlapping)
 
 
    #FUNCTIONS ----
 
    #Correlations for every epoch
    func_cor <- function(df){
-      cat("..."); time <- Sys.time()
       mx <- NULL
       temp_block <- aggregate(df[,c("pres","mcav")],by=list(df$period,df$epoch,df$block),mean)
       colnames(temp_block)[c(1:3)] <- c("period","epoch","block")
@@ -42,13 +49,12 @@ cm_mx <- function(
             mx <- rbind(mx,cbind(i,j,cor(temp_epoch$pres,temp_epoch$mcav)))
          }
       }
-      cat(paste0("Index calculated (", runtime(time)," s)...\n"))
+
       return(mx)
    }
 
    #Output creation
    func_output <- function(df, mx, freq, output, overlapping){
-      cat("..."); time <- Sys.time()
       if(output == "period"){
 
          results <- NULL
@@ -106,7 +112,6 @@ cm_mx <- function(
       }else{
          stop("'output' must be left blank, 'period' or 'epoch'")
       }
-      cat(paste0("Output created (", runtime(time)," s)...\n"))
       results <- as.data.frame(results)
       colnames(results) <- c("period","epoch","blocks","time.min","time.max","pres","vel","missing.perc","cor")
       return(results)
@@ -114,12 +119,6 @@ cm_mx <- function(
 
 
    #RUNNING SCRIPTS ----
-
-   df <- z_trigger(df,trigger)
-   df <- z_deleter(df,del_pres,del_vel)
-   df <- z_blocks(df,freq,blocksize)
-   df <- z_epochs(df,epochsize,overlapping)
-   df <- z_quality(df, freq, blocksize, blockmin, epochsize, epochmin, overlapping)
    mx <- func_cor(df)
    results <- func_output(df, mx, freq, output, overlapping)
 
