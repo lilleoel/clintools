@@ -6,9 +6,9 @@ cm_mx <- function(
    #Calculation settings
    blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
-   blockmin = 0.99, epochmin = 0.99,
+   blockmin = 0.5, epochmin = 0.50,
    #Overlapping
-   overlapping = 10,
+   overlapping = FALSE,
    #Output
    output = "period"
 ){
@@ -19,7 +19,7 @@ cm_mx <- function(
    z_validation(del_vel, "velocity deleter", 2)
    z_validation(trigger, "trigger", 2)
 
-   colnames(df) <- c("time","pres","mcav")
+   colnames(df) <- c("time","val1","val2")
    df$n <- c(1:nrow(df))
 
    df <- z_trigger(df,trigger)
@@ -29,29 +29,9 @@ cm_mx <- function(
    df <- z_blocks(df,freq,blocksize,blockmin)
    df <- z_epochs(df,epochsize,epochmin,overlapping)
 
+   df <- z_cor(df)
 
    #FUNCTIONS ----
-
-   #Correlations for every epoch
-   func_cor <- function(df){
-      mx <- NULL
-      temp_block <- aggregate(df[,c("pres","mcav")],by=list(df$period,df$epoch,df$block),mean)
-      colnames(temp_block)[c(1:3)] <- c("period","epoch","block")
-      for(i in unique(temp_block$period)){
-         temp_period <- temp_block[temp_block$period == i,]
-         if(overlapping) j_temp <- unique(unlist(strsplit(temp_period$epoch[temp_period$period == i],",")))
-         if(!overlapping) j_temp <- unique(temp_period$epoch[temp_period$period == i])
-         j_temp <- j_temp[j_temp != ""]
-
-         for(j in j_temp){
-            if(overlapping) temp_epoch <- temp_period[grep(j,temp_period$epoch),]
-            if(!overlapping) temp_epoch <- temp_period[temp_period$period == i & temp_period$epoch == j,]
-            mx <- rbind(mx,cbind(i,j,cor(temp_epoch$pres,temp_epoch$mcav)))
-         }
-      }
-
-      return(mx)
-   }
 
    #Output creation
    func_output <- function(df, mx, freq, output, overlapping){
@@ -119,7 +99,7 @@ cm_mx <- function(
 
 
    #RUNNING SCRIPTS ----
-   mx <- func_cor(df)
+
    results <- func_output(df, mx, freq, output, overlapping)
 
    return(results)
