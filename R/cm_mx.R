@@ -13,6 +13,15 @@ cm_mx <- function(
    output = "period"
 ){
 
+   #Global functions
+   z_validation(df, "recording", 3)
+   z_validation(del_pres, "pressure deleter", 2)
+   z_validation(del_vel, "velocity deleter", 2)
+   z_validation(trigger, "trigger", 2)
+   colnames(df) <- c("time","pres","mcav")
+   df$n <- c(1:nrow(df))
+
+
    #FUNCTIONS ----
 
    #Correlations for every epoch
@@ -106,7 +115,6 @@ cm_mx <- function(
 
    #RUNNING SCRIPTS ----
 
-   df <- z_validation(df,trigger,del_pres,del_vel)
    df <- z_trigger(df,trigger)
    df <- z_deleter(df,del_pres,del_vel)
    df <- z_blocks(df,freq,blocksize)
