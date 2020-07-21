@@ -1,6 +1,10 @@
 #Correlations for every epoch
 z_cor <- function(df, col_by){
 
+
+
+
+
    #df <- within(df,val1_mean <- ave(val1,period,block, FUN = function(x) mean(x)))
    #df <- within(df,val2_mean <- ave(val2,period,block, FUN = function(x) mean(x)))
 

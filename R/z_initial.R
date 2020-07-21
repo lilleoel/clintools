@@ -35,6 +35,15 @@ z_deleter <- function(df,del){
 
 #Define blocks
 z_blocks <- function(df,freq,blocksize,blockmin){
+   
+   #blocks should be created an also a new dataframe
+   #for each type aggregate fun =... 
+   #return df_blocks
+   means_by_wool <- with(warpbreaks, tapply(breaks, wool, mean))
+warpbreaks$means.by.wool <- means_by_wool[warpbreaks$wool]
+   
+   
+   
    df <- within(df, block <- ave(n,period,FUN = function(x) x-min(x)+1))
    df <- within(df,block <- ave(block,period,FUN = function(x) ceiling(x/(blocksize*freq))))
 
