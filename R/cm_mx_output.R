@@ -1,5 +1,5 @@
 #Output creation
-cm_mx_output <- function(df_agg, df_cor, freq, output, overlapping){
+cm_mx_output <- function(df_agg, df_cor, freq, output, cor_by, overlapping){
    if(output == "period"){
 
       results <- NULL
@@ -55,7 +55,7 @@ cm_mx_output <- function(df_agg, df_cor, freq, output, overlapping){
       }
 
    }else{
-      stop("'output' must be left blank, 'period' or 'epoch'")
+      stop("\'output\' must be left blank, 'period' or 'epoch'")
    }
    results <- as.data.frame(results)
    colnames(results) <- c("period","epoch","blocks","time.min","time.max","val1","val2","missing.perc","cor")
