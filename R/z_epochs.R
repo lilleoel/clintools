@@ -1,20 +1,19 @@
 #Define epochs
-z_epochs <- function(df,epochsize,epochmin,overlapping){
+z_epochs <- function(df_agg,epochsize,epochmin,overlapping){
 
    if(!overlapping){
-      df$epoch <- ceiling(df$block/epochsize)
+      df_agg$epoch <- ceiling(df_agg$block/epochsize)
       if(!is.null(epochmin)){
-         df <- within(df,del <- ave(block,period,epoch, FUN =
-                                    function(x) (length(unique(x))<(epochsize*epochmin))*1))
-         del <- length(unique(df$epoch[df$del == 1]))
-         df <- df[df$del != "1",-c(ncol(df))]
+
+         df_agg <- within(df_agg,del <- ave(block,period,epoch, FUN =
+                                               function(x) (length(unique(x))<(epochsize*epochmin))*1))
+         df_agg <- df_agg[df_agg$del != "1",-c(ncol(df_agg))]
       }
    }else{
 
-
       temp <- NULL
-      for(i in unique(df$period)){
-         temp_df <- as.data.frame(cbind(i,unique(df$block[df$period == i]),NA))
+      for(i in unique(df_agg$period)){
+         temp_df <- as.data.frame(cbind(i,unique(df_agg$block[df_agg$period == i]),NA))
          colnames(temp_df) <- c("period","block","epoch")
          for(j in temp_df$block[temp_df$block %% overlapping == 0]){
 
@@ -26,8 +25,8 @@ z_epochs <- function(df,epochsize,epochmin,overlapping){
          temp <- rbind(temp,temp_df)
       }
       temp$epoch <- substr(temp$epoch,4,nchar(temp$epoch))
-      df <- merge.data.frame(df,temp,by=c("period","block"),all.x=T)
+      df_agg <- merge.data.frame(df_agg,temp,by=c("period","block"),all.x=T)
    }
 
-   return(df)
+   return(df_agg)
 }

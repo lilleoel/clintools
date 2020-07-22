@@ -1,3 +1,3 @@
-importFrom("stats", "aggregate", "cor","ave")
+importFrom("stats", "aggregate", "cor","ave","na.omit")
 export(cm_mx)
 
