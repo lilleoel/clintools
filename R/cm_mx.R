@@ -26,10 +26,7 @@ cm_mx <- function(
    df <- z_deleter(df,del_pres)
    df <- z_deleter(df,del_vel)
 
-   df <- z_blocks(df,freq,blocksize,blockmin)
-
-   #BLOCK FUNCTION ALTERNATIVE
-   #df_agg <- z_blocks(df, freq, blocksize, blockmin, by_type=c("mean"))
+   df_agg <- z_blocks(df,freq,blocksize,blockmin,by_type=c("mean","length"))
 
    df <- z_epochs(df,epochsize,epochmin,overlapping)
 

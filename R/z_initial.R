@@ -34,25 +34,31 @@ z_deleter <- function(df,del){
 }
 
 #Define blocks
-z_blocks <- function(df,freq,blocksize,blockmin){
-   
-   #blocks should be created an also a new dataframe
-   #for each type aggregate fun =... 
-   #return df_blocks
-   means_by_wool <- with(warpbreaks, tapply(breaks, wool, mean))
-warpbreaks$means.by.wool <- means_by_wool[warpbreaks$wool]
-   
-   
-   
-   df <- within(df, block <- ave(n,period,FUN = function(x) x-min(x)+1))
-   df <- within(df,block <- ave(block,period,FUN = function(x) ceiling(x/(blocksize*freq))))
+z_blocks <- function(df,freq,blocksize,blockmin,by_type){
+
+   df <- within(df,block <- ave(n,period,FUN = function(x) ceiling((x-min(x)+1)/(blocksize*freq))))
 
    if(!is.null(blockmin)){
-
-      df <- within(df,del <- ave(n,period,block, FUN = function(x) (length(x)<(freq*blocksize*blockmin))*1))
+      df <- within(df,del <- ave(n,period,block, FUN = function(x)
+         (length(x)<(freq*blocksize*blockmin))*1))
       del <- length(unique(df$block[df$del == 1]))
       df <- df[df$del != "1",-c(ncol(df))]
    }
-   return(df)
+
+   df_block <- NULL
+   for(i in by_type){
+      temp <- aggregate(df[,c("val1","val2")],by=list(df$period,df$block),i)
+      colnames(temp) <- c("period","block",paste0("val1_",i),paste0("val2_",i))
+      if(!is.null(df_block)) df_block <- merge(df_block,temp,by=c("period","block"))
+      if(is.null(df_block)) df_block <- temp
+   }
+
+   #this should be faster.
+   #missing <- creation of dataframe with unique blocks, i think it exists in the cor function
+   temp <- by(df$val1, list(df$block,df$period), mean,simplify=TRUE)
+
+
+
+   return(df_block)
 }
 
