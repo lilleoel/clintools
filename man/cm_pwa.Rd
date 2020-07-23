@@ -6,7 +6,7 @@ Calculates the pulsw ave amplitude, and further described in following publicati
 [clinmon: An R package for calculation of clinical monitoring indices (2019)]
 }
 \usage{
-cm_pi(df, del, trigger, blocksize, freq, blockmin, output)
+cm_pwa(df, del, trigger, blocksize, freq, blockmin, output)
 }
 \arguments{
   \item{df}{Data imported with 2 columns: time (in seconds), physiological measurement (raw measurement).}
@@ -19,5 +19,5 @@ cm_pi(df, del, trigger, blocksize, freq, blockmin, output)
 }
 \examples{
 data <- data.frame(time=seq(7, 918, 0.001), pres=rnorm(911001))
-cm_pi(df=data)
+cm_pwa(df=data)
 }
