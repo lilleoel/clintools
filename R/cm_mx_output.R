@@ -1,5 +1,5 @@
 #Output creation
-cm_mx_output <- function(df_agg, df_cor, freq, output, cor_by, overlapping){
+cm_mx_output <- function(df, df_agg, df_cor, freq, output, cor_by, overlapping){
    if(output == "period"){
 
       results <- NULL

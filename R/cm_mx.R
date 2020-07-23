@@ -32,10 +32,10 @@ cm_mx <- function(
    df_agg <- z_epochs(df_agg,epochsize,epochmin,overlapping)
    df_cor <- z_cor(df_agg, cor_by = c("val1_mean","val2_mean"),overlapping)
 
-   results <- cm_mx_output(df_agg, df_cor, freq, output, cor_by = c("val1_mean","val2_mean"), overlapping)
+   results <- cm_mx_output(df, df_agg, df_cor, freq, output, cor_by = c("val1_mean","val2_mean"), overlapping)
 
-   colnames(results)[colnames(results) == "val1"] <- df_cols[2]
-   colnames(results)[colnames(results) == "val2"] <- df_cols[3]
+   colnames(results)[colnames(results) == "val1"] <- paste0(df_cols[2],"_mean")
+   colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_mean")
 
    #FUNCTIONS ----
    return(results)
