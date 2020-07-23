@@ -1,3 +1,4 @@
 importFrom("stats", "aggregate", "cor","ave","na.omit")
 export(cm_mx)
+export(cm_pi)
 
