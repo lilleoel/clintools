@@ -1,4 +1,6 @@
 importFrom("stats", "aggregate", "cor","ave","na.omit")
 export(cm_mx)
 export(cm_pi)
-
+export(cm_dx)
+export(cm_sx)
+export(cm_prx)
