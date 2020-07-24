@@ -1,14 +1,14 @@
-\name{cm_cvr}
-\alias{cm_cvr}
-\title{Cardiovascular resistance}
+\name{cm_cvri}
+\alias{cm_cvri}
+\title{Cardiovascular resistance index}
 \description{
-Calculates the cvr, and further described in following publication ...
+Calculates the cvri, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2019)]
 Cvr formel - https://europepmc.org/article/pmc/pmc6054990
 CVR = mean BP/mean MCAv
 }
 \usage{
-cm_cvr(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
+cm_cvri(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
 }
 \arguments{
   \item{df}{Data imported with 2 columns: time (in seconds), physiological measurement (raw measurement).}
@@ -23,5 +23,5 @@ cm_cvr(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
 \examples{
 data <- data.frame(time=seq(7, 918, 0.001), pres=rnorm(911001),
                     mcav=rnorm(911001))
-cm_cvr(df=data)
+cm_cvri(df=data)
 }

@@ -3,7 +3,7 @@
 
 globalVariables(c("block","epoch","n","period","overlapping"))
 
-cm_cvr <- function(
+cm_cvri <- function(
    #Dataframes
    df, del_1 = NULL, del_2 = NULL, trigger = NULL,
    #Calculation settings
@@ -31,7 +31,7 @@ cm_cvr <- function(
 
    df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("mean"),n_vars=2)
 
-   results <- cm_cvr_output(df, df_agg, by_type=c("val1_mean","val2_mean"),freq, blocksize, output)
+   results <- cm_cvri_output(df, df_agg, by_type=c("val1_mean","val2_mean"),freq, blocksize, output)
 
    colnames(results)[colnames(results) == "val1"] <- paste0(df_cols[2],"_mean")
    colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_mean")

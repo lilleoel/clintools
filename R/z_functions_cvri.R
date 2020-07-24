@@ -1,5 +1,5 @@
 #Output creation
-cm_cvr_output <- function(df, df_agg, by_type, freq, blocksize, output){
+cm_cvri_output <- function(df, df_agg, by_type, freq, blocksize, output){
    if(output == "period"){
 
       results <- NULL
@@ -36,6 +36,6 @@ cm_cvr_output <- function(df, df_agg, by_type, freq, blocksize, output){
       stop("\'output\' must be left blank, 'period' or 'block'")
    }
    results <- as.data.frame(results)
-   colnames(results) <- c("period","blocks","time.min","time.max","val1_mean","val2_mean","missing.perc","cvr")
+   colnames(results) <- c("period","blocks","time.min","time.max","val1_mean","val2_mean","missing.perc","cvri")
    return(results)
 }
