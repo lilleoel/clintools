@@ -7,4 +7,9 @@ ekstra
 https://pubmed.ncbi.nlm.nih.gov/19877773/
 PAx RAC, ARI
 
-cheatsheet <- Rbuildignore, 
+cheatsheet <- Rbuildignore,
+
+CRCP https://jnnp.bmj.com/content/66/5/606
+ARI https://www.ahajournals.org/doi/10.1161/01.str.26.6.1014?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed
+RoR https://jnnp.bmj.com/content/72/5/583
+Cppopt original https://journals.lww.com/ccmjournal/Abstract/2012/08000/Continuous_determination_of_optimal_cerebral.25.aspx#
