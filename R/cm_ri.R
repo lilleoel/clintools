@@ -5,7 +5,7 @@ cm_ri <- function(
    #Dataframes
    df, del = NULL, trigger = NULL,
    #Calculation settings
-   blocksize = 3, freq = 1000,
+   blocksize = 3, freq,
    #Data Quality
    blockmin = 0.5,
    #Output

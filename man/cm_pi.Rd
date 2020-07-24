@@ -1,23 +1,36 @@
 \name{cm_pi}
 \alias{cm_pi}
-\title{Pulsatility index (Gosling\'s index)}
+\title{Pulsatility index (Gosling's index, PI)}
 \description{
 Calculates the pulsatility index, and further described in following publication ...
-[clinmon: An R package for calculation of clinical monitoring indices (2019)]
+[clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_pi(df, del, trigger, blocksize, freq, blockmin, output)
+cm_pi(df, del = NULL, trigger = NULL,
+      blocksize = 3, freq, blockmin = 0.5,
+      output = 'period')
 }
 \arguments{
-  \item{df}{Data imported with 2 columns: time (in seconds), physiological measurement (raw measurement).}
-  \item{del}{Deleter periods for pressure with two columns, first column is start of deletion period and last column is end of deletion period, every row is a deletion period. (dataframe) }
-  \item{trigger}{Trigger periods with two columns, first column is start of analysed period and last column is end of analysed period, every row is a period for analysis. (dataframe)}
-  \item{blocksize}{Size of blocks created in seconds, default is 3 s. (numeric)}
-  \item{freq}{Frequency of recorded data, default is 1000 Hz. (numeric)}
-  \item{blockmin}{Minimum measurements ratio in every block, default is 0.5 (numeric)}
-  \item{output}{select the resolution of output, either 'period' or 'block' (boolian)}
+  \item{df}{
+    Raw recording with data in 2 columns: time (in seconds) and pressure/velocity curve measurement (e.g. ABP, raw measurement).
+    \emph{[dataframe]} }
+  \item{del}{
+    Deleter with two columns: (1) start of deletion period and (2) end of deletion period.
+    Every row is a deletion period. \emph{[dataframe]} }
+  \item{trigger}{
+    Trigger with two columns: (1) start of analysed period and (2) end of analysed period.
+    Every row is a period for analysis. \emph{[dataframe]} }
+  \item{blocksize}{
+    Size of blocks, in seconds. \emph{[numeric]} }
+  \item{freq}{
+    Frequency of recorded data, in Hz. \emph{[numeric]} }
+  \item{blockmin}{
+    Minimum measurements required to create a block \emph{[numeric]} }
+  \item{output}{
+    Select the output which has to be either one row per 'period' or 'block'. \emph{[boolian]} }
 }
 \examples{
-data <- data.frame(time=seq(7, 918, 0.001), pres=rnorm(911001))
+data <- data.frame(time=seq(1, 901, 0.001),
+                    pres=rnorm(900001))
 cm_pi(df=data)
 }
