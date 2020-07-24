@@ -1,14 +1,14 @@
-\name{cm_cvr}
-\alias{cm_cvr}
+\name{cm_co}
+\alias{cm_co}
 \title{Cardiovascular resistance}
 \description{
-Calculates the cvr, and further described in following publication ...
+Calculates the co, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2019)]
-Cvr formel - https://europepmc.org/article/pmc/pmc6054990
-CVR = mean BP/mean MCAv
+Co - https ://www.ncbi.nlm.nih.gov/ pmc / articles /PMC5317099/
+ CO (EST) = PP / (SBP+DBP) * HR
 }
 \usage{
-cm_cvr(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
+cm_co(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
 }
 \arguments{
   \item{df}{Data imported with 2 columns: time (in seconds), physiological measurement (raw measurement).}
@@ -22,6 +22,6 @@ cm_cvr(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
 }
 \examples{
 data <- data.frame(time=seq(7, 918, 0.001), pres=rnorm(911001),
-                    mcav=rnorm(911001))
-cm_cvr(df=data)
+                    hr=rnorm(911001))
+cm_co(df=data)
 }
