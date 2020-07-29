@@ -32,5 +32,5 @@ cm_pi(df, del = NULL, trigger = NULL,
 \examples{
 data <- data.frame(time=seq(1, 901, 0.001),
                     pres=rnorm(900001))
-cm_pi(df=data)
+cm_pi(df=data, freq=1000)
 }

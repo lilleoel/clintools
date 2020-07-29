@@ -31,5 +31,5 @@ cm_pwa(df, del = NULL, trigger = NULL,
 \examples{
 data <- data.frame(time=seq(1, 901, 0.001),
                     pres=rnorm(900001))
-cm_pwa(df=data)
+cm_pwa(df=data, freq=1000)
 }

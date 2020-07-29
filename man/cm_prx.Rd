@@ -43,5 +43,5 @@ cm_prx(df, del_1 = NULL, del_2 = NULL,
 data <- data.frame(time=seq(1, 901, 0.001),
                   pres=rnorm(900001),
                   mcav=rnorm(900001))
-cm_prx(df=data)
+cm_prx(df=data, freq=1000)
 }

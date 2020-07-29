@@ -2,7 +2,7 @@
 \alias{cm_mx}
 \title{Mean flow velocity index (Mx)}
 \description{
-Calculates mean flow veolicty index, and further described in following publication ...
+Using raw recording, this functions calculates mean flow veolicty index (Mx), initially described by Czosnyka et al. in 1996.
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
@@ -43,5 +43,5 @@ cm_mx(df, del_1 = NULL, del_2 = NULL,
 data <- data.frame(time=seq(1, 901, 0.001),
                   pres=rnorm(900001),
                   mcav=rnorm(900001))
-cm_mx(df=data)
+cm_mx(df=data, freq=1000)
 }

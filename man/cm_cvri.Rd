@@ -23,5 +23,5 @@ cm_cvri(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
 \examples{
 data <- data.frame(time=seq(7, 918, 0.001), pres=rnorm(911001),
                     mcav=rnorm(911001))
-cm_cvri(df=data)
+cm_cvri(df=data, freq=1000)
 }

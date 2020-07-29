@@ -33,5 +33,5 @@ cm_ri(df, del = NULL, trigger = NULL,
   data <- data.frame(time=seq(1, 901, 0.001),
                       pres=rnorm(900001))
 
-  cm_ri(df=data)
+  cm_ri(df=data, freq=1000)
 }
