@@ -1,3 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^.*\.txt
+^\.travis\.yml$
+^cran-comments\.md$
