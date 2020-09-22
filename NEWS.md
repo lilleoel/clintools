@@ -1,0 +1,30 @@
+NEWS 
+====
+
+Versioning
+----------
+
+Releases will be numbered with the following semantic versioning format:
+
+<b>&lt;major&gt;.&lt;minor&gt;.&lt;patch&gt;</b>
+
+And constructed with the following guidelines:
+
+* Breaking backward compatibility bumps the major (and resets the minor 
+  and patch)
+
+* New additions without breaking backward compatibility bumps the minor 
+  (and resets the patch)
+
+* Bug fixes and misc changes bumps the patch
+
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.2.0
+----------------------------------------------------------------
+
+* This is the first version of the package put on CRAN
+
+* Correlation coefficient based indices `Dx`, `Sx`, `Mx` and `PRx` are functional, and validated through ICM+
+
+* Furthermore indices such as `CVRi`, `PI`, `RI`, `PWA`, and `CO` are functional.
+
+* `CPPopt` and `TFA` will be added in future versions

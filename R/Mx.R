@@ -1,6 +1,6 @@
 globalVariables(c("block","epoch","n","period","overlapping"))
 
-cm_sx <- function(
+Mx <- function(
    #Dataframes
    df, del_1 = NULL, del_2 = NULL, trigger = NULL,
    #Calculation settings
@@ -16,8 +16,8 @@ cm_sx <- function(
 
    #Global functions
    z_validation(df, "recording", 3)
-   z_validation(del_1, "first deleter (pressure)", 2)
-   z_validation(del_2, "second deleter (velocity)", 2)
+   z_validation(del_1, "first deleter", 2)
+   z_validation(del_2, "second deleter", 2)
    z_validation(trigger, "trigger", 2)
 
    colnames(df) <- c("time","val1","val2")
@@ -28,14 +28,14 @@ cm_sx <- function(
    df <- z_deleter(df,del_2)
    df <- z_blocks(df,freq,blocksize)
 
-   df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("max","mean"),n_vars=2)
+   df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("mean"),n_vars=2)
    df_agg <- z_epochs(df_agg,epochsize,epochmin,overlapping)
-   df_cor <- z_cor(df_agg, cor_by = c("val1_mean","val2_max"),overlapping)
+   df_cor <- z_cor(df_agg, cor_by = c("val1_mean","val2_mean"),overlapping)
 
-   results <- cor_output(df, df_agg, df_cor, freq, output, cor_by = c("val1_mean","val2_max"), overlapping)
+   results <- cor_output(df, df_agg, df_cor, freq, output, cor_by = c("val1_mean","val2_mean"), overlapping)
 
    colnames(results)[colnames(results) == "val1"] <- paste0(df_cols[2],"_mean")
-   colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_max")
+   colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_mean")
 
    #FUNCTIONS ----
    return(results)

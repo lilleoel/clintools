@@ -1,12 +1,12 @@
-\name{cm_pwa}
-\alias{cm_pwa}
+\name{PWA}
+\alias{PWA}
 \title{Pulse wave amplitude (PWA/AMP)}
 \description{
 Calculates the pulsw ave amplitude, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_pwa(df, del = NULL, trigger = NULL,
+PWA(df, del = NULL, trigger = NULL,
       blocksize = 3, freq, blockmin = 0.5,
       output = 'period')
 }
@@ -29,7 +29,7 @@ cm_pwa(df, del = NULL, trigger = NULL,
   \item{output}{Select the output which has to be either one row per 'period' or 'block'. \emph{[boolian]} }
 }
 \examples{
-data <- data.frame(time=seq(1, 901, 0.001),
-                    pres=rnorm(900001))
-cm_pwa(df=data, freq=1000)
+data <- data.frame(time=seq(1, 901, 0.01),
+                  pres=rnorm(90001))
+PWA(df=data, freq=100)
 }

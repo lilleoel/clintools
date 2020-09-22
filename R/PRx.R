@@ -1,12 +1,14 @@
 globalVariables(c("block","epoch","n","period","overlapping"))
 
-cm_co <- function(
+PRx <- function(
    #Dataframes
    df, del_1 = NULL, del_2 = NULL, trigger = NULL,
    #Calculation settings
-   blocksize = 3, freq = 1000,
+   blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
-   blockmin = 0.5,
+   blockmin = 0.5, epochmin = 0.50,
+   #Overlapping
+   overlapping = FALSE,
    #Output
    output = "period"
 ){
@@ -26,11 +28,15 @@ cm_co <- function(
    df <- z_deleter(df,del_2)
    df <- z_blocks(df,freq,blocksize)
 
-   df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("max","min","mean"),n_vars=2)
+   df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("mean"),n_vars=2)
+   df_agg <- z_epochs(df_agg,epochsize,epochmin,overlapping)
+   df_cor <- z_cor(df_agg, cor_by = c("val1_mean","val2_mean"),overlapping)
 
-   results <- cm_co_output(df, df_agg, by_type=c("val1_max","val1_min","val2_mean"),freq, blocksize, output)
+   results <- cor_output(df, df_agg, df_cor, freq, output, cor_by = c("val1_mean","val2_mean"), overlapping)
+
+   colnames(results)[colnames(results) == "val1"] <- paste0(df_cols[2],"_mean")
+   colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_mean")
 
    #FUNCTIONS ----
    return(results)
 }
-

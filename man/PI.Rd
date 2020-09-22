@@ -1,12 +1,12 @@
-\name{cm_pi}
-\alias{cm_pi}
+\name{PI}
+\alias{PI}
 \title{Pulsatility index (Gosling's index, PI)}
 \description{
 Calculates the pulsatility index, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_pi(df, del = NULL, trigger = NULL,
+PI(df, del = NULL, trigger = NULL,
       blocksize = 3, freq, blockmin = 0.5,
       output = 'period')
 }
@@ -30,7 +30,7 @@ cm_pi(df, del = NULL, trigger = NULL,
     Select the output which has to be either one row per 'period' or 'block'. \emph{[boolian]} }
 }
 \examples{
-data <- data.frame(time=seq(1, 901, 0.001),
-                    pres=rnorm(900001))
-cm_pi(df=data, freq=1000)
+data <- data.frame(time=seq(1, 901, 0.01),
+                  pres=rnorm(90001))
+PI(df=data, freq=100)
 }

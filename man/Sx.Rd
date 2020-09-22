@@ -1,12 +1,12 @@
-\name{cm_mx}
-\alias{cm_mx}
-\title{Mean flow velocity index (Mx)}
+\name{Sx}
+\alias{Sx}
+\title{Systolic flow velocity index (Sx)}
 \description{
-Using raw recording, this functions calculates mean flow veolicty index (Mx), initially described by Czosnyka et al. in 1996.
+Calculates Sx, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_mx(df, del_1 = NULL, del_2 = NULL,
+Sx(df, del_1 = NULL, del_2 = NULL,
       trigger = NULL, blocksize = 3,
       epochsize = 20, freq, blockmin = 0.5,
       epochmin = 0.5, overlapping = FALSE,
@@ -40,8 +40,8 @@ cm_mx(df, del_1 = NULL, del_2 = NULL,
   \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]} }
 }
 \examples{
-data <- data.frame(time=seq(1, 901, 0.001),
-                  pres=rnorm(900001),
-                  mcav=rnorm(900001))
-cm_mx(df=data, freq=1000)
+data <- data.frame(time=seq(1, 901, 0.01),
+                  pres=rnorm(90001),
+                  mcav=rnorm(90001))
+Sx(df=data, freq=1000)
 }

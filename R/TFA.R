@@ -3,6 +3,6 @@
 #   https://journals.sagepub.com/doi/full/10.1038/jcbfm.2008.13
 # R script https://elucimed.com/ensemble-r/extract/pf-transfer-function/
 
-cm_tfa <- function() {
+TFA <- function() {
    print("Hello, world!")
 }

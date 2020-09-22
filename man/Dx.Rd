@@ -1,12 +1,12 @@
-\name{cm_dx}
-\alias{cm_dx}
+\name{Dx}
+\alias{Dx}
 \title{Diastolic flow velocity index (Dx)}
 \description{
 Calculates Dx, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_dx(df, del_1 = NULL, del_2 = NULL,
+Dx(df, del_1 = NULL, del_2 = NULL,
       trigger = NULL, blocksize = 3,
       epochsize = 20, freq, blockmin = 0.5,
       epochmin = 0.5, overlapping = FALSE,
@@ -40,8 +40,8 @@ cm_dx(df, del_1 = NULL, del_2 = NULL,
   \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]} }
 }
 \examples{
-data <- data.frame(time=seq(1, 901, 0.001),
-                  pres=rnorm(900001),
-                  mcav=rnorm(900001))
-cm_dx(df=data, freq=1000)
+data <- data.frame(time=seq(1, 901, 0.01),
+                  pres=rnorm(90001),
+                  mcav=rnorm(90001))
+Dx(df=data, freq=1000)
 }

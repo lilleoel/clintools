@@ -1,6 +1,6 @@
 globalVariables(c("block","n","period"))
 
-cm_pwa <- function(
+PWA <- function(
    #Dataframes
    df, del = NULL, trigger = NULL,
    #Calculation settings

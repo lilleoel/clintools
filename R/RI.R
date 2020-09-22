@@ -1,7 +1,7 @@
 #Resistance index (RI) (End diastolic velocity – peak systolic velocity)/ peak systolic velocity
 globalVariables(c("block","n","period"))
 
-cm_ri <- function(
+RI <- function(
    #Dataframes
    df, del = NULL, trigger = NULL,
    #Calculation settings

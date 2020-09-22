@@ -1,12 +1,12 @@
-\name{cm_prx}
-\alias{cm_prx}
-\title{Pressure reactivity index (PRx)}
+\name{Mx}
+\alias{Mx}
+\title{Mean flow velocity index (Mx)}
 \description{
-Calculates PRx, and further described in following publication ...
+Using raw recording, this functions calculates mean flow veolicty index (Mx), initially described by Czosnyka et al. in 1996.
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_prx(df, del_1 = NULL, del_2 = NULL,
+Mx(df, del_1 = NULL, del_2 = NULL,
       trigger = NULL, blocksize = 3,
       epochsize = 20, freq, blockmin = 0.5,
       epochmin = 0.5, overlapping = FALSE,
@@ -14,13 +14,13 @@ cm_prx(df, del_1 = NULL, del_2 = NULL,
 }
 \arguments{
   \item{df}{
-    Raw recording with data in 3 columns: time (in seconds), arterial blood pressure curve measurement (ABP, raw measurement), and intracranial pressure curve measurement (ICP, raw measurement).
+    Raw recording with data in 3 columns: time (in seconds), pressure curve measurement (e.g. CPP, raw measurement), and velocity curve measurement (e.g. MCAv, raw measurement).
     \emph{[dataframe]} }
   \item{del_1}{
-    Deleter with two columns, reference to arterial blood pressure curve measurement: (1) start of deletion period and (2) end of deletion period.
+    Deleter with two columns, reference to pressure curve measurement: (1) start of deletion period and (2) end of deletion period.
     Every row is a deletion period. \emph{[dataframe]} }
   \item{del_2}{
-    Deleter with two columns, reference to intracranial pressure curve measurement: (1) start of deletion period and (2) end of deletion period.
+    Deleter with two columns, reference to velocity curve measurement: (1) start of deletion period and (2) end of deletion period.
     Every row is a deletion period. \emph{[dataframe]} }
   \item{trigger}{
   Trigger with two columns: (1) start of analysed period and (2) end of analysed period.
@@ -40,8 +40,8 @@ cm_prx(df, del_1 = NULL, del_2 = NULL,
   \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]} }
 }
 \examples{
-data <- data.frame(time=seq(1, 901, 0.001),
-                  pres=rnorm(900001),
-                  mcav=rnorm(900001))
-cm_prx(df=data, freq=1000)
+data <- data.frame(time=seq(1, 901, 0.01),
+                  pres=rnorm(90001),
+                  mcav=rnorm(90001))
+Mx(df=data, freq=1000)
 }

@@ -1,12 +1,12 @@
-\name{cm_ri}
-\alias{cm_ri}
+\name{RI}
+\alias{RI}
 \title{Resistance index (RI)}
 \description{
 Calculates the resistance index, and further described in following publication ...
 [clinmon: An R package for calculation of clinical monitoring indices (2020)]
 }
 \usage{
-cm_ri(df, del = NULL, trigger = NULL,
+RI(df, del = NULL, trigger = NULL,
       blocksize = 3, freq, blockmin = 0.5,
       output = "period")
 }
@@ -30,8 +30,7 @@ cm_ri(df, del = NULL, trigger = NULL,
     Select the output which has to be either one row per 'period' or 'block'. \emph{[boolian]} }
 }
 \examples{
-  data <- data.frame(time=seq(1, 901, 0.001),
-                      pres=rnorm(900001))
-
-  cm_ri(df=data, freq=1000)
+  data <- data.frame(time=seq(1, 901, 0.01),
+                      pres=rnorm(90001))
+  RI(df=data, freq=100)
 }

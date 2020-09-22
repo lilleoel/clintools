@@ -1,15 +1,14 @@
-#Cvr formel - https://europepmc.org/article/pmc/pmc6054990
-#CVR = mean BP/mean MCAv
-
 globalVariables(c("block","epoch","n","period","overlapping"))
 
-cm_cvri <- function(
+Dx <- function(
    #Dataframes
    df, del_1 = NULL, del_2 = NULL, trigger = NULL,
    #Calculation settings
-   blocksize = 3, freq = 1000,
+   blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
-   blockmin = 0.5,
+   blockmin = 0.5, epochmin = 0.50,
+   #Overlapping
+   overlapping = FALSE,
    #Output
    output = "period"
 ){
@@ -17,8 +16,8 @@ cm_cvri <- function(
 
    #Global functions
    z_validation(df, "recording", 3)
-   z_validation(del_1, "first deleter", 2)
-   z_validation(del_2, "second deleter", 2)
+   z_validation(del_1, "first deleter (pressure)", 2)
+   z_validation(del_2, "second deleter (velocity)", 2)
    z_validation(trigger, "trigger", 2)
 
    colnames(df) <- c("time","val1","val2")
@@ -29,12 +28,14 @@ cm_cvri <- function(
    df <- z_deleter(df,del_2)
    df <- z_blocks(df,freq,blocksize)
 
-   df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("mean"),n_vars=2)
+   df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("min","mean"),n_vars=2)
+   df_agg <- z_epochs(df_agg,epochsize,epochmin,overlapping)
+   df_cor <- z_cor(df_agg, cor_by = c("val1_mean","val2_min"),overlapping)
 
-   results <- cm_cvri_output(df, df_agg, by_type=c("val1_mean","val2_mean"),freq, blocksize, output)
+   results <- cor_output(df, df_agg, df_cor, freq, output, cor_by = c("val1_mean","val2_min"), overlapping)
 
    colnames(results)[colnames(results) == "val1"] <- paste0(df_cols[2],"_mean")
-   colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_mean")
+   colnames(results)[colnames(results) == "val2"] <- paste0(df_cols[3],"_min")
 
    #FUNCTIONS ----
    return(results)
