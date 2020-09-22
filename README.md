@@ -7,8 +7,6 @@ Every research team have their own script for calculation of hemodynamic indices
 
 To download the [development version of reports](https://github.com/lilleoel/clinmon/releases):
 
-Note: Windows users need [Rtools](http://www.murdoch-sutherland.com/Rtools/) and [devtools](http://CRAN.R-project.org/package=devtools) to install this way.
-
 ## Help
 
 Any help needed for usage of the package contact - <oel@oelfam.com>
