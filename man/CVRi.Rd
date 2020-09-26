@@ -20,6 +20,9 @@ CVRi(df, del_1, del_2, trigger, blocksize, freq, blockmin, output)
   \item{blockmin}{Minimum measurements ratio in every block, default is 0.5 (numeric)}
   \item{output}{select the resolution of output, either 'period' or 'block' (boolian)}
 }
+\value{
+Returns a dataframe with the results, with either every period  or block as a rows, depending on the chosen output
+}
 \examples{
 data <- data.frame(time=seq(1, 901, 0.01),
                   pres=rnorm(90001),

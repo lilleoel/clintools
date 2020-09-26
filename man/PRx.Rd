@@ -39,6 +39,9 @@ PRx(df, del_1 = NULL, del_2 = NULL,
     The number of block which should overlap, and remain blank if overlapping should not be utilized \emph{numeric} }
   \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]} }
 }
+\value{
+Returns a dataframe with the results, with either every period  or epoch as a rows, depending on the chosen output
+}
 \examples{
 data <- data.frame(time=seq(1, 901, 0.01),
                   pres=rnorm(90001),

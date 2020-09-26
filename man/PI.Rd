@@ -29,6 +29,9 @@ PI(df, del = NULL, trigger = NULL,
   \item{output}{
     Select the output which has to be either one row per 'period' or 'block'. \emph{[boolian]} }
 }
+\value{
+Returns a dataframe with the results, with either every period  or block as a rows, depending on the chosen output
+}
 \examples{
 data <- data.frame(time=seq(1, 901, 0.01),
                   pres=rnorm(90001))
