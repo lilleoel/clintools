@@ -6,7 +6,7 @@ Mx <- function(
    #Calculation settings
    blocksize = 3, epochsize = 20, freq = 1000,
    #Data Quality
-   blockmin = 0.5, epochmin = 0.50,
+   blockmin = 0.5, epochmin = 0.5,
    #Overlapping
    overlapping = FALSE,
    #Output

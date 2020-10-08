@@ -46,10 +46,33 @@ z_agg <- function(df,freq,blocksize,blockmin,by_type,n_vars){
    df_block <- aggregate(df[,1],by=list(df$block,df$period),length)
    colnames(df_block) <- c("block","period","length")
    for(i in by_type){
-      df_block <- cbind(df_block,c(by(df$val1, list(df$block,df$period), eval(parse(text = i)), na.rm=T)))
-      colnames(df_block)[ncol(df_block)] <- paste0("val1_",i)
-     if(n_vars > 1) df_block <- cbind(df_block,c(by(df$val2, list(df$block,df$period), eval(parse(text = i)), na.rm=T)))
-      if(n_vars > 1) colnames(df_block)[ncol(df_block)] <- paste0("val2_",i)
+      temp_df_block <- by(df$val1, list(df$block,df$period), eval(parse(text = i)), na.rm=T)
+      temp_df_block <- array(temp_df_block, dim(temp_df_block), dimnames(temp_df_block))
+      temp_df_block <- as.data.frame(cbind(rownames(temp_df_block),temp_df_block))
+      colnames(temp_df_block)[1] <- "block"
+      insertion_df <- NULL
+      for(j in c(1:(ncol(temp_df_block)-1))){
+         temp <- cbind(temp_df_block$block, j, temp_df_block[,c(j+1)])
+         insertion_df <- rbind(insertion_df,temp)
+      }
+      colnames(insertion_df) <- c("block","period",paste0("val1_",i))
+      df_block <- merge(df_block, insertion_df, by=c("block","period"), all.x=T)
+      df_block[,paste0("val1_",i)] <- as.numeric(df_block[,paste0("val1_",i)])
+
+     if(n_vars > 1){
+        temp_df_block <- by(df$val2, list(df$block,df$period), eval(parse(text = i)), na.rm=T)
+        temp_df_block <- array(temp_df_block, dim(temp_df_block), dimnames(temp_df_block))
+        temp_df_block <- as.data.frame(cbind(rownames(temp_df_block),temp_df_block))
+        colnames(temp_df_block)[1] <- "block"
+        insertion_df <- NULL
+        for(j in c(1:(ncol(temp_df_block)-1))){
+           temp <- cbind(temp_df_block$block, j, temp_df_block[,c(j+1)])
+           insertion_df <- rbind(insertion_df,temp)
+        }
+        colnames(insertion_df) <- c("block","period",paste0("val2_",i))
+        df_block <- merge(df_block, insertion_df, by=c("block","period"), all.x=T)
+        df_block[,paste0("val2_",i)] <- as.numeric(df_block[,paste0("val2_",i)])
+     }
    }
 
    #Remove blocks which does not fullfill quality control
