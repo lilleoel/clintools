@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.2.1
+----------------------------------------------------------------
+
+* Corrected the error, that missing values from artefacts deletion in blocks and epochs results in a errorgenous correlation coefficient.
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.2.0
 ----------------------------------------------------------------
 

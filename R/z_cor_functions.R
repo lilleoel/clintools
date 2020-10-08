@@ -13,12 +13,12 @@ cor_output <- function(df, df_agg, df_cor, freq, output, cor_by, overlapping){
                        length(unique(df_agg$block[df_agg$period == i])),
                        min(df$time[df$period == i]),
                        max(df$time[df$period == i]),
-                       mean(df_agg[df_agg$period == i,c(cor_by[1])]),
-                       mean(df_agg[df_agg$period == i,c(cor_by[2])]),
+                       mean(df_agg[df_agg$period == i,c(cor_by[1])], na.rm=T),
+                       mean(df_agg[df_agg$period == i,c(cor_by[2])], na.rm=T),
                        round(100-sum(df_agg$length[df_agg$period == i])/
                                 (freq*(max(df$time[df$period == i])-
                                           min(df$time[df$period == i])))*100, digits=1),
-                       mean(as.numeric(df_cor$cor[df_cor$period == i]))
+                       mean(as.numeric(df_cor$cor[df_cor$period == i]), na.rm=T)
          )
          results <- rbind(results,temp)
 
@@ -47,6 +47,7 @@ cor_output <- function(df, df_agg, df_cor, freq, output, cor_by, overlapping){
                               (freq*(max(df$time[df$period == i & df$block == max(temp_epoch$block)])-
                                     min(df$time[df$period == i & df$block == min(temp_epoch$block)])))*
                                  100, digits=1),
+
                           mean(as.numeric(df_cor$cor[df_cor$period == i & df_cor$epoch == j]))
             )
             results <- as.data.frame(rbind(results,temp))

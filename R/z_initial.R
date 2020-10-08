@@ -46,9 +46,9 @@ z_agg <- function(df,freq,blocksize,blockmin,by_type,n_vars){
    df_block <- aggregate(df[,1],by=list(df$block,df$period),length)
    colnames(df_block) <- c("block","period","length")
    for(i in by_type){
-      df_block <- cbind(df_block,na.omit(c(by(df$val1, list(df$block,df$period), eval(parse(text = i))))))
+      df_block <- cbind(df_block,c(by(df$val1, list(df$block,df$period), eval(parse(text = i)), na.rm=T)))
       colnames(df_block)[ncol(df_block)] <- paste0("val1_",i)
-     if(n_vars > 1) df_block <- cbind(df_block,na.omit(c(by(df$val2, list(df$block,df$period), eval(parse(text = i))))))
+     if(n_vars > 1) df_block <- cbind(df_block,c(by(df$val2, list(df$block,df$period), eval(parse(text = i)), na.rm=T)))
       if(n_vars > 1) colnames(df_block)[ncol(df_block)] <- paste0("val2_",i)
    }
 
