@@ -37,7 +37,8 @@ Mx(df, del_1 = NULL, del_2 = NULL,
     Minimum blocks required to create an epoch \emph{[numeric]} }
   \item{overlapping}{
     The number of block which should overlap, and remain blank if overlapping should not be utilized \emph{numeric} }
-  \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]} }
+  \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]}
+  \item{fast}{Select if you want the data to aggregated resulting in a faster, but perhabs more imprecise run. \emph{boolian}}}
 }
 \value{
 Returns a dataframe with the results, with either every period  or epoch as a rows, depending on the chosen output
@@ -46,5 +47,5 @@ Returns a dataframe with the results, with either every period  or epoch as a ro
 data <- data.frame(time=seq(1, 901, 0.01),
                   pres=rnorm(90001),
                   mcav=rnorm(90001))
-Mx(df=data, freq=1000)
+Mx(df=data, freq=100)
 }

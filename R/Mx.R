@@ -10,9 +10,28 @@ Mx <- function(
    #Overlapping
    overlapping = FALSE,
    #Output
-   output = "period"
+   output = "period", fast = TRUE
 ){
    df_cols <- colnames(df)
+
+#OPTIMISE
+   BinMean <- function(df, every, na.rm = FALSE){
+      temp_cn <- colnames(df)
+      output <- NULL
+      for(i in 1:ncol(df)){
+         vec <- df[[i]]
+         n <- length(vec)
+         x <- .colMeans(vec, every, n %/% every, na.rm)
+         r <- n %% every
+         if(r){ x <- c(x, mean.default(vec[(n-r+1):n], na.rm=na.rm))}
+         output <- cbind(output,x)
+      }
+      output <- as.data.frame(output)
+      colnames(output) <- temp_cn
+      return(output)
+   }
+
+   if(fast & freq > 50) { df <- BinMean(data,freq/50); freq <- 50 }
 
    #Global functions
    z_validation(df, "recording", 3)
