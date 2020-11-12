@@ -10,7 +10,7 @@ Mx <- function(
    #Overlapping
    overlapping = FALSE,
    #Output
-   output = "period", fast = TRUE
+   output = "period", fast = FALSE
 ){
    df_cols <- colnames(df)
 
@@ -31,7 +31,7 @@ Mx <- function(
       return(output)
    }
 
-   if(fast & freq > 50) { df <- BinMean(data,freq/50); freq <- 50 }
+   if(fast)if(fast > 10 & freq > fast) { df <- BinMean(data,freq/fast); freq <- fast }
 
    #Global functions
    z_validation(df, "recording", 3)
