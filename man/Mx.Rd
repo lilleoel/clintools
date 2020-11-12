@@ -8,9 +8,9 @@ Using raw recording, this functions calculates mean flow veolicty index (Mx), in
 \usage{
 Mx(df, del_1 = NULL, del_2 = NULL,
       trigger = NULL, blocksize = 3,
-      epochsize = 20, freq, blockmin = 0.5,
+      epochsize = 20, freq = 1000, blockmin = 0.5,
       epochmin = 0.5, overlapping = FALSE,
-      output = 'period')
+      output = 'period', fast = FALSE)
 }
 \arguments{
   \item{df}{
@@ -37,8 +37,8 @@ Mx(df, del_1 = NULL, del_2 = NULL,
     Minimum blocks required to create an epoch \emph{[numeric]} }
   \item{overlapping}{
     The number of block which should overlap, and remain blank if overlapping should not be utilized \emph{numeric} }
-  \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]}
-  \item{fast}{Select if you want the data to aggregated resulting in a faster, but perhabs more imprecise run. \emph{boolian}}}
+  \item{output}{Select the output which has to be either one row per 'period' or 'epoch'. \emph{[boolian]} }
+  \item{fast}{Select if you want the data to aggregated resulting in a faster, but perhabs more imprecise run. \emph{boolian}}
 }
 \value{
 Returns a dataframe with the results, with either every period  or epoch as a rows, depending on the chosen output

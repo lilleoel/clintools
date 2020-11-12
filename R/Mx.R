@@ -31,7 +31,7 @@ Mx <- function(
       return(output)
    }
 
-   if(fast)if(fast > 10 & freq > fast) { df <- BinMean(data,freq/fast); freq <- fast }
+   if(fast)if(fast >= 10 & freq > fast) { df <- BinMean(df,freq/fast); freq <- fast }
 
    #Global functions
    z_validation(df, "recording", 3)
@@ -45,6 +45,7 @@ Mx <- function(
    df <- z_trigger(df,trigger)
    df <- z_deleter(df,del_1)
    df <- z_deleter(df,del_2)
+
    df <- z_blocks(df,freq,blocksize)
 
    df_agg <- z_agg(df,freq,blocksize,blockmin,by_type=c("mean"),n_vars=2)
