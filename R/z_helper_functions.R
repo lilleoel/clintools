@@ -1,10 +1,8 @@
-#  -----------------
-#       Generic
-#  -----------------
+# ==== OPTIMIZE ====
 
-   #Functions which optimize the function.
-   #This is done by aggregating the dataframe.
-   helper_optimize <- function(df, freq, fast){
+   # Functions which optimize the function.
+   # This is done by aggregating the dataframe.
+   Z.fast <- function(df, freq, fast){
       if(fast >= 10 & freq > fast){
          every <- freq/fast
          na.rm = FALSE
@@ -26,58 +24,83 @@
       }
    }
 
-   #This function ensures changing freq if the dataframe is aggregated.
-   helper_optimize_freqtofast <- function(freq, fast){
+   # This function ensures changing freq if the
+   # dataframe is aggregated.
+   Z.fast_ftf <- function(freq, fast){
       if(fast >= 10 & freq > fast){
          freq <- fast
       }
       return(freq)
    }
 
-   #Validation of dataframes
-   z_validation <- function(df, name, cols){
+# ==== DATA MANAGEMENT ====
 
-      if(!is.null(df)){
-         if(any(sapply(df,class) != "numeric")){
-            stop(paste0("The full \'", name, "\' dataframe must be numeric"))
-         }else if(ncol(df) != cols){
-            stop(paste0("The \'", name, "\' dataframe must contain ", cols, " columns."))
+   Z.datamanagement <- function(df, trigger, deleter, freq, blocksize = NULL, rec_col = 3){
+
+      # Validation of dataframes
+      Z.validation <- function(df, name, cols){
+
+         if(!is.null(df)){
+            if(any(sapply(df,class) != "numeric")){
+               stop(paste0("The full \'", name, "\' dataframe must be numeric"))
+            }else if(ncol(df) != cols){
+               stop(paste0("The \'", name, "\' dataframe must contain ", cols, " columns."))
+            }
          }
       }
-   }
 
-   #Remove measurements outside of the trigger periods.
-   z_trigger <- function(df, trigger){
-      if(!is.null(trigger)) {
-         for(i in c(1:nrow(trigger))){
-            df$period[df[[1]] >= trigger[i,1] & df[[1]] < trigger[i,2]] <- i
-         }
-         df <- df[!is.na(df$period),]
-      }else{
-         df$period <- 1
+      #Run the validation
+      Z.validation(df, "recording", rec_col)
+      Z.validation(deleter, "deleter", 2)
+      Z.validation(trigger, "trigger", 2)
+
+      if(rec_col == 2){
+         colnames(df) <- c("time","val1")
+      }else if(rec_col == 3){
+         colnames(df) <- c("time","val1","val2")
       }
-      return(df)
-   }
+      df$n <- c(1:nrow(df))
 
-   #Remove deleted measurements
-   z_deleter <- function(df,del){
-      if(!is.null(del)){
-         for(i in c(1:nrow(del))){
-            df <- df[df[[1]] <= del[i,1] | df[[1]] >= del[i,2],]
+      #Remove measurements outside of the trigger periods.
+      Z.trigger <- function(df, trigger){
+         if(!is.null(trigger)) {
+            for(i in c(1:nrow(trigger))){
+               df$period[df[[1]] >= trigger[i,1] & df[[1]] < trigger[i,2]] <- i
+            }
+            df <- df[!is.na(df$period),]
+         }else{
+            df$period <- 1
          }
+         return(df)
       }
-      return(df)
-   }
+      df <- Z.trigger(df,trigger)
 
-   #Define blocks
-   z_blocks <- function(df, freq, blocksize){
-      df <- within(df,block <- ave(n,period,FUN = function(x)
-                                 ceiling((x-min(x)+1)/(blocksize*freq))))
+      #Remove deleted measurements
+      Z.deleter <- function(df,del){
+         if(!is.null(del)){
+            for(i in c(1:nrow(del))){
+               df <- df[df[[1]] <= del[i,1] | df[[1]] >= del[i,2],]
+            }
+         }
+         return(df)
+      }
+      df <- Z.deleter(df,deleter)
+
+      #Define blocks
+      Z.blocks <- function(df, freq, blocksize){
+         if(!is.null(blocksize)){
+            df <- within(df,block <- ave(n,period,FUN = function(x)
+               ceiling((x-min(x)+1)/(blocksize*freq))))
+         }
+         return(df)
+      }
+      df <- Z.blocks(df,freq,blocksize)
+
       return(df)
    }
 
    #Aggregate dataframe
-   z_agg <- function(df,freq,blocksize,blockmin,by_type,n_vars){
+   Z.aggregate <- function(df,freq,blocksize,blockmin,by_type,n_vars){
 
       #Create df_block
       df_block <- aggregate(df[,1],by=list(df$block,df$period),length)
@@ -121,12 +144,10 @@
       return(df_block)
    }
 
-#  -----------------
-#       Generic
-#  -----------------
+# ==== Mx | Dx | Sx | PRx ====
 
    #Define epochs
-   z_epochs <- function(df_agg,epochsize,epochmin,overlapping){
+   Z.epochs <- function(df_agg,epochsize,epochmin,overlapping){
 
       if(!overlapping){
          df_agg$epoch <- ceiling(df_agg$block/epochsize)
@@ -159,7 +180,7 @@
    }
 
    #Correlations for every epoch
-   z_cor <- function(df_agg, cor_by,overlapping){
+   Z.cor <- function(df_agg, cor_by,overlapping){
 
       df_agg <- df_agg[!is.na(df_agg$epoch),]
       df_cor <- NULL
@@ -181,7 +202,7 @@
    }
 
    #Output creation
-   cor_output <- function(df, df_agg, df_cor, freq, output, cor_by, overlapping){
+   Z.cor_output <- function(df, df_agg, df_cor, freq, output, cor_by, overlapping){
       if(output == "period"){
 
          results <- NULL
@@ -245,8 +266,10 @@
       return(results)
    }
 
+# ==== CO ====
+
    #Output creation
-   cm_co_output <- function(df, df_agg, by_type, freq, blocksize, output){
+   Z.co_output <- function(df, df_agg, by_type, freq, blocksize, output){
       if(output == "period"){
 
          results <- NULL
@@ -292,8 +315,10 @@
       return(results)
    }
 
+# ==== CVRi ====
+
    #Output creation
-   cm_cvri_output <- function(df, df_agg, by_type, freq, blocksize, output){
+   Z.cvri_output <- function(df, df_agg, by_type, freq, blocksize, output){
       if(output == "period"){
 
          results <- NULL
@@ -334,8 +359,10 @@
       return(results)
    }
 
+# ==== PI ====
+
    #Output creation
-   cm_pi_output <- function(df, df_agg, by_type, freq, blocksize, output){
+   Z.pi_output <- function(df, df_agg, by_type, freq, blocksize, output){
       if(output == "period"){
 
          results <- NULL
@@ -378,8 +405,10 @@
       return(results)
    }
 
+# ==== PWA ====
+
    #Output creation
-   cm_pwa_output <- function(df, df_agg, by_type, freq, blocksize, output){
+   Z.pwa_output <- function(df, df_agg, by_type, freq, blocksize, output){
       if(output == "period"){
 
          results <- NULL
@@ -420,8 +449,10 @@
       return(results)
    }
 
+# ==== RI ====
+
    #Output creation
-   cm_ri_output <- function(df, df_agg, by_type, freq, blocksize, output){
+   Z.ri_output <- function(df, df_agg, by_type, freq, blocksize, output){
       if(output == "period"){
 
          results <- NULL
@@ -462,3 +493,10 @@
       colnames(results) <- c("period","blocks","time.min","time.max","val1_max","val1_min","missing.perc","ri")
       return(results)
    }
+
+
+
+# ==== TFA ====
+
+
+   #calculate cyclic mean from

@@ -11,17 +11,11 @@ overlapping = FALSE, output = 'period',
 fast = FALSE)
 }
 \arguments{
-\item{df}{Raw recording with data in 3 columns:
-time (in seconds), pressure curve measurement (e.g. CPP,
-raw measurement), and velocity curve measurement (e.g. MCAv,
-raw measurement). \code{"dataframe"}}
+\item{df}{Raw recording with data in 3 columns: time (in seconds), pressure curve measurement (e.g. CPP, raw measurement), and velocity curve measurement (e.g. MCAv, raw measurement). \code{"dataframe"}}
 
-\item{del}{Deleter with two columns, reference to pressure
-curve measurement: (1) start of deletion period and (2) end
-of deletion period. Every row is a deletion period. \code{"dataframe"}}
+\item{del}{Deleter with two columns, reference to pressure curve measurement: (1) start of deletion period and (2) end of deletion period. Every row is a deletion period. \code{"dataframe"}}
 
-\item{trigger}{Trigger with two columns: (1) start of analysed period
-and (2) end of analysed period. Every row is a period for analysis. \code{"dataframe"}}
+\item{trigger}{Trigger with two columns: (1) start of analysed period and (2) end of analysed period. Every row is a period for analysis. \code{"dataframe"}}
 
 \item{blocksize}{Size of blocks, in seconds. \code{"numeric"}}
 
@@ -33,14 +27,11 @@ and (2) end of analysed period. Every row is a period for analysis. \code{"dataf
 
 \item{epochmin}{Minimum blocks required to create an epoch. \code{"numeric"}}
 
-\item{overlapping}{The number of block which should overlap, and
-remain blank if overlapping should not be utilized. \code{"numeric"}}
+\item{overlapping}{The number of block which should overlap, and remain blank if overlapping should not be utilized. \code{"numeric"}}
 
-\item{output}{Select the output which has to be either one row per.
-(\code{"period"} or \code{"epoch"})}
+\item{output}{Select the output which has to be either one row per. (\code{"period"} or \code{"epoch"})}
 
-\item{fast}{Select if you want the data to aggregated resulting in a
-faster, but perhabs more imprecise run. \code{"numeric"}}
+\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhabs more imprecise run. \code{"numeric"}}
 }
 \value{
 Returns a dataframe with the results, with either
@@ -55,8 +46,8 @@ mean flow veolicty index (Mx), initially described
 by Czosnyka et al. in 1996. \code{\link{Mx}}
 }
 \examples{
-data <- data.frame(time=seq(1, 901, 0.01),
-             pres=rnorm(90001), mcav=rnorm(90001))
+data <- data.frame(seq(1, 901, 0.01),
+         rnorm(90001), rnorm(90001))
 Mx(df=data, freq=100)
 
 }
