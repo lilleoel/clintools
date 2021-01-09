@@ -27,3 +27,5 @@ devtools::spell_check()
 devtools::check()
 usethis::use_cran_comments()
 devtools::release()
+
+#Save data

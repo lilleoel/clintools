@@ -320,6 +320,7 @@
 
       #Output creation
       Z.output <- function(df.block,df.epoch,output,overlapping){
+
          if(output == "block"){
             df.temp <- df.block
          }else if(output == "epoch"){
@@ -379,6 +380,27 @@
 
          }
 
+         Z.cppopt <- function(df.temp){
+            for(i in unique(df.temp$period)){
+               df.cppopt <- df.temp[df.temp$period == i,]
+               df.cppopt$CPPopt <- floor(df.cppopt$cpp_mean/5)*5
+               df.cppopt <- aggregate(df.cppopt$PRx,by=list(df.cppopt$CPPopt),mean)
+               cppopt <- df.cppopt$Group.1[df.cppopt$x == min(df.cppopt$x)]
+               if(cppopt == max(df.cppopt$Group.1) |
+                  cppopt == min(df.cppopt$Group.1) ){
+                  cppopt <- NA
+               }else{
+                  cppopt <- paste0(cppopt,"-",cppopt+5)
+               }
+               if(i == 1){ results <- cppopt
+               }else{ results <- c(results,cppopt) }
+            }
+            return(results)
+         }
+
+         if(any(colnames(df.temp) == "PRx")){
+            df.temp$CPPopt <- Z.cppopt(df.temp)
+         }
 
          return(df.temp)
       }

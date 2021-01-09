@@ -2,7 +2,7 @@
 
 #' Hemodynamic Indexes Calculated From Clinical Monitoring (clinmon)
 #'
-#' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Includes `COest`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
+#' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Includes `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
 #'
 #' @name clinmon
 #'
@@ -83,17 +83,24 @@
 #'    \deqn{COest = PP / (SBP+DBP) * HR}
 #' PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure; HR: heart rate.
 #'
+#' ## Optimal cerebral perfusion pressure (`CPPopt`)
+#' *Required variables:* `cpp`, `icp`; *Required output:* `period`.
+#'
+#' Optimal cerebral perfusion pressure (`CPPopt`) is calculated utilizing the method described by Steiner et al. \[2]. The CPPopt return `NA` if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
+#'    \deqn{CPPopt = 5 mmHg CPP interval with lowest PRx ) }
+#' CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
+#'
 #' ## Cardiovascular resistance index (`CVRi`)
 #' *Required variables:* `abp`, `mcav`; *Required output:* `-`.
 #'
-#' Cardiovascular resistance index (`CVRi`) is calculated utilizing the method described by Fan et al. \[2]:
+#' Cardiovascular resistance index (`CVRi`) is calculated utilizing the method described by Fan et al. \[3]:
 #'    \deqn{CVRi = mean ABP / mean MCAv }
 #' ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 #'
 #' ## Diastolic flow index (`Dx`)
 #' *Required variables:* `cpp`, `abp`, `mcav`; *Required output:* `epoch`, `period`.
 #'
-#' Diastolic flow index (`Dx`) is calculated utilizing the method described by Reinhard et al. \[3]:
+#' Diastolic flow index (`Dx`) is calculated utilizing the method described by Reinhard et al. \[4]:
 #'    \deqn{Dx = cor( mean CPP / min MCAv ) }
 #'    \deqn{Dxa = cor( mean ABP / min MCAv ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
@@ -101,7 +108,7 @@
 #' ## Mean flow index (`Mx`)
 #' *Required variables:* `cpp`, `abp`, `mcav`; *Required output:* `epoch`, `period`.
 #'
-#' Mean flow index (`Mx`) is calculated utilizing the method described by Czosnyka et al. \[4]:
+#' Mean flow index (`Mx`) is calculated utilizing the method described by Czosnyka et al. \[5]:
 #'    \deqn{Mx = cor( mean CPP / mean MCAv ) }
 #'    \deqn{Mxa = cor( mean ABP / mean MCAv ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
@@ -109,47 +116,48 @@
 #' ## Gosling index of pulsatility  (`PI`)
 #' *Required variables:* `mcav`; *Required output:* `-`.
 #'
-#' Gosling index of pulsatility (`PI`) is calculated utilizing the method described by Michel et al. \[5]:
+#' Gosling index of pulsatility (`PI`) is calculated utilizing the method described by Michel et al. \[6]:
 #'    \deqn{PI = (systolic MCAv - diastolic MCAv) / mean MCAv  }
 #' MCAv: middle cerebral artery blood velocity.
 #'
 #' ## Pressure reactivity index (`PRx`)
 #' *Required variables:* `cpp`, `icp`; *Required output:* `epoch`, `period`.
 #'
-#' Pressure reactivity index (`PRx`) is calculated utilizing the method described by Czosnyka et al. \[6]:
+#' Pressure reactivity index (`PRx`) is calculated utilizing the method described by Czosnyka et al. \[7]:
 #'    \deqn{PRx = cor( mean CPP / mean ICP ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ICP: intracranial pressure.
 #'
 #' ## Pulse wave amplitude (`PWA`)
 #' *Required variables:* `cpp`, `icp`, `abp`, `mcav`; *Required output:* `-`.
 #'
-#' Pulse wave amplitude (`PWA`) is calculated utilizing the method described by Norager et al. \[7]:
+#' Pulse wave amplitude (`PWA`) is calculated utilizing the method described by Norager et al. \[8]:
 #'    \deqn{PWA = systolic - diastolic }
 #'
 #' ## Pourcelot’s resistive (resistance) index (`RI`)
 #' *Required variables:* `mcav`; *Required output:* `-`.
 #'
-#' Pourcelot’s resistive (resistance) index (`RI`) is calculated utilizing the method described by Forster et al. \[8]:
+#' Pourcelot’s resistive (resistance) index (`RI`) is calculated utilizing the method described by Forster et al. \[9]:
 #'    \deqn{RI = (systolic MCAv - diastolic MCAv) / systolic MCAv  }
 #' MCAv: middle cerebral artery blood velocity.
 #'
 #' ## Systolic flow index (`Sx`)
 #' *Required variables:* `cpp`, `abp`, `mcav`; *Required output:* `epoch`, `period`.
 #'
-#' Systolic flow index (`Sx`) is calculated utilizing the method described by Czosnyka et al. \[4]:
+#' Systolic flow index (`Sx`) is calculated utilizing the method described by Czosnyka et al. \[5]:
 #'    \deqn{Sx = cor( mean CPP / systolic MCAv ) }
 #'    \deqn{Sxa = cor( mean ABP / systolic MCAv ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 #'
 #' @references
 #' 1. Koenig et al. (2015) Biomed Sci Instrum. 2015;51:85-90. (\href{https://pubmed.ncbi.nlm.nih.gov/25996703/}{PubMed})
-#' 2. Fan et al. (2018) Front Physiol. 2018 Jul 16;9:869. (\href{https://pubmed.ncbi.nlm.nih.gov/30061839/}{PubMed})
-#' 3. Reinhard et al. (2003) Stroke. 2003 Sep;34(9):2138-44. (\href{https://pubmed.ncbi.nlm.nih.gov/12920261/}{PubMed})
-#' 4. Czosnyka et al. (1996) Stroke. 1996 Oct;27(10):1829-34. (\href{https://pubmed.ncbi.nlm.nih.gov/8841340/}{PubMed})
-#' 5. Michel et al. (1998) Ultrasound Med Biol. 1998 May;24(4):597-9. (\href{https://pubmed.ncbi.nlm.nih.gov/9651969/}{PubMed})
-#' 6. Czosnyka et al. (1997) Neurosurgery. 1997 Jul;41(1):11-7; discussion 17-9. (\href{https://pubmed.ncbi.nlm.nih.gov/9218290/}{PubMed})
-#' 7. Norager et al. (2020) Acta Neurochir (Wien). 2020 Dec;162(12):2983-2989. (\href{https://pubmed.ncbi.nlm.nih.gov/32886224/}{PubMed})
-#' 8. Forster et al. (2017) J Paediatr Child Health. 2018 Jan;54(1):61-68. (\href{https://pubmed.ncbi.nlm.nih.gov/28845537/}{PubMed})
+#' 1. Steiner et al. (2002) Crit Care Med. 2002 Apr;30(4):733-8. (\href{https://pubmed.ncbi.nlm.nih.gov/11940737/}{PubMed})
+#' 3. Fan et al. (2018) Front Physiol. 2018 Jul 16;9:869. (\href{https://pubmed.ncbi.nlm.nih.gov/30061839/}{PubMed})
+#' 4. Reinhard et al. (2003) Stroke. 2003 Sep;34(9):2138-44. (\href{https://pubmed.ncbi.nlm.nih.gov/12920261/}{PubMed})
+#' 5. Czosnyka et al. (1996) Stroke. 1996 Oct;27(10):1829-34. (\href{https://pubmed.ncbi.nlm.nih.gov/8841340/}{PubMed})
+#' 6. Michel et al. (1998) Ultrasound Med Biol. 1998 May;24(4):597-9. (\href{https://pubmed.ncbi.nlm.nih.gov/9651969/}{PubMed})
+#' 7. Czosnyka et al. (1997) Neurosurgery. 1997 Jul;41(1):11-7; discussion 17-9. (\href{https://pubmed.ncbi.nlm.nih.gov/9218290/}{PubMed})
+#' 8. Norager et al. (2020) Acta Neurochir (Wien). 2020 Dec;162(12):2983-2989. (\href{https://pubmed.ncbi.nlm.nih.gov/32886224/}{PubMed})
+#' 9. Forster et al. (2017) J Paediatr Child Health. 2018 Jan;54(1):61-68. (\href{https://pubmed.ncbi.nlm.nih.gov/28845537/}{PubMed})
 #'
 #'
 #' @examples

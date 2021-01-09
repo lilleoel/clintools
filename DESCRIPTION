@@ -11,7 +11,7 @@ Description:
    periods of interest (trigger-periods), and delete artifacts with deleter-files.
 License: MIT + file LICENSE
 URL: https://github.com/lilleoel/clinmon
-BugReports: https://github.com/cosimameyer/overviewR/issues
+BugReports: https://github.com/lilleoel/clinmon/issues
 Depends:
    R (>= 3.5.0)
 Encoding: UTF-8
