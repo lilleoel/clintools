@@ -16,3 +16,14 @@ Cppopt original https://journals.lww.com/ccmjournal/Abstract/2012/08000/Continuo
 
 #BEST WEBPAGE FOR SUBMISSION
 https://www.r-bloggers.com/2020/07/how-to-write-your-own-r-package-and-publish-it-on-cran/
+
+#Upload scripts
+devtools::run_examples()
+devtools::check()
+devtools::check_rhub()
+devtools::check_win_devel()
+devtools::document()
+devtools::spell_check()
+devtools::check()
+usethis::use_cran_comments()
+devtools::release()

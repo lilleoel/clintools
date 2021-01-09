@@ -1,7 +1,7 @@
 Type: Package
 Package: clinmon
-Title: Calculation of Hemodynamic Indexes from Clinical Monitoring
-Version: 0.3.0
+Title: Hemodynamic Indexes Calculated from Clinical Monitoring
+Version: 0.5.1
 Authors@R: c(
     person("Markus Harboe", "Olsen", email = "oel@oelfam.com", role = c("cre","aut")),
     person("Christian", "Riberholt", role = "aut"))
@@ -9,7 +9,6 @@ Description:
    Every research team have their own script for calculation of hemodynamic indexes. 
    This package makes it possible  to insert a long-format dataframe, and add both 
    periods of interest (trigger-periods), and delete artifacts with deleter-files.
-   The calculation methods are based on Czosnyka et al. (1996) <doi:10.1161/01.str.27.10.1829>.
 License: MIT + file LICENSE
 URL: https://github.com/lilleoel/clinmon
 BugReports: https://github.com/cosimameyer/overviewR/issues
@@ -19,5 +18,6 @@ Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE)
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr

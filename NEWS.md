@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.5.1
+----------------------------------------------------------------
+
+* Simplified the package, to calculate all the indexes in `clinmon()`. `clinmon()` uses a *continuous* recording and returns a dataframe with haemodynamic indexes for every period, epoch or block depending on the chosen output. Includes `COest`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.2.1
 ----------------------------------------------------------------
 
