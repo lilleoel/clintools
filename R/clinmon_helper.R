@@ -321,6 +321,34 @@
       #Output creation
       Z.output <- function(df.block,df.epoch,output,overlapping){
 
+         #CPPopt helper
+         Z.cppopt <- function(df.block,df.epoch,output){
+
+            df.cppopt <- df.block[,c("period","epoch","cpp_mean","icp_mean")]
+            df.cppopt <- aggregate(df.cppopt,by=list(df.cppopt$period, df.cppopt$epoch),mean)[,-c(1:2)]
+            df.cppopt$CPPopt <- paste0(floor(df.cppopt$cpp_mean/5)*5,"-",floor(df.cppopt$cpp_mean/5)*5+5)
+            df.cppopt <- merge(df.cppopt,df.epoch,by=c("period","epoch"))
+            df.cppopt <- df.cppopt[order(df.cppopt$period,df.cppopt$epoch),]
+
+            if(output == "period"){
+               df.cppopt <- aggregate(df.cppopt$PRx,by=list(df.cppopt$period,df.cppopt$CPPopt),mean)
+
+               results <- NA
+               for(i in unique(df.epoch$period)){
+
+                  cppopt <- df.cppopt$Group.2[df.cppopt$x == min(df.cppopt$x)]
+                  if(cppopt == max(df.cppopt$Group.2[df.cppopt$Group.1 == i]) |
+                     cppopt == min(df.cppopt$Group.2[df.cppopt$Group.1 == i]) ){
+                     cppopt <- NA
+                  }
+                  if(i == 1){ results <- cppopt
+                  }else{ results <- c(results,cppopt) }
+               }
+               df.cppopt <- results
+            }
+            return(df.cppopt)
+         }
+
          if(output == "block"){
             df.temp <- df.block
          }else if(output == "epoch"){
@@ -378,28 +406,14 @@
             df.temp.2[,c("epoch")] <- NULL
             df.temp <- merge(df.temp,df.temp.2,by=c("period"))
 
-         }
-
-         Z.cppopt <- function(df.temp){
-            for(i in unique(df.temp$period)){
-               df.cppopt <- df.temp[df.temp$period == i,]
-               df.cppopt$CPPopt <- floor(df.cppopt$cpp_mean/5)*5
-               df.cppopt <- aggregate(df.cppopt$PRx,by=list(df.cppopt$CPPopt),mean)
-               cppopt <- df.cppopt$Group.1[df.cppopt$x == min(df.cppopt$x)]
-               if(cppopt == max(df.cppopt$Group.1) |
-                  cppopt == min(df.cppopt$Group.1) ){
-                  cppopt <- NA
-               }else{
-                  cppopt <- paste0(cppopt,"-",cppopt+5)
-               }
-               if(i == 1){ results <- cppopt
-               }else{ results <- c(results,cppopt) }
+            if(any(colnames(df.temp) == "PRx")){
+               df.temp$CPPopt <- Z.cppopt(df.block,df.epoch,output)
             }
-            return(results)
-         }
-
-         if(any(colnames(df.temp) == "PRx")){
-            df.temp$CPPopt <- Z.cppopt(df.temp)
+         }else if(output == "cppopt"){
+            if(is.null(df.epoch$PRx)){
+               stop("For CPPopt-output the recording needs 'icp' and 'cpp'")
+            }
+            df.temp <- Z.cppopt(df.block,df.epoch,output)
          }
 
          return(df.temp)

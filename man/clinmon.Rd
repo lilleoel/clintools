@@ -16,7 +16,7 @@ output = "period", fast = FALSE)
 
 \item{variables}{Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}) Arterial blood pressure (\code{'abp'}), cerebral perfusion pressure (\code{'cpp'}), intracranial pressure (\code{'icp'}), and heart rate (\code{'hr'}) is currently supported. (\code{list})}
 
-\item{trigger}{Trigger with two columns: (1) start and (2) end of period to be analysed. Every row is a period for analysis. Default is \code{NULL}. (\code{dataframe})}
+\item{trigger}{Trigger with two columns: (1) start and (2) end of period to be analyzed. Every row is a period for analysis. Default is \code{NULL}. (\code{dataframe})}
 
 \item{deleter}{Deleter with two columns: (1) start and (2) end of period with artefacts which need to be deleted. Every row is a period with artefacts. Default is \code{NULL}. (\code{dataframe})}
 
@@ -32,9 +32,9 @@ output = "period", fast = FALSE)
 
 \item{epochmin}{Minimum blocks required to create an epoch in ratio. Default is \code{0.5} corresponding to 50\%. (\code{numeric})}
 
-\item{output}{Select what the rows should represent in the output. Correlation based indexes are not presented when selecting blocks for every row. Currently \code{'block'}, \code{'epoch'}, or \code{'period'} is supported. Default is \code{'period'}. (\code{string})}
+\item{output}{Select what the rows should represent in the output. Correlation based indexes are not presented when selecting blocks for every row. Currently \code{'block'}, \code{'epoch'}, \code{'period'} or \code{'cppopt'} is supported. Default is \code{'period'}. (\code{string})}
 
-\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhabs more imprecise run, in Hz. Default is \code{FALSE.} (\code{numeric})}
+\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{FALSE.} (\code{numeric})}
 }
 \value{
 Returns a dataframe with the results, with either
@@ -43,7 +43,7 @@ every blocks, epochs or periods as rows, depending on the chosen output.\tabular
    \code{period} \tab The period number corresponding to the row-number in the trigger file. \cr
    \code{epoch} \tab The epoch number, or if \code{period} is chosen as output it reflects the number of epochs in the period. \cr
    \code{block} \tab The block number, or if \code{period} or \code{epoch} is chosen as output it reflects the number of blocks in the \code{period} or \code{epoch}. \cr
-   \code{time_min} \tab The mimimum time value or the \code{period}, \code{epoch} or \code{block}. \cr
+   \code{time_min} \tab The minimum time value or the \code{period}, \code{epoch} or \code{block}. \cr
    \code{time_max} \tab The maximum time value or the \code{period}, \code{epoch} or \code{block}. \cr
    \code{missing_percent} \tab The percentage of missing data in the \code{period}, \code{epoch} or \code{block}. \cr
    \verb{*_mean} \tab The mean value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
@@ -53,7 +53,7 @@ every blocks, epochs or periods as rows, depending on the chosen output.\tabular
 }
 }
 \description{
-\code{clinmon()} uses a \emph{continuous} recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Includes \code{COest}, \code{CVRi}, \code{Dx}, \code{Mx}, \code{PI}, \code{PRx}, \code{PWA}, \code{RI}, and \code{Sx} (see details).
+\code{clinmon()} uses a \emph{continuous} recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Includes \code{COest}, \code{CPPopt}, \code{CVRi}, \code{Dx}, \code{Mx}, \code{PI}, \code{PRx}, \code{PWA}, \code{RI}, and \code{Sx} (see details).
 }
 \details{
 Using a \emph{continuous} raw recording, this \code{clinmon()} calculates hemodynamic indexes for every period, epoch or block depending on the chosen output.\preformatted{head(data)
@@ -83,11 +83,20 @@ Estimated cardiac output (\code{COest}) is calculated by utilizing the method de
 PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure; HR: heart rate.
 }
 
+\subsection{Optimal cerebral perfusion pressure (\code{CPPopt})}{
+
+\emph{Required variables:} \code{cpp}, \code{icp}; \emph{Required output:} \code{period}.
+
+Optimal cerebral perfusion pressure (\code{CPPopt}) is calculated utilizing the method described by Steiner et al. [2]. The CPPopt return \code{NA} if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
+\deqn{CPPopt = 5 mmHg CPP interval with lowest mean PRx ) }
+CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
+}
+
 \subsection{Cardiovascular resistance index (\code{CVRi})}{
 
 \emph{Required variables:} \code{abp}, \code{mcav}; \emph{Required output:} \code{-}.
 
-Cardiovascular resistance index (\code{CVRi}) is calculated utilizing the method described by Fan et al. [2]:
+Cardiovascular resistance index (\code{CVRi}) is calculated utilizing the method described by Fan et al. [3]:
 \deqn{CVRi = mean ABP / mean MCAv }
 ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 }
@@ -96,7 +105,7 @@ ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 
 \emph{Required variables:} \code{cpp}, \code{abp}, \code{mcav}; \emph{Required output:} \code{epoch}, \code{period}.
 
-Diastolic flow index (\code{Dx}) is calculated utilizing the method described by Reinhard et al. [3]:
+Diastolic flow index (\code{Dx}) is calculated utilizing the method described by Reinhard et al. [4]:
 \deqn{Dx = cor( mean CPP / min MCAv ) }
 \deqn{Dxa = cor( mean ABP / min MCAv ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
@@ -106,7 +115,7 @@ cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial bl
 
 \emph{Required variables:} \code{cpp}, \code{abp}, \code{mcav}; \emph{Required output:} \code{epoch}, \code{period}.
 
-Mean flow index (\code{Mx}) is calculated utilizing the method described by Czosnyka et al. [4]:
+Mean flow index (\code{Mx}) is calculated utilizing the method described by Czosnyka et al. [5]:
 \deqn{Mx = cor( mean CPP / mean MCAv ) }
 \deqn{Mxa = cor( mean ABP / mean MCAv ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
@@ -116,7 +125,7 @@ cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial bl
 
 \emph{Required variables:} \code{mcav}; \emph{Required output:} \code{-}.
 
-Gosling index of pulsatility (\code{PI}) is calculated utilizing the method described by Michel et al. [5]:
+Gosling index of pulsatility (\code{PI}) is calculated utilizing the method described by Michel et al. [6]:
 \deqn{PI = (systolic MCAv - diastolic MCAv) / mean MCAv  }
 MCAv: middle cerebral artery blood velocity.
 }
@@ -125,7 +134,7 @@ MCAv: middle cerebral artery blood velocity.
 
 \emph{Required variables:} \code{cpp}, \code{icp}; \emph{Required output:} \code{epoch}, \code{period}.
 
-Pressure reactivity index (\code{PRx}) is calculated utilizing the method described by Czosnyka et al. [6]:
+Pressure reactivity index (\code{PRx}) is calculated utilizing the method described by Czosnyka et al. [7]:
 \deqn{PRx = cor( mean CPP / mean ICP ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ICP: intracranial pressure.
 }
@@ -134,7 +143,7 @@ cor: correlation coefficient; CPP: cerebral perfusion pressure; ICP: intracrania
 
 \emph{Required variables:} \code{cpp}, \code{icp}, \code{abp}, \code{mcav}; \emph{Required output:} \code{-}.
 
-Pulse wave amplitude (\code{PWA}) is calculated utilizing the method described by Norager et al. [7]:
+Pulse wave amplitude (\code{PWA}) is calculated utilizing the method described by Norager et al. [8]:
 \deqn{PWA = systolic - diastolic }
 }
 
@@ -142,7 +151,7 @@ Pulse wave amplitude (\code{PWA}) is calculated utilizing the method described b
 
 \emph{Required variables:} \code{mcav}; \emph{Required output:} \code{-}.
 
-Pourcelot’s resistive (resistance) index (\code{RI}) is calculated utilizing the method described by Forster et al. [8]:
+Pourcelot’s resistive (resistance) index (\code{RI}) is calculated utilizing the method described by Forster et al. [9]:
 \deqn{RI = (systolic MCAv - diastolic MCAv) / systolic MCAv  }
 MCAv: middle cerebral artery blood velocity.
 }
@@ -151,7 +160,7 @@ MCAv: middle cerebral artery blood velocity.
 
 \emph{Required variables:} \code{cpp}, \code{abp}, \code{mcav}; \emph{Required output:} \code{epoch}, \code{period}.
 
-Systolic flow index (\code{Sx}) is calculated utilizing the method described by Czosnyka et al. [4]:
+Systolic flow index (\code{Sx}) is calculated utilizing the method described by Czosnyka et al. [5]:
 \deqn{Sx = cor( mean CPP / systolic MCAv ) }
 \deqn{Sxa = cor( mean ABP / systolic MCAv ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
@@ -167,6 +176,7 @@ clinmon(df, variables=c("abp","mcav"), freq=100)
 \references{
 \enumerate{
 \item Koenig et al. (2015) Biomed Sci Instrum. 2015;51:85-90. (\href{https://pubmed.ncbi.nlm.nih.gov/25996703/}{PubMed})
+\item Steiner et al. (2002) Crit Care Med. 2002 Apr;30(4):733-8. (\href{https://pubmed.ncbi.nlm.nih.gov/11940737/}{PubMed})
 \item Fan et al. (2018) Front Physiol. 2018 Jul 16;9:869. (\href{https://pubmed.ncbi.nlm.nih.gov/30061839/}{PubMed})
 \item Reinhard et al. (2003) Stroke. 2003 Sep;34(9):2138-44. (\href{https://pubmed.ncbi.nlm.nih.gov/12920261/}{PubMed})
 \item Czosnyka et al. (1996) Stroke. 1996 Oct;27(10):1829-34. (\href{https://pubmed.ncbi.nlm.nih.gov/8841340/}{PubMed})

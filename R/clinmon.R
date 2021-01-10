@@ -17,7 +17,7 @@
 #'
 #' @param variables Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`) Arterial blood pressure (`'abp'`), cerebral perfusion pressure (`'cpp'`), intracranial pressure (`'icp'`), and heart rate (`'hr'`) is currently supported. (`list`)
 #'
-#' @param trigger Trigger with two columns: (1) start and (2) end of period to be analysed. Every row is a period for analysis. Default is `NULL`. (`dataframe`)
+#' @param trigger Trigger with two columns: (1) start and (2) end of period to be analyzed. Every row is a period for analysis. Default is `NULL`. (`dataframe`)
 #'
 #' @param deleter Deleter with two columns: (1) start and (2) end of period with artefacts which need to be deleted. Every row is a period with artefacts. Default is `NULL`. (`dataframe`)
 #'
@@ -33,9 +33,9 @@
 #'
 #' @param epochmin Minimum blocks required to create an epoch in ratio. Default is `0.5` corresponding to 50%. (`numeric`)
 #'
-#' @param output Select what the rows should represent in the output. Correlation based indexes are not presented when selecting blocks for every row. Currently `'block'`, `'epoch'`, or `'period'` is supported. Default is `'period'`. (`string`)
+#' @param output Select what the rows should represent in the output. Correlation based indexes are not presented when selecting blocks for every row. Currently `'block'`, `'epoch'`, `'period'` or `'cppopt'` is supported. Default is `'period'`. (`string`)
 #'
-#' @param fast Select if you want the data to aggregated resulting in a faster, but perhabs more imprecise run, in Hz. Default is `FALSE.` (`numeric`)
+#' @param fast Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is `FALSE.` (`numeric`)
 #'
 #' @details
 #'
@@ -67,7 +67,7 @@
 #' | `period`           | The period number corresponding to the row-number in the trigger file. |
 #' | `epoch`            | The epoch number, or if `period` is chosen as output it reflects the number of epochs in the period. |
 #' | `block`            | The block number, or if `period` or `epoch` is chosen as output it reflects the number of blocks in the `period` or `epoch`. |
-#' | `time_min`         | The mimimum time value or the `period`, `epoch` or `block`. |
+#' | `time_min`         | The minimum time value or the `period`, `epoch` or `block`. |
 #' | `time_max`         | The maximum time value or the `period`, `epoch` or `block`. |
 #' | `missing_percent`  | The percentage of missing data in the `period`, `epoch` or `block`. |
 #' | `*_mean`           | The mean value of each variable for the `period`, `epoch` or `block`. |
@@ -87,7 +87,7 @@
 #' *Required variables:* `cpp`, `icp`; *Required output:* `period`.
 #'
 #' Optimal cerebral perfusion pressure (`CPPopt`) is calculated utilizing the method described by Steiner et al. \[2]. The CPPopt return `NA` if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-#'    \deqn{CPPopt = 5 mmHg CPP interval with lowest PRx ) }
+#'    \deqn{CPPopt = 5 mmHg CPP interval with lowest mean PRx ) }
 #' CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 #'
 #' ## Cardiovascular resistance index (`CVRi`)

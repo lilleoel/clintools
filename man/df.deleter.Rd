@@ -18,6 +18,11 @@ data(testdata)
 Deleter dataframe with two columns: start (start) and
 end (end) of the deleter-period.
 }
+\examples{
+data(testdata)
+variables <- c("abp","mcav","hr")
+clinmon(df.data1000,variables,deleter=df.deleter,fast=50)
+}
 \references{
 Olsen MH et al. (Unpublished data, 2020) (\href{https://github.com/lilleoel/clinmon}{GitHub})
 }

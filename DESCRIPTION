@@ -1,7 +1,7 @@
 Type: Package
 Package: clinmon
 Title: Hemodynamic Indexes Calculated from Clinical Monitoring
-Version: 0.5.1
+Version: 0.5.5
 Authors@R: c(
     person("Markus Harboe", "Olsen", email = "oel@oelfam.com", role = c("cre","aut")),
     person("Christian", "Riberholt", role = "aut"))
@@ -20,4 +20,3 @@ LazyData: true
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 Suggests: knitr, rmarkdown
-VignetteBuilder: knitr

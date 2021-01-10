@@ -22,7 +22,7 @@
 #'
 #' @examples
 #' data(testdata)
-#' variables <- c("abp","mcav","hr)
+#' variables <- c("abp","mcav","hr")
 #' clinmon(df.data10,variables,freq=10)
 "df.data10"
 
@@ -51,8 +51,8 @@
 #'
 #' @examples
 #' data(testdata)
-#' variables <- c("abp","mcav","hr)
-#' clinmon(df.data1000,variables)
+#' variables <- c("abp","mcav","hr")
+#' clinmon(df.data1000,variables,fast=50)
 "df.data1000"
 
 #| ------------ |
@@ -78,6 +78,6 @@
 #'
 #' @examples
 #' data(testdata)
-#' variables <- c("abp","mcav","hr)
-#' clinmon(df.data1000,variables,deleter=df.deleter)
+#' variables <- c("abp","mcav","hr")
+#' clinmon(df.data1000,variables,deleter=df.deleter,fast=50)
 "df.deleter"

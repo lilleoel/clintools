@@ -16,8 +16,13 @@ data(testdata)
 }
 \description{
 Recording with four columns: time (t), non-invasive arterial
-blood pressure (nabp), middle cerebral artery velocity measured
-using transcranial Doppler (tcd), and heart rate (hr).
+blood pressure (abp), middle cerebral artery velocity measured
+using transcranial Doppler (mcav), and heart rate (hr).
+}
+\examples{
+data(testdata)
+variables <- c("abp","mcav","hr")
+clinmon(df.data1000,variables,fast=50)
 }
 \references{
 Olsen MH et al. (Unpublished data, 2020)
