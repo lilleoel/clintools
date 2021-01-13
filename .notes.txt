@@ -20,18 +20,11 @@ https://www.r-bloggers.com/2020/07/how-to-write-your-own-r-package-and-publish-i
 #Upload scripts
 devtools::check()
 rhub::check_for_cran()
-results <- devtools::check_rhub()
+usethis::use_cran_comments()
 devtools::check_win_devel()
 devtools::document()
 devtools::spell_check()
 devtools::check()
-
-results <- rhub::check_for_cran()
-results$cran_summary()
-usethis::use_cran_comments()
-
-
-
 devtools::release()
 
 #Save data

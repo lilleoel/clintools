@@ -46,9 +46,9 @@ every blocks, epochs or periods as rows, depending on the chosen output.\tabular
    \code{time_min} \tab The minimum time value or the \code{period}, \code{epoch} or \code{block}. \cr
    \code{time_max} \tab The maximum time value or the \code{period}, \code{epoch} or \code{block}. \cr
    \code{missing_percent} \tab The percentage of missing data in the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{*_mean} \tab The mean value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{*_min} \tab The minimum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{*_max} \tab The maximum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
+   \verb{\\*_mean} \tab The mean value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
+   \verb{\\*_min} \tab The minimum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
+   \verb{\\*_max} \tab The maximum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
    \code{*} \tab The indexes in each column. \cr
 }
 }
@@ -56,7 +56,7 @@ every blocks, epochs or periods as rows, depending on the chosen output.\tabular
 \code{clinmon()} uses a \emph{continuous} recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Includes \code{COest}, \code{CPPopt}, \code{CVRi}, \code{Dx}, \code{Mx}, \code{PI}, \code{PRx}, \code{PWA}, \code{RI}, and \code{Sx} (see details).
 }
 \details{
-Using a \emph{continuous} raw recording, this \code{clinmon()} calculates hemodynamic indexes for every period, epoch or block depending on the chosen output.\preformatted{head(data)
+Using a \emph{continuous} raw recording, \code{clinmon()} calculates hemodynamic indexes for every period, epoch or block depending on the chosen output.\preformatted{head(data)
 }\tabular{rrr}{
    \code{time} \tab \code{abp} \tab \code{mcav} \cr
    \code{7.00} \tab \code{78} \tab \code{45} \cr
@@ -88,7 +88,7 @@ PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure;
 \emph{Required variables:} \code{cpp}, \code{icp}; \emph{Required output:} \code{period}.
 
 Optimal cerebral perfusion pressure (\code{CPPopt}) is calculated utilizing the method described by Steiner et al. [2]. The CPPopt return \code{NA} if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-\deqn{CPPopt = 5 mmHg CPP interval with lowest mean PRx ) }
+\deqn{CPPopt = 5 mmHg_CPP_interval_with_lowest_mean_PRx ) }
 CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 }
 
@@ -170,7 +170,7 @@ cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial bl
 \examples{
 df <- data.frame(seq(1, 901, 0.01),
          rnorm(90001), rnorm(90001))
-clinmon(df, variables=c("abp","mcav"), freq=100)
+clinmon(df, variables=c("abp","mcav"), freq=50)
 
 }
 \references{

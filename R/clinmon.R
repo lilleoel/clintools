@@ -39,7 +39,7 @@
 #'
 #' @details
 #'
-#' Using a *continuous* raw recording, this `clinmon()` calculates hemodynamic indexes for every period, epoch or block depending on the chosen output.
+#' Using a *continuous* raw recording, `clinmon()` calculates hemodynamic indexes for every period, epoch or block depending on the chosen output.
 #'
 #' ```
 #' head(data)
@@ -77,17 +77,17 @@
 #'
 #' @section Hemodynamic indexes:
 #' ## Estimated cardiac output (`COest`)
-#' *Required variables:* `abp`, `hr`; *Required output:* `-`.
+#' *Required variables:* `abp` and `hr`; *Required output:* `-`.
 #'
 #' Estimated cardiac output (`COest`) is calculated by utilizing the method described by Koenig et al. \[1]:
 #'    \deqn{COest = PP / (SBP+DBP) * HR}
 #' PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure; HR: heart rate.
 #'
 #' ## Optimal cerebral perfusion pressure (`CPPopt`)
-#' *Required variables:* `cpp`, `icp`; *Required output:* `period`.
+#' *Required variables:* `abp`, `cpp`, `icp`; *Required output:* `period`.
 #'
 #' Optimal cerebral perfusion pressure (`CPPopt`) is calculated utilizing the method described by Steiner et al. \[2]. The CPPopt return `NA` if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-#'    \deqn{CPPopt = 5 mmHg CPP interval with lowest mean PRx ) }
+#'    \deqn{CPPopt = 5 mmHg_CPP_interval_with_lowest_mean_PRx ) }
 #' CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 #'
 #' ## Cardiovascular resistance index (`CVRi`)
@@ -121,10 +121,10 @@
 #' MCAv: middle cerebral artery blood velocity.
 #'
 #' ## Pressure reactivity index (`PRx`)
-#' *Required variables:* `cpp`, `icp`; *Required output:* `epoch`, `period`.
+#' *Required variables:* `abp`, `icp`; *Required output:* `epoch`, `period`.
 #'
 #' Pressure reactivity index (`PRx`) is calculated utilizing the method described by Czosnyka et al. \[7]:
-#'    \deqn{PRx = cor( mean CPP / mean ICP ) }
+#'    \deqn{PRx = cor( mean ABP / mean ICP ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ICP: intracranial pressure.
 #'
 #' ## Pulse wave amplitude (`PWA`)
@@ -163,7 +163,7 @@
 #' @examples
 #' df <- data.frame(seq(1, 901, 0.01),
 #'          rnorm(90001), rnorm(90001))
-#' clinmon(df, variables=c("abp","mcav"), freq=100)
+#' clinmon(df, variables=c("abp","mcav"), freq=50)
 #'
 #' @export
 #
@@ -184,6 +184,10 @@ clinmon <- function(
    output = "period", fast = FALSE
 ){
    colnames(df) <- c("t",variables)
+   if(any(variables == "abp") & any(variables == "icp") & !any(variables == "cpp")){
+      df$cpp <- df$abp-df$icp
+      variables <- c(variables,"cpp")
+   }
 
    #OPTIMIZE
    df <- Z.fast(df,freq,fast)

@@ -302,8 +302,8 @@
          df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_min"),"Dx"),
                          by=c("period","epoch"))
       }
-      if(any(variables == "cpp") & any(variables == "icp")){
-         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","icp_mean"),"PRx"),
+      if(any(variables == "abp") & any(variables == "icp")){
+         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("abp_mean","icp_mean"),"PRx"),
                          by=c("period","epoch"))
       }
 
@@ -324,7 +324,7 @@
          #CPPopt helper
          Z.cppopt <- function(df.block,df.epoch,output){
 
-            df.cppopt <- df.block[,c("period","epoch","cpp_mean","icp_mean")]
+            df.cppopt <- df.block[,c("period","epoch","abp_mean","icp_mean","cpp_mean")]
             df.cppopt <- aggregate(df.cppopt,by=list(df.cppopt$period, df.cppopt$epoch),mean)[,-c(1:2)]
             df.cppopt$CPPopt <- paste0(floor(df.cppopt$cpp_mean/5)*5,"-",floor(df.cppopt$cpp_mean/5)*5+5)
             df.cppopt <- merge(df.cppopt,df.epoch,by=c("period","epoch"))
@@ -424,7 +424,3 @@
 
 
 
-# ==== TFA ====
-
-
-   #calculate cyclic mean from
