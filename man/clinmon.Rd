@@ -46,9 +46,9 @@ every blocks, epochs or periods as rows, depending on the chosen output.\tabular
    \code{time_min} \tab The minimum time value or the \code{period}, \code{epoch} or \code{block}. \cr
    \code{time_max} \tab The maximum time value or the \code{period}, \code{epoch} or \code{block}. \cr
    \code{missing_percent} \tab The percentage of missing data in the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{\\*_mean} \tab The mean value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{\\*_min} \tab The minimum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{\\*_max} \tab The maximum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
+   \verb{*_mean} \tab The mean value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
+   \verb{*_min} \tab The minimum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
+   \verb{*_max} \tab The maximum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
    \code{*} \tab The indexes in each column. \cr
 }
 }
@@ -76,7 +76,7 @@ See \strong{Value} for output description.
 
 \subsection{Estimated cardiac output (\code{COest})}{
 
-\emph{Required variables:} \code{abp}, \code{hr}; \emph{Required output:} \code{-}.
+\emph{Required variables:} \code{abp} and \code{hr}; \emph{Required output:} \code{-}.
 
 Estimated cardiac output (\code{COest}) is calculated by utilizing the method described by Koenig et al. [1]:
 \deqn{COest = PP / (SBP+DBP) * HR}
@@ -85,7 +85,7 @@ PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure;
 
 \subsection{Optimal cerebral perfusion pressure (\code{CPPopt})}{
 
-\emph{Required variables:} \code{cpp}, \code{icp}; \emph{Required output:} \code{period}.
+\emph{Required variables:} \code{abp}, \code{cpp}, \code{icp}; \emph{Required output:} \code{period}.
 
 Optimal cerebral perfusion pressure (\code{CPPopt}) is calculated utilizing the method described by Steiner et al. [2]. The CPPopt return \code{NA} if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
 \deqn{CPPopt = 5 mmHg_CPP_interval_with_lowest_mean_PRx ) }
@@ -132,10 +132,10 @@ MCAv: middle cerebral artery blood velocity.
 
 \subsection{Pressure reactivity index (\code{PRx})}{
 
-\emph{Required variables:} \code{cpp}, \code{icp}; \emph{Required output:} \code{epoch}, \code{period}.
+\emph{Required variables:} \code{abp}, \code{icp}; \emph{Required output:} \code{epoch}, \code{period}.
 
 Pressure reactivity index (\code{PRx}) is calculated utilizing the method described by Czosnyka et al. [7]:
-\deqn{PRx = cor( mean CPP / mean ICP ) }
+\deqn{PRx = cor( mean ABP / mean ICP ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ICP: intracranial pressure.
 }
 
