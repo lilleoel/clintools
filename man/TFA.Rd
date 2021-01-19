@@ -6,14 +6,14 @@
 \usage{
 TFA(df, variables,
 trigger = NULL, deleter = NULL,
-freq = 1000, fast = 50,
+freq = 1000, fast = FALSE,
 raw_data = TRUE, interpolation = 3,
 output = "table", ...)
 }
 \arguments{
 \item{df}{Raw \emph{continuous} recording with numeric data and first column has to be time in seconds. (\code{dataframe})}
 
-\item{variables}{Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}) Arterial blood pressure (\code{'abp'}), cerebral perfusion pressure (\code{'cpp'}), intracranial pressure (\code{'icp'}) is currently supported. (\code{list})}
+\item{variables}{Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}) and arterial blood pressure (\code{'abp'}). (\code{list})}
 
 \item{trigger}{Trigger with two columns: (1) start and (2) end of period to be analyzed. Every row is a period for analysis. Default is \code{NULL}. (\code{dataframe})}
 
@@ -21,7 +21,7 @@ output = "table", ...)
 
 \item{freq}{Frequency of recorded data, in Hz. Default is \code{1000}. (\code{numeric})}
 
-\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{50} (\code{numeric})}
+\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{FALSE} (\code{numeric})}
 
 \item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. Default is \code{TRUE} (\code{boolian})}
 
@@ -34,7 +34,7 @@ output = "table", ...)
 \value{
 \code{TFA()} returns a dataframe depending on the output selected. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. \link{1}; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging.
 
-The some variable are generecally named and listed below:
+Some generic variables are listed below:
 \itemize{
 \item \code{abp_power} - The blood pressure power measured in mmHg^2.
 \item \code{cbfv_power} - The cerebral blood flow velocity power measured in cm^2\*s^-2
@@ -58,7 +58,7 @@ Wide format output table with period, VLF, LF, and HF as columns, and the TFA-va
 
 \subsection{\code{output='long'}}{
 
-The output table is a long format table, which can be manipulated depending on the intended use.\tabular{rllr}{
+Long format output table which can be manipulated depending on the intended use, with period, interval, variables and values as columns.\tabular{rllr}{
    \code{period} \tab \code{interval} \tab \code{variable} \tab \code{values} \cr
    \code{1} \tab \code{vlf} \tab \code{abp_power} \tab \code{6.25} \cr
    \code{1} \tab \code{vlf} \tab \code{cbfv_power} \tab \code{3.22} \cr
@@ -73,7 +73,7 @@ The output table is a long format table, which can be manipulated depending on t
 }
 }
 \description{
-\code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis from a \emph{continuous} recording. This function utilizes the recommendations from Claassen et al \link{1} nad mimicks the matlab script created by David Simpsons in 2015. (see details).
+\code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis from a \emph{continuous} recording. This function follows the recommendations from Claassen et al. [1] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). \code{TFA()} also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see details).
 }
 \details{
 Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al \link{1} nad mimicks the matlab script created by David Simpsons in 2015. (see details).\preformatted{head(data)

@@ -2,7 +2,7 @@
 
 #' Transfer function analysis of dynamic cerebral autoregulation (TFA)
 #'
-#' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function utilizes the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015, but can also utilize raw recordings, where cyclic average and interpolation can also be carried out. (see details).
+#' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function follows the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). `TFA()` also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see details).
 #'
 #' @name TFA
 #'
@@ -14,7 +14,7 @@
 #'
 #' @param df Raw *continuous* recording with numeric data and first column has to be time in seconds. (`dataframe`)
 #'
-#' @param variables Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`) Arterial blood pressure (`'abp'`), cerebral perfusion pressure (`'cpp'`), intracranial pressure (`'icp'`) is currently supported. (`list`)
+#' @param variables Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`) and arterial blood pressure (`'abp'`). (`list`)
 #'
 #' @param trigger Trigger with two columns: (1) start and (2) end of period to be analyzed. Every row is a period for analysis. Default is `NULL`. (`dataframe`)
 #'
@@ -56,7 +56,7 @@
 #'
 #' @return `TFA()` returns a dataframe depending on the output selected. `'table'` results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; `'long'` results in a dataframe with the results in a long format; `'plot'` results in a daframe which can help plot gain, phase and coherence; and `'raw'` results in a nested list with results primarily for debugging.
 #'
-#' The some variable are generecally named and listed below:
+#' Some generic variables are listed below:
 #' - `abp_power` - The blood pressure power measured in mmHg^2.
 #' - `cbfv_power` - The cerebral blood flow velocity power measured in cm^2\*s^-2
 #' - `coherence` - Coherence.
@@ -77,7 +77,7 @@
 #'
 #'
 #' ## `output='long'`
-#' Long format output table which can be manipulated depending on the intended use, with period, interval, variables and vlues as columns.
+#' Long format output table which can be manipulated depending on the intended use, with period, interval, variables and values as columns.
 #'
 #' | `period` | `interval` | `variable` | `values` |
 #' | --: | --- | --- | --: |
@@ -88,6 +88,8 @@
 #' | `2` | `hf` | `phase` | `9.38` |
 #'
 #' ## output=`plot`
+#'
+#' *****
 #'
 #'
 #' @section TFA-parameters:
@@ -126,31 +128,29 @@ TFA <- function(
    #Dataframes
    df, variables,
    trigger = NULL, deleter = NULL,
-   freq = 1000, fast = 10,
-   #Raw data
+   freq = 1000, fast = 50,
    raw_data = TRUE, interpolation = 3,
-   #Output
    output = "table",
    #TFA-settings
-   vlf = c(0.02,0.07), lf = c(0.07,0.2), hf = c(0.2,0.5),
-   detrend = 1, spectral_smoothing = 3,
+   vlf = c(0.02,0.07),
+   lf = c(0.07,0.2),
+   hf = c(0.2,0.5),
+   detrend = FALSE,
+   spectral_smoothing = 3,
    coherence2_thresholds = cbind(c(3:15),c(0.51,0.40,0.34,0.29,0.25,0.22,0.20,0.18,0.17,0.15,0.14,0.13,0.12)),
-   apply_coherence2_threshold = 1,
-   remove_negative_phase = 1,
+   apply_coherence2_threshold = TRUE,
+   remove_negative_phase = TRUE,
    remove_negative_phase_f_cutoff = 0.1,
-   normalize_ABP = 0,
-   normalize_CBFV = 0,
+   normalize_ABP = FALSE,
+   normalize_CBFV = FALSE,
    window_type = 'hanning', #alternative BOXCAR
    window_length = 102.4, #in s
    overlap = 59.99,
-   overlap_adjust = 1
+   overlap_adjust = TRUE
 ){
-   #TFA ----
    colnames(df) <- c("t",variables)
-   if(any(variables == "abp") & any(variables == "icp") & !any(variables == "cpp")){
-      df$cpp <- df$abp-df$icp
-      variables <- c(variables,"cpp")
-   }
+   df <- df[,c("t","abp","mcav")]
+   variables <- colnames(df)[-1]
 
    #OPTIMIZE
    df <- Z.fast(df,freq,fast)
@@ -158,4 +158,22 @@ TFA <- function(
 
    #DATA MANAGEMENT
    df <- Z.datamanagement(df, variables, trigger, deleter, blocksize = NULL, freq)
+
+   #PEAK IDENTIFICATION
+   df <- Z.peak_identification(df, variables)
+
+   #INTERPOLATION
+   df <- Z.interpolation(df, variables, interpolation,deleter)
+
+   #PEAK IDENTIFICATION - PLOT
+   if(output == "plot-peak"){
+      df$abp_cyclicmean[!is.na(df$abp_cyclicmean)] <- df$abp[!is.na(df$abp_cyclicmean)]
+      df$mcav_cyclicmean[!is.na(df$mcav_cyclicmean)] <- df$mcav[!is.na(df$mcav_cyclicmean)]
+      return(df); stop()
+   }
+
+   #BEAT-TO-BEAT AVERAGE
+
+   #TFA calculation
+
 }

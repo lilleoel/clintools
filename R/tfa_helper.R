@@ -1,11 +1,23 @@
-#CYCLIC MEAN ----
-Z.cyclic_mean <- function(df, variables,interpolation){
+# ==== HELPERS ====
 
-   variables <- variables[variables != "hr"]
+#Insert deleted rows based on missing n
+Z.insert.deleted <- function(temp){
+   del_n <- c(min(temp$n):max(temp$n))
+   del_n <- del_n[-which(del_n %in% temp$n)]
+   del_df <- as.data.frame(matrix(NA, ncol = ncol(temp), nrow = length(del_n)))
+   colnames(del_df) <- colnames(temp)
+   del_df$n <- del_n
+   temp <- rbind(temp,del_df)
+   temp <- temp[order(temp$n),]
+   return(temp)
+}
+
+# ==== PEAK IDENTIFICATION ====
+Z.peak_identification <- function(df, variables, deleter){
 
    #find peaks (use - to identify minimum)
    Z.find_peaks <- function (x, freq){
-      m <- freq/2
+      m <- freq/4
       shape <- diff(sign(diff(x, na.pad = FALSE)))
       pks <- sapply(which(shape < 0), FUN = function(i){
          z <- i - m + 1
@@ -18,73 +30,167 @@ Z.cyclic_mean <- function(df, variables,interpolation){
       pks
    }
 
-   if(interpolation >= 1){  }
-
-
    for(i in c(variables)){
-      temp <- df
+      temp <- df[complete.cases(df[,c("t",i)]),]
+      if(!is.null(deleter)){ temp <- Z.insert.deleted(temp) }
+      rep <- 1
+      peaks <- NA
+      while(rep <= max(temp$n)){
+         print(rep)
+         temp2 <- temp[temp$n >= rep & temp$n <= rep*15*freq,]
+         temp2 <- temp2[!is.na(temp2$n),]
+         if(any(is.na(temp2[,i]))){
+            temp2[is.na(temp2[,i]),i] <- max(temp2[!is.na(temp2[,i]),i])
+         }
+         peaks <- c(peaks,temp2$t[Z.find_peaks(-temp2[[i]],freq)])
+         rep <- rep+7.44*freq
+      }
+      peaks <- peaks[order(peaks)][!is.na(peaks)]
+      rem_peaks <- NA
+      for(j in c(1:(length(peaks)-1))){
+         if(!is.na(peaks[j]) & !is.na(peaks[j+1])){
+            if(abs(peaks[j]-peaks[j+1]) < 0.10){
+               rem_peaks <- c(rem_peaks,j)
+            }
+         }
+      }
+      rem_peaks <- rem_peaks[!is.na(rem_peaks)]
+      peaks <- peaks[-rem_peaks]
+      #Find every cycle.
+      temp <- temp[!is.na(temp$t),]
       temp$peaks <- 0
-      temp$peaks[Z.find_peaks(-temp[[i]],freq)] <- temp[[i]][Z.find_peaks(-temp[[i]],freq)]
+      temp$peaks[which(temp$t %in% peaks)] <- temp$abp[which(temp$t %in% peaks)]
       temp$cycle <- cumsum(c(0,as.numeric(diff(temp$peaks))!=0))
-      temp$cycle[temp$cycle %% 2 == 1] <- temp$cycle[temp$cycle %% 2 == 1] -1
+      temp$cycle[temp$cycle %% 2 == 1] <- temp$cycle[temp$cycle %% 2 == 1]-1
       temp$cycle <- temp$cycle/2
+      #Insert mean value
       temp_mean <- aggregate(temp[[i]],by=list(temp$cycle),mean)
-      colnames(temp_mean) <- c("cycle",paste0(i,"_cmean"))
+      colnames(temp_mean) <- c("cycle",paste0(i,"_cyclicmean"))
       temp_max <- aggregate(temp$t,by=list(temp$cycle),max)
       colnames(temp_max) <- c("cycle","t")
-      temp_max <- temp_max[temp_max$t[c(2:nrow(temp_max))]-temp_max$t[c(1:(nrow(temp_max)-1))] > 0.25,]
-      if(interpolation >= 1){
-         temp_max$interpolation <- c(temp_max$t,NA)[1:nrow(temp_max)]-c(NA,lag(temp_max$t))[1:nrow(temp_max)]
-         temp_max$interpolation <- temp_max$interpolation*interpolation*freq
-      }
       temp_results <- merge(temp_max,temp_mean,by="cycle")
-      temp <- merge(temp,temp_results[,c("t",paste0(i,"_cmean"),if(interpolation >= 1){"interpolation"})],by="t",all.x=T)
-      temp <- temp[,c("t","n",i,paste0(i,"_cmean"),if(interpolation >= 1){"interpolation"})]
-      del_n <- c(min(temp$n):max(temp$n))
-      del_n <- del_n[-which(del_n %in% temp$n)]
-      del_df <- as.data.frame(cbind(NA,del_n,NA,NA,0))
-      colnames(del_df) <- c("t","n",i,paste0(i,"_cmean"),"del")
-      temp$del <- NA
-      temp <- rbind(del_df,temp)
-      temp <- temp[order(temp$n),]
+      colnames(temp_results)[which(colnames(temp_results) %in% "cycle")] <- paste0(i,"_cycle")
 
-      if(interpolation >= 1){
-         temp$interpolation <- approx(temp$interpolation, xout = seq_along(temp$interpolation))$y
+      df <- merge(df,temp_results,by="t",all.x = T)
+   }
 
-         tmp <- unname(tapply(del_n, cumsum(c(1, diff(del_n)) != 1), range))
-         tmp_df <- NULL
-         for(j in c(1:length(tmp))) tmp_df <- rbind(tmp_df,t(as.data.frame(tmp[j])))
-         tmp_df <- as.data.frame(tmp_df)
-         tmp_df$length <- tmp_df[,2]-tmp_df[,1]
-         tmp_df$V1 <- tmp_df$V1-1
-         tmp_df$V2 <- tmp_df$V2+1
-         for(k in c(1:nrow(tmp_df))){
-            tmp_df$before[k] <- temp$interpolation[temp$n == tmp_df$V1[k]]
-            tmp_df$after[k] <- temp$interpolation[temp$n == tmp_df$V2[k]]
+   return(df)
+}
+
+# ==== INTERPOLATION ====
+Z.interpolation <- function(df, variables, interpolation, deleter){
+
+   df <- Z.insert.deleted(df)
+
+   for(i in c(variables)){
+      temp <- df[complete.cases(df[,c("t",i)]),]
+      if(!is.null(deleter)){
+         temp2 <- temp[!is.na(temp$abp_cycle),c("n",paste0(i, "_cycle"))]
+         temp2$start <- c(temp2$n[-length(temp2$n)],NA)
+         temp2$end <- c(temp2$n[-1],NA)
+         temp2 <- temp2[complete.cases(temp2),]
+         temp2$num <- temp2$end - temp2$start
+         temp2$real_num <- NA
+         for(j in c(1:nrow(temp2))){
+            temp2$real_num[j] <- nrow(temp[temp$n >= temp2$start[j] & temp$n < temp2$end[j],])
          }
-         tmp_df <- tmp_df[rowMeans(tmp_df[,c("before","after")]) < tmp_df$length,]
-         del_interpol <- NULL
-         tmp_df$V1 <- tmp_df$V1+1
-         tmp_df$V2 <- tmp_df$V2-1
-         for(k in c(1:nrow(tmp_df))){
-            del_interpol <- c(del_interpol,c(tmp_df$V1[k]:tmp_df$V2[k]))
+         temp2$del_cycle[temp2$num != temp2$real_num] <- 1
+         cycle <- temp2[[paste0(i, "_cycle")]][temp2$del_cycle == 1]
+         cycle <- cycle[!is.na(cycle)]
+         temp_ip <- unname(tapply(cycle, cumsum(c(1, diff(cycle)) != 1), range))
+         df_ip <- NULL
+         for(j in c(1:length(temp_ip))) df_ip <- as.data.frame(rbind(df_ip,t(as.data.frame(temp_ip[j]))))
+         df_ip$start <- NA; df_ip$end <- NA; df_ip$interpol_length <- NA
+         for(j in c(1:nrow(df_ip))){
+            df_ip$start[j] <-  temp2$start[df_ip$V1[j] == temp2[[paste0(i, "_cycle")]]]
+            df_ip$end[j] <-  temp2$end[df_ip$V2[j] == temp2[[paste0(i, "_cycle")]]]
+            df_ip$length[j] <- df_ip$end[j]-df_ip$start[j]
+
+            df_ip$interpol_length[j] <- mean(c(temp2$num[temp2[[paste0(i, "_cycle")]] == df_ip$V1[j]-1]*interpolation,
+                   temp2$num[temp2[[paste0(i, "_cycle")]] == df_ip$V2[j]+1]*interpolation))
          }
+         df_ip$interpolate <- (df_ip$interpol_length > df_ip$length)*1
 
-
-
-
-         dfs <- lapply(tmep, data.frame, stringsAsFactors = FALSE)
-
-
-
-
-
+         #flag interpolation in DF
+         temp <- Z.insert.deleted(temp)
+         for(j in c(1:nrow(df_ip))){
+            temp$interpolate[temp$n > df_ip$start[j] & temp$n <= df_ip$end[j]] <- df_ip$interpolate[j]
+         }
+         temp[temp$interpolate == 1 & !is.na(temp$interpolate),paste0(i,"_cyclicmean")] <- NA
       }
 
-      df <- merge(df,temp[,c("t",paste0(i,"_mean"))],by="t")
-      df[[paste0(i,"_mean")]] <- approx(df[[paste0(i,"_mean")]],
-                                        xout = seq_along(df[[paste0(i,"_mean")]]))$y
+      #interpolate beat-to-beat
+      temp[[paste0(i,"_cyclicinterpol")]] <- approx(temp[[paste0(i,"_cyclicmean")]],
+                                        xout = seq_along(temp[[paste0(i,"_cyclicmean")]]))$y
+      temp[temp$interpolate == 0 & !is.na(temp$interpolate),paste0(i,"_cyclicinterpol")] <- NA
+      df <- merge(df,temp[,c("n",paste0(i,"_cyclicinterpol"))],by="n")
    }
+   return(df)
+}
+
+#CYCLIC MEAN
+Z.cyclic_mean <- function(df, variables,interpolation){
+
+
+   #Inserting deleted rows
+   del_n <- c(min(df$n):max(df$n))
+   del_n <- del_n[-which(del_n %in% df$n)]
+   del_df <- as.data.frame(matrix(NA, ncol = ncol(df), nrow = length(del_n)))
+   colnames(del_df) <- colnames(df)
+   del_df$n <- del_n
+   df <- rbind(df,del_df)
+   df <- df[order(df$n),]
+   df$del_abp <- 1
+   df$del_abp[complete.cases(df)] <- 0
+   df$del_mcav <- 1
+   df$del_mcav[complete.cases(df)] <- 0
+
+      temp_max$interpolation <- c(temp_max$t,NA)[1:nrow(temp_max)]-c(NA,lag(temp_max$t))[1:nrow(temp_max)]
+      temp_max$interpolation <- temp_max$interpolation*interpolation*freq
+
+      #remove cycle shorter than 0.25 seconds
+      temp_results <- temp_results[(temp_results$interpolation/freq/interpolation > 0.25)*1 == 1,]
+      temp_results <- temp_results[complete.cases(temp_results),]
+
+      #insert into the full dataframe
+      temp <- merge(temp,temp_results[,c("t",paste0(i,"_cmean"),"interpolation")],by="t",all.x=T)
+
+      temp$interpolation <- approx(temp$interpolation, xout = seq_along(temp$interpolation))$y
+
+      #INTERPOLATION?
+      del_n2 <- del_n
+      temp_ip <- unname(tapply(del_n2, cumsum(c(1, diff(del_n2)) != 1), range))
+      df_ip <- NULL
+      for(j in c(1:length(temp_ip))) df_ip <- rbind(df_ip,t(as.data.frame(temp_ip[j])))
+      df_ip <- as.data.frame(df_ip)
+      df_ip$length <- df_ip[,2]-df_ip[,1]
+      df_ip$V1 <- df_ip$V1-1
+      df_ip$V2 <- df_ip$V2+1
+      for(k in c(1:nrow(df_ip))){
+         df_ip$before[k] <- temp$interpolation[temp$n == df_ip$V1[k]]
+         df_ip$after[k] <- temp$interpolation[temp$n == df_ip$V2[k]]
+      }
+      df_ip <- df_ip[rowMeans(df_ip[,c("before","after")]) > df_ip$length,]
+      del_interpol <- NULL
+      df_ip$V1 <- df_ip$V1+1
+      df_ip$V2 <- df_ip$V2-1
+      for(k in c(1:nrow(df_ip))){
+         del_interpol <- c(del_interpol,c(df_ip$V1[k]:df_ip$V2[k]))
+      }
+      #Change deletion to 0 for interpolated part
+      df[[paste0("del_",i)]][which(df$n %in% del_interpol)] <- 0
+      df <- merge(df,temp[,c("t",paste0(i,"_cmean"))],by="t",all.x=T)
+
+      #Delete cycle with missing data.
+
+      df[[paste0("del_",i)]][which(df$n %in% del_interpol)] <- 0
+
+   }
+
+
+
+
+
    return(df)
 }
 
