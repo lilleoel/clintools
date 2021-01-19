@@ -1,3 +1,5 @@
-importFrom("stats", "aggregate", "ave", "cor")
+importFrom("stats", "aggregate", "ave", "cor",
+           "complete.cases","sd","fft","approx")
 
 export(clinmon)
+export(TFA)

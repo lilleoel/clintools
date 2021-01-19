@@ -13,7 +13,7 @@ Z.insert.deleted <- function(temp){
 }
 
 # ==== PEAK IDENTIFICATION ====
-Z.peak_identification <- function(df, variables, deleter){
+Z.peak_identification <- function(df, variables, deleter, freq){
 
    #find peaks (use - to identify minimum)
    Z.find_peaks <- function (x, freq){
@@ -36,7 +36,6 @@ Z.peak_identification <- function(df, variables, deleter){
       rep <- 1
       peaks <- NA
       while(rep <= max(temp$n)){
-         print(rep)
          temp2 <- temp[temp$n >= rep & temp$n <= rep*15*freq,]
          temp2 <- temp2[!is.na(temp2$n),]
          if(any(is.na(temp2[,i]))){
@@ -128,90 +127,12 @@ Z.interpolation <- function(df, variables, interpolation, deleter){
    return(df)
 }
 
-#CYCLIC MEAN
-Z.cyclic_mean <- function(df, variables,interpolation){
-
-
-   #Inserting deleted rows
-   del_n <- c(min(df$n):max(df$n))
-   del_n <- del_n[-which(del_n %in% df$n)]
-   del_df <- as.data.frame(matrix(NA, ncol = ncol(df), nrow = length(del_n)))
-   colnames(del_df) <- colnames(df)
-   del_df$n <- del_n
-   df <- rbind(df,del_df)
-   df <- df[order(df$n),]
-   df$del_abp <- 1
-   df$del_abp[complete.cases(df)] <- 0
-   df$del_mcav <- 1
-   df$del_mcav[complete.cases(df)] <- 0
-
-      temp_max$interpolation <- c(temp_max$t,NA)[1:nrow(temp_max)]-c(NA,lag(temp_max$t))[1:nrow(temp_max)]
-      temp_max$interpolation <- temp_max$interpolation*interpolation*freq
-
-      #remove cycle shorter than 0.25 seconds
-      temp_results <- temp_results[(temp_results$interpolation/freq/interpolation > 0.25)*1 == 1,]
-      temp_results <- temp_results[complete.cases(temp_results),]
-
-      #insert into the full dataframe
-      temp <- merge(temp,temp_results[,c("t",paste0(i,"_cmean"),"interpolation")],by="t",all.x=T)
-
-      temp$interpolation <- approx(temp$interpolation, xout = seq_along(temp$interpolation))$y
-
-      #INTERPOLATION?
-      del_n2 <- del_n
-      temp_ip <- unname(tapply(del_n2, cumsum(c(1, diff(del_n2)) != 1), range))
-      df_ip <- NULL
-      for(j in c(1:length(temp_ip))) df_ip <- rbind(df_ip,t(as.data.frame(temp_ip[j])))
-      df_ip <- as.data.frame(df_ip)
-      df_ip$length <- df_ip[,2]-df_ip[,1]
-      df_ip$V1 <- df_ip$V1-1
-      df_ip$V2 <- df_ip$V2+1
-      for(k in c(1:nrow(df_ip))){
-         df_ip$before[k] <- temp$interpolation[temp$n == df_ip$V1[k]]
-         df_ip$after[k] <- temp$interpolation[temp$n == df_ip$V2[k]]
-      }
-      df_ip <- df_ip[rowMeans(df_ip[,c("before","after")]) > df_ip$length,]
-      del_interpol <- NULL
-      df_ip$V1 <- df_ip$V1+1
-      df_ip$V2 <- df_ip$V2-1
-      for(k in c(1:nrow(df_ip))){
-         del_interpol <- c(del_interpol,c(df_ip$V1[k]:df_ip$V2[k]))
-      }
-      #Change deletion to 0 for interpolated part
-      df[[paste0("del_",i)]][which(df$n %in% del_interpol)] <- 0
-      df <- merge(df,temp[,c("t",paste0(i,"_cmean"))],by="t",all.x=T)
-
-      #Delete cycle with missing data.
-
-      df[[paste0("del_",i)]][which(df$n %in% del_interpol)] <- 0
-
-   }
-
-
-
-
-
-   return(df)
-}
-
-
-
-#TFA FUNCTION ----
-Z.TFA_func <- function(ABP, CBFV, freq, output = "table",
-   vlf = c(0.02,0.07), lf = c(0.07,0.2), hf = c(0.2,0.5),
-   detrend = 1, spectral_smoothing = 3,
-   coherence2_thresholds = cbind(c(3:15),c(0.51,0.40,0.34,0.29,0.25,0.22,0.20,0.18,0.17,0.15,0.14,0.13,0.12)),
-   apply_coherence2_threshold = 1,
-   remove_negative_phase = 1,
-   remove_negative_phase_f_cutoff = 0.1,
-   normalize_ABP = 0,
-   normalize_CBFV = 0,
-   window_type = 'hanning', #alternative BOXCAR
-   window_length = 102.4, #in s
-   overlap = 59.99,
-   overlap_adjust = 1
-
-){
+# ==== TFA FUNCTION ====
+Z.TFA_func <- function(df, freq, output, vlf, lf, hf,
+   detrend, spectral_smoothing, coherence2_thresholds,
+   apply_coherence2_threshold, remove_negative_phase,
+   remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV,
+   window_type, window_length, overlap, overlap_adjust, na_as_mean){
 
    #HELPER FUNCTIONS ----
       #Hanning function:
@@ -292,27 +213,37 @@ Z.TFA_func <- function(ABP, CBFV, freq, output = "table",
       }
 
       #FILTERFILTER COMPLEX NUMBERS
-      Z.filter.complex=function(x){complex(real=signal::filtfilt(h,1,Re(x)), imag=signal::filtfilt(h,1,Im(x)))}
+      Z.filter.complex=function(x){complex(real=signal::filtfilt(h,1,Re(x)), imaginary=signal::filtfilt(h,1,Im(x)))}
 
 
    #TFA ----
 
+      df <- df[,c("abp","mcav")]
+      if(na_as_mean){
+         df$abp[is.na(df$abp)] <- mean(df$abp,na.rm=T)
+         df$mcav[is.na(df$mcav)] <- mean(df$mcav,na.rm=T)
+      }else{
+         df <- df[complete.cases(df),]
+      }
+      ABP <- df$abp
+      CBFV <- df$mcav
+
       #Adjust ABP and CBFV
       output_var <- NULL
-      output_var$abp_mean <- mean(ABP)
-      output_var$abp_sd <- sd(ABP)
-      output_var$cbfv_mean <- mean(CBFV)
-      output_var$cbfv_sd <- sd(CBFV)
+      output_var$abp_mean <- mean(ABP, na.rm=T)
+      output_var$abp_sd <- sd(ABP, na.rm=T)
+      output_var$cbfv_mean <- mean(CBFV, na.rm=T)
+      output_var$cbfv_sd <- sd(CBFV, na.rm=T)
 
-      if(detrend == 1){
+      if(detrend){
          ABP <- Z.detrend(ABP)
          CBFV <- Z.detrend(CBFV)
       }else{
          ABP <- ABP-mean(ABP, na.rm=T)
-         CBFV <- CBFV-mean(CBFV)
+         CBFV <- CBFV-mean(CBFV, na.rm=T)
       }
-      if(normalize_ABP == 1) ABP <- (ABP/output_var$abp_mean)*100
-      if(normalize_CBFV == 1) CBFV <- (CBFV/output_var$cbfv_mean)*100
+      if(normalize_ABP) ABP <- (ABP/output_var$abp_mean)*100
+      if(normalize_CBFV) CBFV <- (CBFV/output_var$cbfv_mean)*100
 
       #HANNING / BOXCAR
       window_l <- round(window_length*freq)
@@ -320,7 +251,7 @@ Z.TFA_func <- function(ABP, CBFV, freq, output = "table",
       if(window_type == "boxcar") window <- Z.boxcar(window_l)
 
       #Overlapping
-      if(overlap_adjust == 1){
+      if(overlap_adjust){
          L <- floor((length(ABP)-window_l)/(window_l*(1-overlap/100)))+1
          if(L>1){
             shift <- floor((length(ABP)-window_l)/(L-1))
@@ -338,7 +269,7 @@ Z.TFA_func <- function(ABP, CBFV, freq, output = "table",
 
       if(length(window) == 1){
          M <- window
-         window <- boxcar(window_l)
+         window <- Z.boxcar(window_l)
       }else{
          M <- length(window)
       }
@@ -414,14 +345,14 @@ Z.TFA_func <- function(ABP, CBFV, freq, output = "table",
          coherence2_threshold <- coherence2_thresholds[i,2];
       }
 
-      if(apply_coherence2_threshold == 1){
+      if(apply_coherence2_threshold){
          i <- which(abs(C)^2 < coherence2_threshold)
          H[i] <- NA
       }
 
       P <- atan2(Im(H), Re(H))
 
-      if(remove_negative_phase == 1){
+      if(remove_negative_phase){
          n <- which(f<remove_negative_phase_f_cutoff)
          k <- which(P[n]<0)
          if(length(k) != 0){
@@ -450,7 +381,7 @@ Z.TFA_func <- function(ABP, CBFV, freq, output = "table",
       output_var$hf_p_abp <- 2*sum(Pxx[i])*f[2]
       output_var$hf_p_cbfv <- 2*sum(Pyy[i])*f[2]
 
-      if(normalize_CBFV != 0){
+      if(normalize_CBFV){
          output_var$vlf_gain_norm <- output_var$vlf_gain
          output_var$lf_gain_norm <- output_var$lf_gain
          output_var$hf_gain_norm <- output_var$hf_gain

@@ -6,9 +6,24 @@
 \usage{
 TFA(df, variables,
 trigger = NULL, deleter = NULL,
-freq = 1000, fast = FALSE,
-raw_data = TRUE, interpolation = 3,
-output = "table", ...)
+freq = 1000, fast = 50, raw_data = FALSE,
+interpolation = 3, output = "table",
+vlf = c(0.02,0.07),lf = c(0.07,0.2),
+hf = c(0.2,0.5), detrend = FALSE,
+spectral_smoothing = 3,
+coherence2_thresholds = cbind(c(3:15),
+c(0.51,0.40,0.34,0.29,0.25,0.22,0.20,0.18,
+0.17,0.15,0.14,0.13,0.12)),
+apply_coherence2_threshold = TRUE,
+remove_negative_phase = TRUE,
+remove_negative_phase_f_cutoff = 0.1,
+normalize_ABP = FALSE,
+normalize_CBFV = FALSE,
+window_type = 'hanning',
+window_length = 102.4,
+overlap = 59.99,
+overlap_adjust = TRUE,
+na_as_mean = TRUE)
 }
 \arguments{
 \item{df}{Raw \emph{continuous} recording with numeric data and first column has to be time in seconds. (\code{dataframe})}
@@ -21,18 +36,18 @@ output = "table", ...)
 
 \item{freq}{Frequency of recorded data, in Hz. Default is \code{1000}. (\code{numeric})}
 
-\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{FALSE} (\code{numeric})}
+\item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{50} (\code{numeric})}
 
-\item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. Default is \code{TRUE} (\code{boolian})}
+\item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. Default is \code{FALSE} (\code{boolian})}
 
 \item{interpolation}{Select the number of beats which should be interpolated. Default is up to \code{3} beats and \code{0} results in no interpolation. (\code{numeric})}
 
-\item{output}{Select what the output should be. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. \link{1}; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging. Default is \code{'table'}. (\code{string})}
+\item{output}{Select what the output should be. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging. Default is \code{'table'}. (\code{string})}
 
-\item{...}{See the \emph{TFA-paramters}-section.}
+\item{vlf, lf, hf, detrend, spectral_smoothing, coherence2_thresholds, apply_coherence2_threshold, remove_negative_phase, remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV, window_type, window_length, overlap, overlap_adjust, na_as_mean}{See \strong{TFA-paramters}}
 }
 \value{
-\code{TFA()} returns a dataframe depending on the output selected. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. \link{1}; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging.
+\code{TFA()} returns a dataframe depending on the output selected. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging.
 
 Some generic variables are listed below:
 \itemize{
@@ -43,7 +58,7 @@ Some generic variables are listed below:
 \item \code{gain_normal} - Normalized gain measured in \%\*mmHg^-1.
 \item \code{phase} - Phase measured in radians.
 }
-\subsection{\code{output='table'}}{
+\subsection{output \= \'table\'}{
 
 Wide format output table with period, VLF, LF, and HF as columns, and the TFA-variables as rows.\tabular{lrrrr}{
    \code{variable} \tab \code{period} \tab \code{vlf} \tab \code{lf} \tab \code{hf} \cr
@@ -56,7 +71,7 @@ Wide format output table with period, VLF, LF, and HF as columns, and the TFA-va
 
 }
 
-\subsection{\code{output='long'}}{
+\subsection{output \= \'long\'}{
 
 Long format output table which can be manipulated depending on the intended use, with period, interval, variables and values as columns.\tabular{rllr}{
    \code{period} \tab \code{interval} \tab \code{variable} \tab \code{values} \cr
@@ -69,14 +84,16 @@ Long format output table which can be manipulated depending on the intended use,
 
 }
 
-\subsection{output=\code{plot}}{
+\subsection{output \= \'plot\'}{
+
+HELLO WORLD
 }
 }
 \description{
 \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis from a \emph{continuous} recording. This function follows the recommendations from Claassen et al. [1] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). \code{TFA()} also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see details).
 }
 \details{
-Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al \link{1} nad mimicks the matlab script created by David Simpsons in 2015. (see details).\preformatted{head(data)
+Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al [1] nad mimicks the matlab script created by David Simpsons in 2015. (see details).\preformatted{head(data)
 }\tabular{rrr}{
    \code{time} \tab \code{abp} \tab \code{mcav} \cr
    \code{7.00} \tab \code{78} \tab \code{45} \cr
@@ -92,32 +109,32 @@ To calculate the indexes insert the data and select the relevant variables.\pref
 
 See \strong{Value} for output description.
 }
-\section{TFA-parameters}{
+\section{TFA-paramters}{
 
 A series of parameters that control TFA analysis (window-length, frequency bands …). If this is not provided, default values, corresponding to those recommended in the white paper, will be used. These default values are given below for each parameter.
 \itemize{
-\item \code{vlf} - Limits of \emph{very low frequency} band (in Hz). This corresponds to the matematical inclusion of \verb{[X:Y[}. Default is \code{c(0.02-0.07)}.
-\item \code{lf} - Limits of \emph{low frequency} band (in Hz). This corresponds to the matematical inclusion of \verb{[X:Y[}. Default is \code{c(0.07-0.2)}.
-\item \code{hf} - Limits of \emph{high frequency} band (in Hz). This corresponds to the matematical inclusion of \verb{[X:Y[}. Default is \code{c(0.2-0.5)}.
-\item \code{detrend} - Linear detrending of data prior to TFA-analysis (detrending is carried out as one continuous trend over the whole length of the recording, not segment-by-segment). Default is \code{FALSE}.
-\item \code{spectral_smoothing} - The length, in samples, of the triangular spectral smoothing function. Note that this must be an odd number, to ensure that smoothing is symmetrical around the centre frequency. Default is \code{3}.
-\item \code{coherence2_thresholds} - The critical values (alpha=5\%, second column) for coherence for a number of windows (first column, here from 3 to 15). These values were obtained by Monte Carlo simulation, using the default parameter settings for the TFA-analysis (Hanning window, overlap of 50\% and 3-point spectral smoothing was assumed). These values should be recalculated for different settings. Note that if \code{overlap_adjust=TRUE}, the overlap will vary depending on the length of data. With an overlap of 60\% (see below), the critical values increase by between 0.04 (for 3 windows) and 0.02 (for 15 windows). Default is \verb{cbind(c(3:15),c(0.51,0.40,} \verb{0.34,0.29,0.25,0.22,0.20,0.18,0.17,} \verb{0.15,0.14,0.13,0.12))}.
-\item \code{apply_coherence2_threshold} - Apply the thresholds given above to the TFA-estimates. All frequencies with magnitude-squared coherence below the threshold value are excluded from averaging when calculating the mean values of gain and phase across the bands. Note that low values of coherence are not excluded in the average of coherence across the bands. Default is \code{TRUE}.
-\item \code{remove_negative_phase} - Remove (ignore) negative values of phase in averaging across bands. Negative phase values are removed only for frequencies below the frequency given below, when calculating the average phase in bands. Default is \code{TRUE}.
-\item \code{remove_negative_phase_f_cutoff} - The cut-off frequency below-which negative phase values are neglected (only if \code{remove_negative_phase} is \code{TRUE}). Default is \code{0.1}.
-\item \code{normalize_ABP} - Normalize ABP by dividing by the mean and multiplying by 100, to express ABP change in \%. Note that mean-values are always removed from ABP prior to analysis. Default is \code{FALSE}.
-\item \code{normalize_CBFV} - Normalize CBFV by dividing by the mean and multiplying by 100, to express CBFV change in \%. Note that the band-average values of gain are always calculated both with and without normalization of CBFV, in accordance with the recommendations. Note also that mean-values are always removed from CBFV prior to analysis. Default is \code{FALSE}.
-\item \code{window_type} - Chose window \code{'hanning'} or \code{'boxcar'}. Default is \code{'hanning'}.
-\item \code{window_length} - Length of the data-window, in seconds. Default is \code{102.4}.
-\item \code{overlap} - Overlap of the windows, in \%. If \code{overlap_adjust} is \code{TRUE} (see below), then this value may be automatically reduced, to ensure that windows cover the full length of data. Default is \verb{59.99\%} rather than 60\%, so that with data corresponding to 5 windows of 100 s at an overlap of 50\%, 5 windows are indeed chosen.
-\item \code{overlap_adjust} - Ensure that the full length of data is used (i.e. the last window finishes as near as possible to the end of the recording), by adjusting the overlap up to a maximum value given by params.overlap. Default is \code{TRUE}.
+\item \code{vlf} Limits of \emph{very low frequency} band (in Hz). This corresponds to the matematical inclusion of \verb{[X:Y[}. Default is \code{c(0.02-0.07)}.
+\item \code{lf} Limits of \emph{low frequency} band (in Hz). This corresponds to the matematical inclusion of \verb{[X:Y[}. Default is \code{c(0.07-0.2)}.
+\item \code{hf} Limits of \emph{high frequency} band (in Hz). This corresponds to the matematical inclusion of \verb{[X:Y[}. Default is \code{c(0.2-0.5)}.
+\item \code{detrend} Linear detrending of data prior to TFA-analysis (detrending is carried out as one continuous trend over the whole length of the recording, not segment-by-segment). Default is \code{FALSE}.
+\item \code{spectral_smoothing} The length, in samples, of the triangular spectral smoothing function. Note that this must be an odd number, to ensure that smoothing is symmetrical around the centre frequency. Default is \code{3}.
+\item \code{coherence2_thresholds} The critical values (alpha=5\%, second column) for coherence for a number of windows (first column, here from 3 to 15). These values were obtained by Monte Carlo simulation, using the default parameter settings for the TFA-analysis (Hanning window, overlap of 50\% and 3-point spectral smoothing was assumed). These values should be recalculated for different settings. Note that if \code{overlap_adjust=TRUE}, the overlap will vary depending on the length of data. With an overlap of 60\% (see below), the critical values increase by between 0.04 (for 3 windows) and 0.02 (for 15 windows). Default is \verb{cbind(c(3:15),c(0.51,0.40,} \verb{0.34,0.29,0.25,0.22,0.20,0.18,0.17,} \verb{0.15,0.14,0.13,0.12))}.
+\item \code{apply_coherence2_threshold} Apply the thresholds given above to the TFA-estimates. All frequencies with magnitude-squared coherence below the threshold value are excluded from averaging when calculating the mean values of gain and phase across the bands. Note that low values of coherence are not excluded in the average of coherence across the bands. Default is \code{TRUE}.
+\item \code{remove_negative_phase} Remove (ignore) negative values of phase in averaging across bands. Negative phase values are removed only for frequencies below the frequency given below, when calculating the average phase in bands. Default is \code{TRUE}.
+\item \code{remove_negative_phase_f_cutoff} The cut-off frequency below-which negative phase values are neglected (only if \code{remove_negative_phase} is \code{TRUE}). Default is \code{0.1}.
+\item \code{normalize_ABP} Normalize ABP by dividing by the mean and multiplying by 100, to express ABP change in \%. Note that mean-values are always removed from ABP prior to analysis. Default is \code{FALSE}.
+\item \code{normalize_CBFV} Normalize CBFV by dividing by the mean and multiplying by 100, to express CBFV change in \%. Note that the band-average values of gain are always calculated both with and without normalization of CBFV, in accordance with the recommendations. Note also that mean-values are always removed from CBFV prior to analysis. Default is \code{FALSE}.
+\item \code{window_type} Chose window \code{'hanning'} or \code{'boxcar'}. Default is \code{'hanning'}.
+\item \code{window_length} Length of the data-window, in seconds. Default is \code{102.4}.
+\item \code{overlap} Overlap of the windows, in \%. If \code{overlap_adjust} is \code{TRUE} (see below), then this value may be automatically reduced, to ensure that windows cover the full length of data. Default is \verb{59.99\%} rather than 60\%, so that with data corresponding to 5 windows of 100 s at an overlap of 50\%, 5 windows are indeed chosen.
+\item \code{overlap_adjust} Ensure that the full length of data is used (i.e. the last window finishes as near as possible to the end of the recording), by adjusting the overlap up to a maximum value given by params.overlap. Default is \code{TRUE}.
 }
 }
 
 \examples{
-df <- data.frame(seq(1, 901, 0.01),
-         rnorm(90001), rnorm(90001))
-TFA(df, variables=c("abp","mcav"), freq=100)
+df <- data.frame(seq(1, 901, 0.1),
+         rnorm(9001), rnorm(9001))
+TFA(df, variables=c("abp","mcav"), freq=10)
 
 }
 \references{
