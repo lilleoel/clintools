@@ -28,26 +28,26 @@ na_as_mean = TRUE)
 \arguments{
 \item{df}{Raw \emph{continuous} recording with numeric data and first column has to be time in seconds. (\code{dataframe})}
 
-\item{variables}{Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}) and arterial blood pressure (\code{'abp'}). (\code{list})}
+\item{variables}{Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}) and arterial blood pressure (\code{'abp'}) is currently supported. (\code{list})}
 
-\item{trigger}{Trigger with two columns: (1) start and (2) end of period to be analyzed. Every row is a period for analysis. Default is \code{NULL}. (\code{dataframe})}
+\item{trigger}{Trigger with two columns:  first is start, and second is end of period to be analyzed. Every row is a period for analysis. Default is \code{NULL}, which results in analysis of the full dataframe.  (\code{dataframe})}
 
-\item{deleter}{Deleter with two columns: (1) start and (2) end of period with artefacts which need to be deleted. Every row is a period with artefacts. Default is \code{NULL}. (\code{dataframe})}
+\item{deleter}{Deleter with two columns: first is start and second is end of period with artefacts, which need to be deleted. Every row is a period with artefacts. Default is \code{NULL}. (\code{dataframe})}
 
 \item{freq}{Frequency of recorded data, in Hz. Default is \code{1000}. (\code{numeric})}
 
 \item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{50} (\code{numeric})}
 
-\item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. Default is \code{FALSE} (\code{boolian})}
+\item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. \strong{NB:} this function have not been validated, why validated methods for calculating cyclic mean are preferred. Default is \code{FALSE} (\code{boolian})}
 
 \item{interpolation}{Select the number of beats which should be interpolated. Default is up to \code{3} beats and \code{0} results in no interpolation. (\code{numeric})}
 
-\item{output}{Select what the output should be. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging. Default is \code{'table'}. (\code{string})}
+\item{output}{Select what the output should be. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; \code{'plot-peak'} results in a dataframe, which can be used to validate the cyclic average, and \code{'raw'} results in a nested list with results primarily for debugging. Default is \code{'table'}. (\code{string})}
 
-\item{vlf, lf, hf, detrend, spectral_smoothing, coherence2_thresholds, apply_coherence2_threshold, remove_negative_phase, remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV, window_type, window_length, overlap, overlap_adjust, na_as_mean}{See \strong{TFA-paramters}}
+\item{vlf, lf, hf, detrend, spectral_smoothing, coherence2_thresholds, apply_coherence2_threshold, remove_negative_phase, remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV, window_type, window_length, overlap, overlap_adjust, na_as_mean}{See \strong{TFA-parameters}}
 }
 \value{
-\code{TFA()} returns a dataframe depending on the output selected. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; and \code{'raw'} results in a nested list with results primarily for debugging.
+\code{TFA()} returns a dataframe depending on the output selected. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; \code{'plot-peak'} results in a dataframe, which can be used to validate the cyclic average, and \code{'raw'} results in a nested list with results primarily for debugging.
 
 Some generic variables are listed below:
 \itemize{
@@ -58,42 +58,50 @@ Some generic variables are listed below:
 \item \code{gain_normal} - Normalized gain measured in \%\*mmHg^-1.
 \item \code{phase} - Phase measured in radians.
 }
-\subsection{output \= \'table\'}{
+\subsection{output = 'table'}{
 
 Wide format output table with period, VLF, LF, and HF as columns, and the TFA-variables as rows.\tabular{lrrrr}{
-   \code{variable} \tab \code{period} \tab \code{vlf} \tab \code{lf} \tab \code{hf} \cr
-   \code{abp_power} \tab \code{1} \tab \code{6.25} \tab \code{1.56} \tab \code{0.21} \cr
-   \code{cbfv_power} \tab \code{1} \tab \code{3.22} \tab \code{2.25} \tab \code{0.30} \cr
+   \code{period} \tab \code{variable} \tab \code{vlf} \tab \code{lf} \tab \code{hf} \cr
+   \code{1} \tab \code{abp_power} \tab \code{6.25} \tab \code{1.56} \tab \code{0.21} \cr
+   \code{1} \tab \code{cbfv_power} \tab \code{3.22} \tab \code{2.25} \tab \code{0.30} \cr
    \code{...} \tab \code{...} \tab \code{...} \tab \code{...} \tab \code{...} \cr
-   \code{gain_normal} \tab \code{3} \tab \code{1.04} \tab \code{1.48} \tab \code{1.85} \cr
-   \code{phase} \tab \code{3} \tab \code{53.0} \tab \code{25.4} \tab \code{9.38} \cr
+   \code{3} \tab \code{gain_normal} \tab \code{1.04} \tab \code{1.48} \tab \code{1.85} \cr
+   \code{3} \tab \code{phase} \tab \code{53.0} \tab \code{25.4} \tab \code{9.38} \cr
 }
 
 }
 
-\subsection{output \= \'long\'}{
+\subsection{output = 'long'}{
 
 Long format output table which can be manipulated depending on the intended use, with period, interval, variables and values as columns.\tabular{rllr}{
    \code{period} \tab \code{interval} \tab \code{variable} \tab \code{values} \cr
-   \code{1} \tab \code{vlf} \tab \code{abp_power} \tab \code{6.25} \cr
-   \code{1} \tab \code{vlf} \tab \code{cbfv_power} \tab \code{3.22} \cr
+   \code{1} \tab \code{hf} \tab \code{abp_power} \tab \code{6.25} \cr
+   \code{1} \tab \code{hf} \tab \code{cbfv_power} \tab \code{3.22} \cr
    \code{...} \tab \code{...} \tab \code{...} \tab \code{...} \cr
-   \code{2} \tab \code{hf} \tab \code{gain_norm} \tab \code{1.85} \cr
-   \code{2} \tab \code{hf} \tab \code{phase} \tab \code{9.38} \cr
+   \code{2} \tab \code{vlf} \tab \code{gain_norm} \tab \code{1.85} \cr
+   \code{2} \tab \code{vlf} \tab \code{phase} \tab \code{9.38} \cr
 }
 
 }
 
-\subsection{output \= \'plot\'}{
+\subsection{output = 'plot'}{
 
-HELLO WORLD
+Plot format output table which can be used to draw figures with gain, phase and coherence depending on frequency.\tabular{rrrrr}{
+   \code{period} \tab \code{freq} \tab \code{gain} \tab \code{phase} \tab \code{coherence} \cr
+   \code{1} \tab \code{0.00} \tab \code{0.16} \tab \code{0.00} \tab \code{0.04} \cr
+   \code{1} \tab \code{0.01} \tab \code{0.29} \tab \code{4.22} \tab \code{0.29} \cr
+   \code{...} \tab \code{...} \tab \code{...} \tab \code{...} \tab \code{...} \cr
+   \code{2} \tab \code{1.55} \tab \code{1.15} \tab \code{-43.2} \tab \code{0.64} \cr
+   \code{2} \tab \code{1.56} \tab \code{1.16} \tab \code{-41.1} \tab \code{0.42} \cr
+}
+
 }
 }
 \description{
-\code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis from a \emph{continuous} recording. This function follows the recommendations from Claassen et al. [1] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). \code{TFA()} also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see details).
+\code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis from a \emph{continuous} recording. This function follows the recommendations from Claassen et al. [1] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). \code{TFA()} also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see \strong{details}).
 }
 \details{
-Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al [1] nad mimicks the matlab script created by David Simpsons in 2015. (see details).\preformatted{head(data)
+Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al [1] and mimicks the matlab script created by David Simpsons in 2015.\preformatted{View(data)
 }\tabular{rrr}{
    \code{time} \tab \code{abp} \tab \code{mcav} \cr
    \code{7.00} \tab \code{78} \tab \code{45} \cr
@@ -128,6 +136,7 @@ A series of parameters that control TFA analysis (window-length, frequency bands
 \item \code{window_length} Length of the data-window, in seconds. Default is \code{102.4}.
 \item \code{overlap} Overlap of the windows, in \%. If \code{overlap_adjust} is \code{TRUE} (see below), then this value may be automatically reduced, to ensure that windows cover the full length of data. Default is \verb{59.99\%} rather than 60\%, so that with data corresponding to 5 windows of 100 s at an overlap of 50\%, 5 windows are indeed chosen.
 \item \code{overlap_adjust} Ensure that the full length of data is used (i.e. the last window finishes as near as possible to the end of the recording), by adjusting the overlap up to a maximum value given by params.overlap. Default is \code{TRUE}.
+\item \code{na_as_mean} Changes all missing non-interpolated values to the mean value of the corresponding variable. This have not been adressed in the paper by Claassen, and to ensure the dataframes are not 'gathered' this should generate the most stable results. Default is \code{TRUE}.
 }
 }
 

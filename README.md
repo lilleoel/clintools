@@ -5,7 +5,7 @@ Every research team have their own script for calculation of hemodynamic indices
 
 ## Installation
 
-To download the [development version of reports](https://github.com/lilleoel/clinmon/releases):
+To download the [development version of reports](https://github.com/lilleoel/clinmon/releases)
 
 ## Help
 

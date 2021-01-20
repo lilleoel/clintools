@@ -3,9 +3,9 @@
 #| ------------ |
 #' Test-data (10 Hz)
 #'
-#' Recording with four columns: time (t), non-invasive arterial
-#' blood pressure (abp), middle cerebral artery velocity measured
-#' using transcranial Doppler (mcav), and heart rate (hr).
+#' Recording with four columns: time (`t`), non-invasive arterial
+#' blood pressure (`abp`), middle cerebral artery velocity measured
+#' using transcranial Doppler (`mcav`), and heart rate (`hr`).
 #'
 #' @docType data
 #'
@@ -31,9 +31,9 @@
 #| ------------ |
 #' Test-data (1000 Hz)
 #'
-#' Recording with four columns: time (t), non-invasive arterial
-#' blood pressure (abp), middle cerebral artery velocity measured
-#' using transcranial Doppler (mcav), and heart rate (hr).
+#' Recording with four columns: time (`t`), non-invasive arterial
+#' blood pressure (`abp`), middle cerebral artery velocity measured
+#' using transcranial Doppler (`mcav`), and heart rate (`hr`).
 #'
 #' @docType data
 #'
@@ -60,8 +60,8 @@
 #| ------------ |
 #' Test-deleter
 #'
-#' Deleter dataframe with two columns: start (start) and
-#' end (end) of the deleter-period.
+#' Deleter dataframe with two columns: start (`start`) and
+#' end (`end`) of the deleter-period.
 #'
 #' @docType data
 #'

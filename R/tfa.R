@@ -2,7 +2,7 @@
 
 #' Transfer function analysis of dynamic cerebral autoregulation (TFA)
 #'
-#' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function follows the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). `TFA()` also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see details).
+#' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function follows the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). `TFA()` also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see **details**).
 #'
 #' @name TFA
 #'
@@ -29,30 +29,30 @@
 #'
 #' @param df Raw *continuous* recording with numeric data and first column has to be time in seconds. (`dataframe`)
 #'
-#' @param variables Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`) and arterial blood pressure (`'abp'`). (`list`)
+#' @param variables Definition of the type and order of recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`) and arterial blood pressure (`'abp'`) is currently supported. (`list`)
 #'
-#' @param trigger Trigger with two columns: (1) start and (2) end of period to be analyzed. Every row is a period for analysis. Default is `NULL`. (`dataframe`)
+#' @param trigger Trigger with two columns:  first is start, and second is end of period to be analyzed. Every row is a period for analysis. Default is `NULL`, which results in analysis of the full dataframe.  (`dataframe`)
 #'
-#' @param deleter Deleter with two columns: (1) start and (2) end of period with artefacts which need to be deleted. Every row is a period with artefacts. Default is `NULL`. (`dataframe`)
+#' @param deleter Deleter with two columns: first is start and second is end of period with artefacts, which need to be deleted. Every row is a period with artefacts. Default is `NULL`. (`dataframe`)
 #'
 #' @param freq Frequency of recorded data, in Hz. Default is `1000`. (`numeric`)
 #'
 #' @param fast Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is `50` (`numeric`)
 #'
-#' @param raw_data Select `TRUE` if the data is raw and cyclic mean should be calculated. Default is `FALSE` (`boolian`)
+#' @param raw_data Select `TRUE` if the data is raw and cyclic mean should be calculated. **NB:** this function have not been validated, why validated methods for calculating cyclic mean are preferred. Default is `FALSE` (`boolian`)
 #'
 #' @param interpolation Select the number of beats which should be interpolated. Default is up to `3` beats and `0` results in no interpolation. (`numeric`)
 #'
-#' @param output Select what the output should be. `'table'` results in a dataframe with values for the three frequencies defined by Claassen et al. \[1\]; `'long'` results in a dataframe with the results in a long format; `'plot'` results in a daframe which can help plot gain, phase and coherence; and `'raw'` results in a nested list with results primarily for debugging. Default is `'table'`. (`string`)
+#' @param output Select what the output should be. `'table'` results in a dataframe with values for the three frequencies defined by Claassen et al. \[1\]; `'long'` results in a dataframe with the results in a long format; `'plot'` results in a daframe which can help plot gain, phase and coherence; `'plot-peak'` results in a dataframe, which can be used to validate the cyclic average, and `'raw'` results in a nested list with results primarily for debugging. Default is `'table'`. (`string`)
 #'
-#' @param vlf,lf,hf,detrend,spectral_smoothing,coherence2_thresholds,apply_coherence2_threshold,remove_negative_phase,remove_negative_phase_f_cutoff,normalize_ABP,normalize_CBFV,window_type,window_length,overlap,overlap_adjust,na_as_mean See **TFA-paramters**
+#' @param vlf,lf,hf,detrend,spectral_smoothing,coherence2_thresholds,apply_coherence2_threshold,remove_negative_phase,remove_negative_phase_f_cutoff,normalize_ABP,normalize_CBFV,window_type,window_length,overlap,overlap_adjust,na_as_mean See **TFA-parameters**
 #'
 #' @details
 #'
-#' Using a *continuous* raw recording, `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al \[1\] nad mimicks the matlab script created by David Simpsons in 2015. (see details).
+#' Using a *continuous* raw recording, `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al \[1\] and mimicks the matlab script created by David Simpsons in 2015.
 #'
 #' ```
-#' head(data)
+#' View(data)
 #' ```
 #' | `time` | `abp` | `mcav` |
 #' | --: | --: | --: |
@@ -69,7 +69,7 @@
 #' ```
 #' See **Value** for output description.
 #'
-#' @return `TFA()` returns a dataframe depending on the output selected. `'table'` results in a dataframe with values for the three frequencies defined by Claassen et al. \[1\]; `'long'` results in a dataframe with the results in a long format; `'plot'` results in a daframe which can help plot gain, phase and coherence; and `'raw'` results in a nested list with results primarily for debugging.
+#' @return `TFA()` returns a dataframe depending on the output selected. `'table'` results in a dataframe with values for the three frequencies defined by Claassen et al. \[1\]; `'long'` results in a dataframe with the results in a long format; `'plot'` results in a daframe which can help plot gain, phase and coherence; `'plot-peak'` results in a dataframe, which can be used to validate the cyclic average, and `'raw'` results in a nested list with results primarily for debugging.
 #'
 #' Some generic variables are listed below:
 #' - `abp_power` - The blood pressure power measured in mmHg^2.
@@ -79,32 +79,39 @@
 #' - `gain_normal` - Normalized gain measured in %\*mmHg^-1.
 #' - `phase` - Phase measured in radians.
 #'
-#' ## output \= \'table\'
+#' ## output = 'table'
 #' Wide format output table with period, VLF, LF, and HF as columns, and the TFA-variables as rows.
 #'
-#' | `variable` | `period` | `vlf` | `lf` | `hf` |
+#' | `period` | `variable` | `vlf` | `lf` | `hf` |
 #' | --- | --: | --: | --: | --: |
-#' | `abp_power` | `1` | `6.25` | `1.56` | `0.21` |
-#' | `cbfv_power` | `1` | `3.22` | `2.25` | `0.30` |
+#' | `1` | `abp_power` | `6.25` | `1.56` | `0.21` |
+#' | `1` | `cbfv_power` | `3.22` | `2.25` | `0.30` |
 #' | `...` | `...` | `...` | `...` | `...` |
-#' | `gain_normal` | `3` | `1.04` | `1.48` | `1.85` |
-#' | `phase` | `3` | `53.0` | `25.4` | `9.38` |
+#' | `3` | `gain_normal` | `1.04` | `1.48` | `1.85` |
+#' | `3` | `phase` | `53.0` | `25.4` | `9.38` |
 #'
 #'
-#' ## output \= \'long\'
+#' ## output = 'long'
 #' Long format output table which can be manipulated depending on the intended use, with period, interval, variables and values as columns.
 #'
 #' | `period` | `interval` | `variable` | `values` |
 #' | --: | --- | --- | --: |
-#' | `1` | `vlf` | `abp_power` | `6.25` |
-#' | `1` | `vlf` | `cbfv_power` | `3.22` |
+#' | `1` | `hf` | `abp_power` | `6.25` |
+#' | `1` | `hf` | `cbfv_power` | `3.22` |
 #' | `...` | `...` | `...` | `...` |
-#' | `2` | `hf` | `gain_norm` | `1.85` |
-#' | `2` | `hf` | `phase` | `9.38` |
+#' | `2` | `vlf` | `gain_norm` | `1.85` |
+#' | `2` | `vlf` | `phase` | `9.38` |
 #'
-#' ## output \= \'plot\'
+#' ## output = 'plot'
+#' Plot format output table which can be used to draw figures with gain, phase and coherence depending on frequency.
 #'
-#' HELLO WORLD
+#' | `period` | `freq` | `gain` | `phase` | `coherence` |
+#' | --: | --: | --: | --: | --: |
+#' | `1` | `0.00` | `0.16` | `0.00` | `0.04` |
+#' | `1` | `0.01` | `0.29` | `4.22` | `0.29` |
+#' | `...` | `...` | `...` | `...` | `...` |
+#' | `2` | `1.55` | `1.15` | `-43.2` | `0.64` |
+#' | `2` | `1.56` | `1.16` | `-41.1` | `0.42` |
 #'
 #' @section TFA-paramters:
 #' A series of parameters that control TFA analysis (window-length, frequency bands …). If this is not provided, default values, corresponding to those recommended in the white paper, will be used. These default values are given below for each parameter.
@@ -124,6 +131,7 @@
 #' - `window_length` Length of the data-window, in seconds. Default is `102.4`.
 #' - `overlap` Overlap of the windows, in %. If `overlap_adjust` is `TRUE` (see below), then this value may be automatically reduced, to ensure that windows cover the full length of data. Default is `59.99%` rather than 60%, so that with data corresponding to 5 windows of 100 s at an overlap of 50%, 5 windows are indeed chosen.
 #' - `overlap_adjust` Ensure that the full length of data is used (i.e. the last window finishes as near as possible to the end of the recording), by adjusting the overlap up to a maximum value given by params.overlap. Default is `TRUE`.
+#' - `na_as_mean` Changes all missing non-interpolated values to the mean value of the corresponding variable. This have not been adressed in the paper by Claassen, and to ensure the dataframes are not 'gathered' this should generate the most stable results. Default is `TRUE`.
 #'
 #'
 #' @references
@@ -186,21 +194,35 @@ TFA <- function(
       if(output == "plot-peak"){
          df$abp_cyclicmean[!is.na(df$abp_cyclicmean)] <- df$abp[!is.na(df$abp_cyclicmean)]
          df$mcav_cyclicmean[!is.na(df$mcav_cyclicmean)] <- df$mcav[!is.na(df$mcav_cyclicmean)]
-         return(df); stop()
+         return(df);
       }
 
       #Organize columns
       df$abp <- df$abp_cyclicinterpol
       df$mcav <- df$mcav_cyclicinterpol
-      df <- df[,c("t",variables)]
+      df <- df[,c("period","t",variables)]
    }
 
+   result <- NULL
+   if(output != "raw"){
+      for(i in unique(df$period)){
+         df_i <- df[df$period == i,]
+         result <- Z.TFA_func(df_i[,c("abp","mcav")], freq, output, vlf, lf, hf,
+                                detrend, spectral_smoothing, coherence2_thresholds,
+                                apply_coherence2_threshold, remove_negative_phase,
+                                remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV,
+                                window_type, window_length, overlap, overlap_adjust, na_as_mean)
+         result <- as.data.frame(cbind(i,result))
+         colnames(result)[1] <- "period"
+      }
+   }else{
+      result <- Z.TFA_func(df_i[,c("abp","mcav")], freq, output, vlf, lf, hf,
+                           detrend, spectral_smoothing, coherence2_thresholds,
+                           apply_coherence2_threshold, remove_negative_phase,
+                           remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV,
+                           window_type, window_length, overlap, overlap_adjust, na_as_mean)
+   }
 
-   result <- Z.TFA_func(df[,c("abp","mcav")], freq, output, vlf, lf, hf,
-                          detrend, spectral_smoothing, coherence2_thresholds,
-                          apply_coherence2_threshold, remove_negative_phase,
-                          remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV,
-                          window_type, window_length, overlap, overlap_adjust, na_as_mean)
    return(result)
    #TFA calculation
 

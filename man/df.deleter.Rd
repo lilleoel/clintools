@@ -15,8 +15,8 @@ usage in \code{\link[clinmon]{clinmon}}.
 data(testdata)
 }
 \description{
-Deleter dataframe with two columns: start (start) and
-end (end) of the deleter-period.
+Deleter dataframe with two columns: start (\code{start}) and
+end (\code{end}) of the deleter-period.
 }
 \examples{
 data(testdata)

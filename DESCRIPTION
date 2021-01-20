@@ -1,6 +1,6 @@
 Type: Package
 Package: clinmon
-Title: Hemodynamic Indexes Calculated from Clinical Monitoring
+Title: Hemodynamic Calculations from Clinical Monitoring
 Version: 0.6.0
 Authors@R: c(
     person("Markus Harboe", "Olsen", email = "oel@oelfam.com", role = c("cre","aut")),

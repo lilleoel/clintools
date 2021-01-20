@@ -15,9 +15,9 @@ usage in \code{\link[clinmon]{clinmon}}.
 data(testdata)
 }
 \description{
-Recording with four columns: time (t), non-invasive arterial
-blood pressure (abp), middle cerebral artery velocity measured
-using transcranial Doppler (mcav), and heart rate (hr).
+Recording with four columns: time (\code{t}), non-invasive arterial
+blood pressure (\code{abp}), middle cerebral artery velocity measured
+using transcranial Doppler (\code{mcav}), and heart rate (\code{hr}).
 }
 \examples{
 data(testdata)

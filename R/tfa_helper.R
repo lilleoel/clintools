@@ -408,17 +408,32 @@ Z.TFA_func <- function(df, freq, output, vlf, lf, hf,
       ),digits=2)
 
       colnames(results) <- c("VLF","LF","HF")
-      rownames(results) <- c("BP power","CBFV power","Coherence", "Gain (not norm)", "Gain (norm)","Phase")
+      results <- cbind(c("abp_power","cbfv_power","coherence", "gain_not_normal", "gain_normal","phase"),results)
       results <- as.data.frame(results)
+      colnames(results)[1] <- "variable"
 
       #PLOT output
       plot <- cbind(f,abs(output_var$H),atan2(Im(output_var$H), Re(output_var$H))/(2*pi)*360,abs(C)^2)
       colnames(plot) <- c("freq","gain","phase","coherence")
       plot <- as.data.frame(plot)
 
+      #LONG OUTPUT
+      long_df <- NULL
+      for(i in c(1:nrow(results))){
+         for(j in c(2:ncol(results))){
+            long_df <- rbind(long_df,c(tolower(colnames(results)[j]),results[i,1],results[i,j]))
+         }
+      }
+      long_df <- as.data.frame(long_df)
+      colnames(long_df) <- c("interval","variable","values")
+      long_df <- long_df[order(long_df$interval,long_df$variable),]
+      long_df$values <- as.numeric(long_df$values)
+      rownames(long_df) <- c(1:nrow(long_df))
+
       if(output == "raw") return(output_var)
       if(output == "plot") return(plot)
-      if(output != "raw" & output != "plot") return(results)
+      if(output == "long") return(long_df)
+      if(output != "raw" & output != "plot" & output != "long") return(results)
 }
 
 
