@@ -1,8 +1,8 @@
 # ==== DOCUMENTATION ====
 
-#' Hemodynamic Indexes Calculated From Clinical Monitoring (clinmon)
+#' Hemodynamic Indices Calculated From Clinical Monitoring (clinmon)
 #'
-#' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Calculates `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see *Hemodynamic indexes*).
+#' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the chosen output. Calculates `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see *Hemodynamic indices*).
 #'
 #' @name clinmon
 #'
@@ -25,7 +25,7 @@
 #'
 #' @param epochsize Size of epochs in number of blocks. Default is `20`. (`numeric`)
 #'
-#' @param overlapping The number of block which should overlap when calculating correlation based indexes, and remain blank if overlapping calculations should not be utilized. Default is `FALSE`. (`numeric`)
+#' @param overlapping The number of block which should overlap when calculating correlation based indices, and remain blank if overlapping calculations should not be utilized. Default is `FALSE`. (`numeric`)
 #'
 #' @param freq Frequency of recorded data, in Hz. Default is `1000`. (`numeric`)
 #'
@@ -33,13 +33,13 @@
 #'
 #' @param epochmin Minimum number of blocks required to create an epoch in ratio. Default is `0.5` corresponding to 50%. If the epoch holds less than the defined ration the epoch will be omitted. (`numeric`)
 #'
-#' @param output Select what each row should represent in the output. Correlation based indexes are not presented when selecting blocks for every row. Currently `'block'`, `'epoch'`, `'period'` or `'cppopt'` is supported. Default is `'period'`. (`string`)
+#' @param output Select what each row should represent in the output. Correlation based indices are not presented when selecting blocks for every row. Currently `'block'`, `'epoch'`, `'period'` or `'cppopt'` is supported. Default is `'period'`. (`string`)
 #'
 #' @param fast Select if you want the data to aggregated before analysis resulting in a faster, but perhaps more imprecise run, in Hz. Default is `FALSE.` (`numeric`)
 #'
 #' @details
 #'
-#' Using a *continuous* raw recording, `clinmon()` calculates hemodynamic indexes for every period, epoch or block depending on the chosen output.
+#' Using a *continuous* raw recording, `clinmon()` calculates hemodynamic indices for every period, epoch or block depending on the chosen output.
 #'
 #' ```
 #' View(data)
@@ -52,7 +52,7 @@
 #' | `301.82` | `82` | `70` |
 #' | `301.83` | `81` | `69` |
 #'
-#' To calculate the indexes insert the data and select the relevant variables.
+#' To calculate the indices insert the data and select the relevant variables.
 #'
 #' ```
 #' clinmon(df=data, variables=c("abp","mcav"))
@@ -73,9 +73,9 @@
 #' | `*_mean`           | The mean value of each variable for the `period`, `epoch` or `block`. |
 #' | `*_min`            | The minimum value of each variable for the `period`, `epoch` or `block`. |
 #' | `*_max`            | The maximum value of each variable for the `period`, `epoch` or `block`. |
-#' | `*`                | The indexes in each column. |
+#' | `*`                | The indices in each column. |
 #'
-#' @section Hemodynamic indexes:
+#' @section Hemodynamic indices:
 #' ## Estimated cardiac output (`COest`)
 #' *Required variables:* `abp`, `hr`; *Required output:* `-`.
 #'
