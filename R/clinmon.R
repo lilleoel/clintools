@@ -76,28 +76,28 @@
 #' | `*`                | The indices in each column. |
 #'
 #' @section Hemodynamic indices:
-#' ## Estimated cardiac output (`COest`)
+#' ## `COest` | Estimated cardiac output
 #' *Required variables:* `abp`, `hr`; *Required output:* `-`.
 #'
 #' Estimated cardiac output (`COest`) is calculated by utilizing the method described by Koenig et al. \[1]:
 #'    \deqn{COest = PP / (SBP+DBP) * HR}
 #' PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure; HR: heart rate.
 #'
-#' ## Optimal cerebral perfusion pressure (`CPPopt`)
+#' ## `CPPopt` | Optimal cerebral perfusion pressure
 #' *Required variables:* `abp`, `icp`; *Required output:* `period`.
 #'
 #' Optimal cerebral perfusion pressure (`CPPopt`) is calculated utilizing the method described by Steiner et al. \[2]. The CPPopt return `NA` if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
 #'    \deqn{CPPopt = 5 mmHg_CPP_interval_with_lowest_mean_PRx ) }
 #' CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 #'
-#' ## Cardiovascular resistance index (`CVRi`)
+#' ## `CVRi` | Cardiovascular resistance index
 #' *Required variables:* `abp`, `mcav`; *Required output:* `-`.
 #'
 #' Cardiovascular resistance index (`CVRi`) is calculated utilizing the method described by Fan et al. \[3]:
 #'    \deqn{CVRi = mean ABP / mean MCAv }
 #' ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 #'
-#' ## Diastolic flow index (`Dx`)
+#' ## `Dx` | Diastolic flow index
 #' *Required variables:* `cpp`/`abp`, `mcav`; *Required output:* `epoch`, `period`.
 #'
 #' Diastolic flow index (`Dx`) is calculated utilizing the method described by Reinhard et al. \[4]:
@@ -105,7 +105,7 @@
 #'    \deqn{Dxa = cor( mean ABP / min MCAv ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 #'
-#' ## Mean flow index (`Mx`)
+#' ## `Mx` | Mean flow index
 #' *Required variables:* `cpp`/`abp`, `mcav`; *Required output:* `epoch`, `period`.
 #'
 #' Mean flow index (`Mx`) is calculated utilizing the method described by Czosnyka et al. \[5]:
@@ -113,34 +113,34 @@
 #'    \deqn{Mxa = cor( mean ABP / mean MCAv ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 #'
-#' ## Gosling index of pulsatility  (`PI`)
+#' ##  `PI` | Gosling index of pulsatility
 #' *Required variables:* `mcav`; *Required output:* `-`.
 #'
 #' Gosling index of pulsatility (`PI`) is calculated utilizing the method described by Michel et al. \[6]:
 #'    \deqn{PI = (systolic MCAv - diastolic MCAv) / mean MCAv  }
 #' MCAv: middle cerebral artery blood velocity.
 #'
-#' ## Pressure reactivity index (`PRx`)
+#' ## `PRx` | Pressure reactivity index
 #' *Required variables:* `abp`, `icp`; *Required output:* `epoch`, `period`.
 #'
 #' Pressure reactivity index (`PRx`) is calculated utilizing the method described by Czosnyka et al. \[7]:
 #'    \deqn{PRx = cor( mean ABP / mean ICP ) }
 #' cor: correlation coefficient; CPP: cerebral perfusion pressure; ICP: intracranial pressure.
 #'
-#' ## Pulse wave amplitude (`PWA`)
+#' ## `PWA` | Pulse wave amplitude
 #' *Required variables:* `cpp`/`icp`/`abp`/`mcav`; *Required output:* `-`.
 #'
 #' Pulse wave amplitude (`PWA`) is calculated utilizing the method described by Norager et al. \[8]:
 #'    \deqn{PWA = systolic - diastolic }
 #'
-#' ## Pourcelots resistive (resistance) index (`RI`)
+#' ## `RI` | Pourcelots resistive (resistance) index
 #' *Required variables:* `mcav`; *Required output:* `-`.
 #'
 #' Pourcelots resistive (resistance) index (`RI`) is calculated utilizing the method described by Forster et al. \[9]:
 #'    \deqn{RI = (systolic MCAv - diastolic MCAv) / systolic MCAv  }
 #' MCAv: middle cerebral artery blood velocity.
 #'
-#' ## Systolic flow index (`Sx`)
+#' ## `Sx` | Systolic flow index
 #' *Required variables:* `cpp`/`abp`, `mcav`; *Required output:* `epoch`, `period`.
 #'
 #' Systolic flow index (`Sx`) is calculated utilizing the method described by Czosnyka et al. \[5]:

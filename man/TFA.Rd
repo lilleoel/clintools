@@ -112,7 +112,7 @@ Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebra
 }
 
 
-To calculate the indexes insert the data and select the relevant variables.\preformatted{TFA(df=data, variables=c("abp","mcav"))
+To calculate the variables insert the data and select the relevant variables.\preformatted{TFA(df=data, variables=c("abp","mcav"))
 }
 
 See \strong{Value} for output description.

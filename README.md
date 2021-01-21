@@ -14,5 +14,4 @@ Any help needed for usage of the package contact - <oel@oelfam.com>
 ## Contact
 
 You are welcome to:
-* submit suggestions and bug-reports at: <https://github.com/lilleoel/clinmon/issues>
-* compose a friendly e-mail to: <oel@oelfam.com>
+* submit suggestions and bug-reports at: <https://github.com/lilleoel/clinmon/issues> or compose a friendly e-mail to: <oel@oelfam.com>

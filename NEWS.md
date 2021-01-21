@@ -21,7 +21,7 @@ And constructed with the following guidelines:
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.5.5
 ----------------------------------------------------------------
 
-* Simplified the package, to calculate all the indexes in `clinmon()`. `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indexes for every period, epoch or block depending on the chosen output. Includes `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
+* Simplified the package, to calculate all the indices in `clinmon()`. `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the chosen output. Includes `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
 
 * Test data set is added to the package in two resolutions 1000 Hz, and 10 Hz. The corresponding deleter-file is also added. 
 

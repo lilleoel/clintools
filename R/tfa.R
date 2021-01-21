@@ -62,7 +62,7 @@
 #' | `301.82` | `82` | `70` |
 #' | `301.83` | `81` | `69` |
 #'
-#' To calculate the indexes insert the data and select the relevant variables.
+#' To calculate the variables insert the data and select the relevant variables.
 #'
 #' ```
 #' TFA(df=data, variables=c("abp","mcav"))
