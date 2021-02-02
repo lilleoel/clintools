@@ -167,6 +167,12 @@ cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial bl
 }
 }
 
+\examples{
+
+data(testdata)
+clinmon(df.data10, variables=c('abp','mcav','hr'), freq=10)
+
+}
 \references{
 \enumerate{
 \item Koenig et al. (2015) Biomed Sci Instrum. 2015;51:85-90. (\href{https://pubmed.ncbi.nlm.nih.gov/25996703/}{PubMed})

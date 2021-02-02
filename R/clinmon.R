@@ -163,7 +163,7 @@
 #' @examples
 #'
 #' data(testdata)
-#' clinmon(df.data10, variables=c('abp,'mcav','hr'), freq=10)
+#' clinmon(df.data10, variables=c('abp','mcav','hr'), freq=10)
 #'
 #' @export
 #
