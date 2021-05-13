@@ -138,9 +138,8 @@
 #' 1. Claassen et al. (2016) J Cereb Blood Flow Metab. 2016 Apr;36(4):665-80. (\href{https://pubmed.ncbi.nlm.nih.gov/26782760/}{PubMed})
 #'
 #' @examples
-#' df <- data.frame(seq(1, 901, 0.1),
-#'          rnorm(9001), rnorm(9001))
-#' TFA(df, variables=c("abp","mcav"), freq=10)
+#' data(tfa_sample_data)
+#' TFA(tfa_sample_data[,c(1:3)], variables=c("abp","mcav"), freq=10)
 #'
 #' @export
 #

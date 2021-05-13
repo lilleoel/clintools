@@ -18,19 +18,19 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
-<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.5.5
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.5.5
 ----------------------------------------------------------------
 
-* Simplified the package, to calculate all the indices in `clinmon()`. `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the chosen output. Includes `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
+* Simplified the package, to calculate all the indices in `clintools()`. `clintools()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the chosen output. Includes `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see details).
 
 * Test data set is added to the package in two resolutions 1000 Hz, and 10 Hz. The corresponding deleter-file is also added. 
 
-<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.2.1
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.2.1
 ----------------------------------------------------------------
 
 * Corrected the error, that missing values from artefacts deletion in blocks and epochs results in a errorgenous correlation coefficient.
 
-<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clinmon" target="_blank">clinmon</a> VERSION 0.2.0
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.2.0
 ----------------------------------------------------------------
 
 * This is the first version of the package put on CRAN

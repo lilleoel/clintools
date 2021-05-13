@@ -1,19 +1,18 @@
 Type: Package
-Package: clinmon
-Title: Hemodynamic Calculations from Clinical Monitoring
-Version: 0.6.0
+Package: clintools
+Title: Tools for Clinical Research
+Version: 0.8.0
 Authors@R: c(
     person("Markus Harboe", "Olsen", email = "oel@oelfam.com", role = c("cre","aut")),
     person("Christian", "Riberholt", role = "aut"),
     person("Ronan", "Berg", role = "aut"),
     person("Kirsten", "Moeller", role = "aut"))
 Description: 
-   Every research team have their own script for calculation of hemodynamic indexes. 
-   This package makes it possible  to insert a long-format dataframe, and add both 
-   periods of interest (trigger-periods), and delete artifacts with deleter-files.
+   clintools include functions for calculation of hemodynamic indexes, and other
+   helper functions for clinical reserach.
 License: MIT + file LICENSE
-URL: https://github.com/lilleoel/clinmon
-BugReports: https://github.com/lilleoel/clinmon/issues
+URL: https://github.com/lilleoel/clintools
+BugReports: https://github.com/lilleoel/clintools/issues
 Depends:
    R (>= 3.5.0)
 Encoding: UTF-8
