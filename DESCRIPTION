@@ -8,8 +8,10 @@ Authors@R: c(
     person("Ronan", "Berg", role = "aut"),
     person("Kirsten", "Moeller", role = "aut"))
 Description: 
-   clintools include functions for calculation of hemodynamic indexes, and other
-   helper functions for clinical reserach.
+   Functions for calculation of hemodynamic indexes including transfer 
+   function analysis (Claassen et al. (2016) <doi:10.1177/0271678X15626425>) and
+   Mx (Czosnyka et al. (1996) <doi:10.1161/01.str.27.10.1829>), and other
+   helper functions for clinical researchers.
 License: MIT + file LICENSE
 URL: https://github.com/lilleoel/clintools
 BugReports: https://github.com/lilleoel/clintools/issues
