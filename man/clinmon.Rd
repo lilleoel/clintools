@@ -2,7 +2,7 @@
 % Please edit documentation in R/clinmon.R
 \name{clinmon}
 \alias{clinmon}
-\title{Hemodynamic Indices Calculated From Clinical Monitoring (clinmon)}
+\title{Hemodynamic Indices Calculated From Clinical Monitoring}
 \usage{
 clinmon(df, variables,
 trigger = NULL, deleter = NULL,
@@ -14,7 +14,7 @@ output = "period", fast = FALSE)
 \arguments{
 \item{df}{Raw \emph{continuous} recording with all numeric data and first column has to be time in seconds. (\code{dataframe})}
 
-\item{variables}{Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}), Arterial blood pressure (\code{'abp'}), cerebral perfusion pressure (\code{'cpp'}), intracranial pressure (\code{'icp'}), and heart rate (\code{'hr'}) is currently supported. (\code{list})}
+\item{variables}{Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (\code{'mcav'}), Arterial blood pressure (\code{'abp'}), cerebral perfusion pressure (\code{'cpp'}), intracranial pressure (\code{'icp'}), and heart rate (\code{'hr'}) is currently supported. \emph{It is necessary that time is the first row}.  (\code{list})}
 
 \item{trigger}{Trigger with two columns: first is start, and second is end of periods to be analyzed. Every row corresponds to a period. Default is \code{NULL}, which results in analysis of the full dataframe. (\code{dataframe})}
 
@@ -38,22 +38,24 @@ output = "period", fast = FALSE)
 }
 \value{
 Returns a dataframe with the results, with either
-every blocks, epochs or periods as rows, depending on the chosen output.\tabular{ll}{
-   \strong{Column} \tab \strong{Description} \cr
-   \code{period} \tab The period number corresponding to the row-number in the trigger file. \cr
-   \code{epoch} \tab The epoch number, or if \code{period} is chosen as output it reflects the number of epochs in the period. \cr
-   \code{block} \tab The block number, or if \code{period} or \code{epoch} is chosen as output it reflects the number of blocks in the \code{period} or \code{epoch}. \cr
-   \code{time_min} \tab The minimum time value or the \code{period}, \code{epoch} or \code{block}. \cr
-   \code{time_max} \tab The maximum time value or the \code{period}, \code{epoch} or \code{block}. \cr
-   \code{missing_percent} \tab The percentage of missing data in the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{*_mean} \tab The mean value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{*_min} \tab The minimum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \verb{*_max} \tab The maximum value of each variable for the \code{period}, \code{epoch} or \code{block}. \cr
-   \code{*} \tab The indices in each column. \cr
+every blocks, epochs or periods as rows, depending on the chosen output.
+
+The columns of the output are:
+\itemize{
+\item \code{period} - The period number corresponding to the row-number in the trigger file.
+\item \code{epoch} - The epoch number, or if \code{period} is chosen as output it reflects the number of epochs in the period.
+\item \code{block} - The block number, or if \code{period} or \code{epoch} is chosen as output it reflects the number of blocks in the \code{period} or \code{epoch}.
+\item \code{time_min} - The minimum time value or the \code{period}, \code{epoch} or \code{block}.
+\item \code{time_max} - The maximum time value or the \code{period}, \code{epoch} or \code{block}.
+\item \code{missing_percent} - The percentage of missing data in the \code{period}, \code{epoch} or \code{block}.
+\item \code{XX_mean} - The mean value of each variable for the \code{period}, \code{epoch} or \code{block}.
+\item \code{XX_min} - The minimum value of each variable for the \code{period}, \code{epoch} or \code{block}.
+\item \code{XX_max} - The maximum value of each variable for the \code{period}, \code{epoch} or \code{block}.
+\item \code{YY} - The indices in each column.
 }
 }
 \description{
-\code{clinmon()} uses a \emph{continuous} recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the chosen output. Calculates \code{COest}, \code{CPPopt}, \code{CVRi}, \code{Dx}, \code{Mx}, \code{PI}, \code{PRx}, \code{PWA}, \code{RI}, and \code{Sx} (see \emph{Hemodynamic indices}).
+\code{clinmon()} uses a \emph{continuous} recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the input. Calculates \code{COest}, \code{CPPopt}, \code{CVRi}, \code{Dx}, \code{Mx}, \code{PI}, \code{PRx}, \code{PWA}, \code{RI}, and \code{Sx} (see \emph{Hemodynamic indices}).
 }
 \details{
 Using a \emph{continuous} raw recording, \code{clinmon()} calculates hemodynamic indices for every period, epoch or block depending on the chosen output.\preformatted{View(data)
@@ -88,7 +90,7 @@ PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure;
 \emph{Required variables:} \code{abp}, \code{icp}; \emph{Required output:} \code{period}.
 
 Optimal cerebral perfusion pressure (\code{CPPopt}) is calculated utilizing the method described by Steiner et al. [2]. The CPPopt return \code{NA} if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-\deqn{CPPopt = 5 mmHg_CPP_interval_with_lowest_mean_PRx ) }
+\deqn{CPPopt = The 5 mmHg CPP interval with lowest mean PRx ) }
 CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 }
 

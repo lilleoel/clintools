@@ -1,6 +1,10 @@
 clintools
 =======
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/lilleoel/clintools/workflows/R-CMD-check/badge.svg)](https://github.com/lilleoel/clintools/actions)
+<!-- badges: end -->
+
 Every research team have their own script for data management, statistics and most importantly hemodynamic indices. The purpose is to standardize scripts utilized in clinical reserach. The hemodynamic indices can be used in a long-format dataframe, and add both periods of interest (trigger-periods), and delete artifacts with deleter-files.
 
 ## Installation

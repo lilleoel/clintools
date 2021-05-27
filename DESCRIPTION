@@ -1,7 +1,7 @@
 Type: Package
 Package: clintools
 Title: Tools for Clinical Research
-Version: 0.8.0
+Version: 0.8.1
 Authors@R: c(
     person("Markus Harboe", "Olsen", email = "oel@oelfam.com", role = c("cre","aut")),
     person("Christian", "Riberholt", role = "aut"),

@@ -2,7 +2,7 @@
 % Please edit documentation in R/tfa.R
 \name{TFA}
 \alias{TFA}
-\title{Transfer function analysis of dynamic cerebral autoregulation (TFA)}
+\title{Transfer function analysis of dynamic cerebral autoregulation}
 \usage{
 TFA(df, variables,
 trigger = NULL, deleter = NULL,
