@@ -1,8 +1,8 @@
 # ==== DOCUMENTATION ====
 
-#' Hemodynamic Indices Calculated From Clinical Monitoring (clinmon)
+#' Hemodynamic Indices Calculated From Clinical Monitoring
 #'
-#' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the chosen output. Calculates `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see *Hemodynamic indices*).
+#' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the input. Calculates `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see *Hemodynamic indices*).
 #'
 #' @name clinmon
 #'
@@ -15,7 +15,7 @@
 #'
 #' @param df Raw *continuous* recording with all numeric data and first column has to be time in seconds. (`dataframe`)
 #'
-#' @param variables Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`), Arterial blood pressure (`'abp'`), cerebral perfusion pressure (`'cpp'`), intracranial pressure (`'icp'`), and heart rate (`'hr'`) is currently supported. (`list`)
+#' @param variables Defining the type and order of the recorded variables as a list. Middle cerebral artery blood velocity (`'mcav'`), Arterial blood pressure (`'abp'`), cerebral perfusion pressure (`'cpp'`), intracranial pressure (`'icp'`), and heart rate (`'hr'`) is currently supported. *It is necessary that time is the first row*.  (`list`)
 #'
 #' @param trigger Trigger with two columns: first is start, and second is end of periods to be analyzed. Every row corresponds to a period. Default is `NULL`, which results in analysis of the full dataframe. (`dataframe`)
 #'
@@ -62,18 +62,17 @@
 #' @return Returns a dataframe with the results, with either
 #' every blocks, epochs or periods as rows, depending on the chosen output.
 #'
-#' | **Column**         | **Description** |
-#' | ---                | --- |
-#' | `period`           | The period number corresponding to the row-number in the trigger file. |
-#' | `epoch`            | The epoch number, or if `period` is chosen as output it reflects the number of epochs in the period. |
-#' | `block`            | The block number, or if `period` or `epoch` is chosen as output it reflects the number of blocks in the `period` or `epoch`. |
-#' | `time_min`         | The minimum time value or the `period`, `epoch` or `block`. |
-#' | `time_max`         | The maximum time value or the `period`, `epoch` or `block`. |
-#' | `missing_percent`  | The percentage of missing data in the `period`, `epoch` or `block`. |
-#' | `*_mean`           | The mean value of each variable for the `period`, `epoch` or `block`. |
-#' | `*_min`            | The minimum value of each variable for the `period`, `epoch` or `block`. |
-#' | `*_max`            | The maximum value of each variable for the `period`, `epoch` or `block`. |
-#' | `*`                | The indices in each column. |
+#' The columns of the output are:
+#' * `period` - The period number corresponding to the row-number in the trigger file.
+#' * `epoch` - The epoch number, or if `period` is chosen as output it reflects the number of epochs in the period.
+#' * `block` - The block number, or if `period` or `epoch` is chosen as output it reflects the number of blocks in the `period` or `epoch`.
+#' * `time_min` - The minimum time value or the `period`, `epoch` or `block`.
+#' * `time_max` - The maximum time value or the `period`, `epoch` or `block`.
+#' * `missing_percent` - The percentage of missing data in the `period`, `epoch` or `block`.
+#' * `XX_mean` - The mean value of each variable for the `period`, `epoch` or `block`.
+#' * `XX_min` - The minimum value of each variable for the `period`, `epoch` or `block`.
+#' * `XX_max` - The maximum value of each variable for the `period`, `epoch` or `block`.
+#' * `YY` - The indices in each column.
 #'
 #' @section Hemodynamic indices:
 #' ## `COest` | Estimated cardiac output
@@ -87,7 +86,7 @@
 #' *Required variables:* `abp`, `icp`; *Required output:* `period`.
 #'
 #' Optimal cerebral perfusion pressure (`CPPopt`) is calculated utilizing the method described by Steiner et al. \[2]. The CPPopt return `NA` if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-#'    \deqn{CPPopt = 5 mmHg_CPP_interval_with_lowest_mean_PRx ) }
+#'    \deqn{CPPopt = The 5 mmHg CPP interval with lowest mean PRx ) }
 #' CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 #'
 #' ## `CVRi` | Cardiovascular resistance index
@@ -184,6 +183,8 @@ clinmon <- function(
    output = "period", fast = FALSE
 ){
    colnames(df) <- c("t",variables)
+   if(any(variables == "t")) variables <- variables[variables != "t"]
+   if(any(variables == "time")) variables <- variables[variables != "time"]
    if(any(variables == "abp") & any(variables == "icp") & !any(variables == "cpp")){
       df$cpp <- df$abp-df$icp
       variables <- c(variables,"cpp")

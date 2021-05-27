@@ -1,7 +1,7 @@
 clintools
 =======
 
-Every research team have their own script for calculation of hemodynamic indices. This package makes it possible  to insert a long-format dataframe, and add both periods of interest (trigger-periods), and delete artifacts with deleter-files.
+Every research team have their own script for data management, statistics and most importantly hemodynamic indices. The purpose is to standardize scripts utilized in clinical reserach. The hemodynamic indices can be used in a long-format dataframe, and add both periods of interest (trigger-periods), and delete artifacts with deleter-files.
 
 ## Installation
 

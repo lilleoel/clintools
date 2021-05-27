@@ -8,10 +8,12 @@ Authors@R: c(
     person("Ronan", "Berg", role = "aut"),
     person("Kirsten", "Moeller", role = "aut"))
 Description: 
-   Functions for calculation of hemodynamic indexes including transfer 
-   function analysis (Claassen et al. (2016) <doi:10.1177/0271678X15626425>) and
-   Mx (Czosnyka et al. (1996) <doi:10.1161/01.str.27.10.1829>), and other
-   helper functions for clinical researchers.
+   Every research team have their own script for data management, statistics and 
+   most importantly hemodynamic indices. The purpose is to standardize scripts 
+   utilized in clinical reserach. The hemodynamic indices can be used in a long-format dataframe, 
+   and add both periods of interest (trigger-periods), and delete artifacts with deleter-files. 
+   Transfer function analysis (Claassen et al. (2016) <doi:10.1177/0271678X15626425>) and
+   Mx (Czosnyka et al. (1996) <doi:10.1161/01.str.27.10.1829>) can be calculated using this package.
 License: MIT + file LICENSE
 URL: https://github.com/lilleoel/clintools
 BugReports: https://github.com/lilleoel/clintools/issues
