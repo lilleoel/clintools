@@ -294,7 +294,7 @@
          df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("abp_mean","mcav_min"),"Dxa"),
                          by=c("period","epoch"))
       }
-      if(any(variables == "cpb") & any(variables == "mcav")){
+      if(any(variables == "cpp") & any(variables == "mcav")){
          df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_mean"),"Mx"),
                          by=c("period","epoch"))
          df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_max"),"Sx"),
@@ -324,10 +324,21 @@
          #CPPopt helper
          Z.cppopt <- function(df.block,df.epoch,output){
 
-            df.cppopt <- df.block[,c("period","epoch","abp_mean","icp_mean","cpp_mean")]
-            df.cppopt <- aggregate(df.cppopt,by=list(df.cppopt$period, df.cppopt$epoch),mean)[,-c(1:2)]
+            df.cppopt <- df.epoch[,c("period","epoch","PRx")]
+            temp2 <- NULL
+            for(i in 1:nrow(df.cppopt)){
+               if(overlapping){
+                  epoch_no <- paste0("-",df.cppopt$epoch[i],"-")
+               }else{
+                  epoch_no <- df.cppopt$epoch[i]
+               }
+               temp <- df.block[df.block$period == df.cppopt$period[i] & grepl(epoch_no,df.block$epoch),c("period","epoch","abp_mean","icp_mean","cpp_mean")]
+               temp <- suppressWarnings(aggregate(temp,by=list(temp$period),mean)[,-c(1)])
+               temp$epoch <- df.cppopt$epoch[i]
+               temp2 <- rbind(temp2,temp)
+            }
+            df.cppopt <- merge(df.cppopt,temp2,by=c("period","epoch"))
             df.cppopt$CPPopt <- paste0(floor(df.cppopt$cpp_mean/5)*5,"-",floor(df.cppopt$cpp_mean/5)*5+5)
-            df.cppopt <- merge(df.cppopt,df.epoch,by=c("period","epoch"))
             df.cppopt <- df.cppopt[order(df.cppopt$period,df.cppopt$epoch),]
 
             if(output == "period"){

@@ -2,7 +2,7 @@
 % Please edit documentation in R/clinmon.R
 \name{clinmon}
 \alias{clinmon}
-\title{Hemodynamic Indices Calculated From Clinical Monitoring}
+\title{Hemodynamic Indices Calculated From Clinical Monitoring (clinmon)}
 \usage{
 clinmon(df, variables,
 trigger = NULL, deleter = NULL,
@@ -90,7 +90,7 @@ PP: Pulse pressure; SBP: systolic blood pressure; DBP: diastolic blood pressure;
 \emph{Required variables:} \code{abp}, \code{icp}; \emph{Required output:} \code{period}.
 
 Optimal cerebral perfusion pressure (\code{CPPopt}) is calculated utilizing the method described by Steiner et al. [2]. The CPPopt return \code{NA} if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-\deqn{CPPopt = The 5 mmHg CPP interval with lowest mean PRx ) }
+\deqn{CPPopt = The 5 mmHg CPP Interval With Lowest Mean PRx }
 CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 }
 

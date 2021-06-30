@@ -1,6 +1,6 @@
 # ==== DOCUMENTATION ====
 
-#' Transfer function analysis of dynamic cerebral autoregulation
+#' Transfer function analysis of dynamic cerebral autoregulation (TFA)
 #'
 #' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function follows the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). `TFA()` also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see **details**).
 #'
@@ -39,13 +39,21 @@
 #'
 #' @param fast Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is `50` (`numeric`)
 #'
-#' @param raw_data Select `TRUE` if the data is raw and cyclic mean should be calculated. **NB:** this function have not been validated, why validated methods for calculating cyclic mean are preferred. Default is `FALSE` (`boolian`)
+#' @param raw_data Select `TRUE` if the data is raw and cyclic mean should be calculated. **NB:** this function have not been validated, why validated methods for calculating cyclic mean are preferred. Only 1 period can be analysed using raw_data. Default is `FALSE` (`boolian`)
 #'
 #' @param interpolation Select the number of beats which should be interpolated. Default is up to `3` beats and `0` results in no interpolation. (`numeric`)
 #'
 #' @param output Select what the output should be. `'table'` results in a dataframe with values for the three frequencies defined by Claassen et al. \[1\]; `'long'` results in a dataframe with the results in a long format; `'plot'` results in a daframe which can help plot gain, phase and coherence; `'plot-peak'` results in a dataframe, which can be used to validate the cyclic average, and `'raw'` results in a nested list with results primarily for debugging. Default is `'table'`. (`string`)
 #'
-#' @param vlf,lf,hf,detrend,spectral_smoothing,coherence2_thresholds,apply_coherence2_threshold,remove_negative_phase,remove_negative_phase_f_cutoff,normalize_ABP,normalize_CBFV,window_type,window_length,overlap,overlap_adjust,na_as_mean See **TFA-parameters**
+#' @param vlf,lf,hf,detrend,spectral_smoothing,coherence2_thresholds See **TFA-parameters**
+#'
+#' @param apply_coherence2_threshold,remove_negative_phase See **TFA-parameters**
+#'
+#' @param remove_negative_phase_f_cutoff,normalize_ABP See **TFA-parameters**
+#'
+#' @param normalize_CBFV,window_type,window_length,overlap See **TFA-parameters**
+#'
+#' @param overlap_adjust,na_as_mean See **TFA-parameters**
 #'
 #' @details
 #'
@@ -206,16 +214,18 @@ TFA <- function(
    if(output != "raw"){
       for(i in unique(df$period)){
          df_i <- df[df$period == i,]
-         result <- Z.TFA_func(df_i[,c("abp","mcav")], freq, output, vlf, lf, hf,
+         temp_result <- Z.TFA_func(df_i[,c("abp","mcav")], freq, output, vlf, lf, hf,
                                 detrend, spectral_smoothing, coherence2_thresholds,
                                 apply_coherence2_threshold, remove_negative_phase,
                                 remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV,
                                 window_type, window_length, overlap, overlap_adjust, na_as_mean)
-         result <- as.data.frame(cbind(i,result))
-         colnames(result)[1] <- "period"
+         temp_result <- as.data.frame(cbind(i,temp_result))
+         colnames(temp_result)[1] <- "period"
+         result <- rbind(result,temp_result)
       }
+
    }else{
-      result <- Z.TFA_func(df_i[,c("abp","mcav")], freq, output, vlf, lf, hf,
+      result <- Z.TFA_func(df[,c("abp","mcav")], freq, output, vlf, lf, hf,
                            detrend, spectral_smoothing, coherence2_thresholds,
                            apply_coherence2_threshold, remove_negative_phase,
                            remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV,

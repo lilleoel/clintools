@@ -3,13 +3,10 @@
 \docType{data}
 \name{df.data1000}
 \alias{df.data1000}
-\title{Test-data (1000 Hz)}
+\title{Test-data - 1000 Hz}
 \format{
 An object of class \code{"dataframe"}; an example of the
 usage in \code{\link[clintools]{clinmon}}-function.
-}
-\source{
-\href{https://github.com/lilleoel/clintools}{GitHub}
 }
 \usage{
 data(testdata)

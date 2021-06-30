@@ -8,9 +8,6 @@
 An object of class \code{"dataframe"}; an example of the
 usage in \code{\link[clintools]{clinmon}}-function.
 }
-\source{
-\href{https://github.com/lilleoel/clintools}{GitHub}
-}
 \usage{
 data(testdata)
 }

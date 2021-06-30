@@ -18,6 +18,13 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.8.2
+----------------------------------------------------------------
+
+* Small bugfixes for the `TFA` and `clinmon` functions, especially the overlapping functionality did not produce Mx, PRx or CPPopt.
+
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.8.1
 ----------------------------------------------------------------
 

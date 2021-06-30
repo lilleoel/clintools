@@ -1,6 +1,6 @@
 # ==== DOCUMENTATION ====
 
-#' Hemodynamic Indices Calculated From Clinical Monitoring
+#' Hemodynamic Indices Calculated From Clinical Monitoring (clinmon)
 #'
 #' `clinmon()` uses a *continuous* recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the input. Calculates `COest`, `CPPopt`, `CVRi`, `Dx`, `Mx`, `PI`, `PRx`, `PWA`, `RI`, and `Sx` (see *Hemodynamic indices*).
 #'
@@ -86,7 +86,7 @@
 #' *Required variables:* `abp`, `icp`; *Required output:* `period`.
 #'
 #' Optimal cerebral perfusion pressure (`CPPopt`) is calculated utilizing the method described by Steiner et al. \[2]. The CPPopt return `NA` if CPPopt is the maximum or minimum CPP investigated. CPPopt is recommended to only be calculated after 'several hours' of recording:
-#'    \deqn{CPPopt = The 5 mmHg CPP interval with lowest mean PRx ) }
+#'    \deqn{CPPopt = The 5 mmHg CPP Interval With Lowest Mean PRx }
 #' CPP: cerebral perfusion pressure; PRx: Pressure reactivity index.
 #'
 #' ## `CVRi` | Cardiovascular resistance index

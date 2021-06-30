@@ -1,11 +1,13 @@
 #| ------------ |
 #|    data10    |
 #| ------------ |
-#' Test-data (10 Hz)
+#' Test-data - 10 Hz
 #'
 #' Recording with four columns: time (`t`), non-invasive arterial
 #' blood pressure (`abp`), middle cerebral artery velocity measured
 #' using transcranial Doppler (`mcav`), and heart rate (`hr`).
+#'
+#' @name testdata10
 #'
 #' @docType data
 #'
@@ -18,8 +20,6 @@
 #'
 #' @references Olsen MH et al. (Unpublished data, 2020) (\href{https://github.com/lilleoel/clintools}{GitHub})
 #'
-#' @source \href{https://github.com/lilleoel/clintools}{GitHub}
-#'
 #' @examples
 #' data(testdata)
 #' variables <- c("abp","mcav","hr")
@@ -29,7 +29,7 @@
 #| ------------ |
 #|   data1000   |
 #| ------------ |
-#' Test-data (1000 Hz)
+#' Test-data - 1000 Hz
 #'
 #' Recording with four columns: time (`t`), non-invasive arterial
 #' blood pressure (`abp`), middle cerebral artery velocity measured
@@ -46,8 +46,6 @@
 #'
 #' @references Olsen MH et al. (Unpublished data, 2020)
 #' (\href{https://github.com/lilleoel/clintools}{GitHub})
-#'
-#' @source \href{https://github.com/lilleoel/clintools}{GitHub}
 #'
 #' @examples
 #' data(testdata)
@@ -73,8 +71,6 @@
 #' @keywords datasets
 #'
 #' @references Olsen MH et al. (Unpublished data, 2020) (\href{https://github.com/lilleoel/clintools}{GitHub})
-#'
-#' @source \href{https://github.com/lilleoel/clintools}{GitHub}
 #'
 #' @examples
 #' data(testdata)

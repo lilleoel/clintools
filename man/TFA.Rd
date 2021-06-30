@@ -2,7 +2,7 @@
 % Please edit documentation in R/tfa.R
 \name{TFA}
 \alias{TFA}
-\title{Transfer function analysis of dynamic cerebral autoregulation}
+\title{Transfer function analysis of dynamic cerebral autoregulation (TFA)}
 \usage{
 TFA(df, variables,
 trigger = NULL, deleter = NULL,
@@ -38,13 +38,21 @@ na_as_mean = TRUE)
 
 \item{fast}{Select if you want the data to aggregated resulting in a faster, but perhaps more imprecise run, in Hz. Default is \code{50} (\code{numeric})}
 
-\item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. \strong{NB:} this function have not been validated, why validated methods for calculating cyclic mean are preferred. Default is \code{FALSE} (\code{boolian})}
+\item{raw_data}{Select \code{TRUE} if the data is raw and cyclic mean should be calculated. \strong{NB:} this function have not been validated, why validated methods for calculating cyclic mean are preferred. Only 1 period can be analysed using raw_data. Default is \code{FALSE} (\code{boolian})}
 
 \item{interpolation}{Select the number of beats which should be interpolated. Default is up to \code{3} beats and \code{0} results in no interpolation. (\code{numeric})}
 
 \item{output}{Select what the output should be. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; \code{'plot-peak'} results in a dataframe, which can be used to validate the cyclic average, and \code{'raw'} results in a nested list with results primarily for debugging. Default is \code{'table'}. (\code{string})}
 
-\item{vlf, lf, hf, detrend, spectral_smoothing, coherence2_thresholds, apply_coherence2_threshold, remove_negative_phase, remove_negative_phase_f_cutoff, normalize_ABP, normalize_CBFV, window_type, window_length, overlap, overlap_adjust, na_as_mean}{See \strong{TFA-parameters}}
+\item{vlf, lf, hf, detrend, spectral_smoothing, coherence2_thresholds}{See \strong{TFA-parameters}}
+
+\item{apply_coherence2_threshold, remove_negative_phase}{See \strong{TFA-parameters}}
+
+\item{remove_negative_phase_f_cutoff, normalize_ABP}{See \strong{TFA-parameters}}
+
+\item{normalize_CBFV, window_type, window_length, overlap}{See \strong{TFA-parameters}}
+
+\item{overlap_adjust, na_as_mean}{See \strong{TFA-parameters}}
 }
 \value{
 \code{TFA()} returns a dataframe depending on the output selected. \code{'table'} results in a dataframe with values for the three frequencies defined by Claassen et al. [1]; \code{'long'} results in a dataframe with the results in a long format; \code{'plot'} results in a daframe which can help plot gain, phase and coherence; \code{'plot-peak'} results in a dataframe, which can be used to validate the cyclic average, and \code{'raw'} results in a nested list with results primarily for debugging.
