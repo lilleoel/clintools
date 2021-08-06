@@ -1,10 +1,10 @@
 ## Test environments
-* local R installation, R 4.0.2
-* ubuntu 16.04 (on travis-ci), R 4.0.2
+* local R installation, R 4.1.0
+* ubuntu 16.04 (on travis-ci), R 4.1.0
 * win-builder (devel)
 
 ## R CMD check results
 
-0 errors v | 0 warnings v | 0 notes v
+0 errors | 0 warnings | 1 note
 
-R CMD check succeeded
+* This is a new release.

@@ -1,7 +1,9 @@
-importFrom("stats", "aggregate", "ave", "cor",
-           "complete.cases","sd","fft","approx",
-           "coef","confint")
+importFrom("stats", "aggregate", "ave", "cor","coef","confint",
+           "complete.cases","sd","fft","approx")
+importFrom("xml2","read_xml","xml_text","xml_find_all",
+           "as_list","xml_attr","xml_children","xml_name")
 
 export(clinmon)
 export(TFA)
 export(ortable)
+export(iscus)
