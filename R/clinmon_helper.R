@@ -1,3 +1,7 @@
+#' @importFrom stats aggregate
+#' @importFrom stats approx
+#' @importFrom stats cor
+#' @importFrom stats ave
 # ==== OPTIMIZE ====
 
    # Functions which optimize the function.

@@ -3,7 +3,7 @@
 #' ISCUSFlex-values to dataframe  (iscus)
 #'
 #' `iscus()` is a function which converts XML files extracted
-#' from the Microdialyis-apparatur of ISCUSFlex apparatus to a dataframe.
+#' from the Microdialysis-apparatur of ISCUSFlex apparatus to a dataframe.
 #'
 #' @name iscus
 #'
@@ -18,6 +18,13 @@
 #'    iscus("C:/ISCUSfiles/7888e844-1c7a-40af-a3f2-3bb27a8dd9e5.xml")
 #'  }
 #'
+#' @importFrom xml2 read_xml
+#' @importFrom xml2 xml_text
+#' @importFrom xml2 xml_find_all
+#' @importFrom xml2 xml_attr
+#' @importFrom xml2 xml_name
+#' @importFrom xml2 xml_children
+#' @importFrom xml2 as_list
 #' @export
 #
 # ==== FUNCTION ====

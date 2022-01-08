@@ -1,3 +1,8 @@
+#' @importFrom stats aggregate
+#' @importFrom stats complete.cases
+#' @importFrom stats approx
+#' @importFrom stats fft
+#' @importFrom stats sd
 # ==== HELPERS ====
 
 #Insert deleted rows based on missing n

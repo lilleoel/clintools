@@ -26,6 +26,8 @@
 #'         var=sample(0:100,100,replace=TRUE))
 #' ortable(glm(outcome ~ ., data=df))
 #'
+#' @importFrom stats coef
+#' @importFrom stats confint
 #' @export
 #
 # ==== FUNCTION ====

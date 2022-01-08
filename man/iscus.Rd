@@ -14,7 +14,7 @@ Returns a dataframe with the measurements.
 }
 \description{
 \code{iscus()} is a function which converts XML files extracted
-from the Microdialyis-apparatur of ISCUSFlex apparatus to a dataframe.
+from the Microdialysis-apparatur of ISCUSFlex apparatus to a dataframe.
 }
 \examples{
  \dontrun{

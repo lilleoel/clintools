@@ -18,6 +18,15 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.0
+----------------------------------------------------------------
+
+* Added the `sRCT`-function to generate simulated randomized clinical trials. Much more work to add 
+
+* Added the `rrGcomp`-function to calculate relative risk using G-computation from an individual participant dataframe. 
+
+* Added the `PLR3000`-function to convert data extracted from NeurOptics PLR-3000 to a long format dataframe. 
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.8.5
 ----------------------------------------------------------------
 

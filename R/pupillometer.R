@@ -1,3 +1,4 @@
+# NeurOpticsTM PLR-3000 pupillometer
 # pupil_import <- function(df){
 #
 #    dilation_raw[] <- lapply(df, as.character)
