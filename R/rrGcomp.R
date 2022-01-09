@@ -2,7 +2,7 @@
 
 #' Relative risk derived by G-computation (rrGcomp)
 #'
-#' `rrGcomp()` is a small function which generates population-level (marginal) relative risks derived by G-computation. For models with random effects mixed-effects generalized linear model with a logit link with adjustment for stratification variables will be used, while those without random effects a logistic regression will be used. The code is based on the method used in the paper by Dankiewicz et al. <doi:10.1056/NEJMoa2100591>.
+#' `rrGcomp()` is a small function which generates population-level (marginal) relative risks derived by G-computation. For models with random effects mixed-effects generalized linear model with a logit link with adjustment for stratification variables will be used, while those without random effects a logistic regression will be used. The code is based on the method used in the paper by Dankiewicz et al. (2021) N Engl J Med. Jun 17;384(24):2283-2294. (\href{https://pubmed.ncbi.nlm.nih.gov/34133859/}{PubMed}
 #'
 #' @name rrGcomp
 #'
@@ -22,8 +22,8 @@
 #' @return Returns a list with relative risk (rr), simulated rr (simRR), lower- and upper confidence level (simLCL/simUCL), and the p-value (p_val)
 #'
 #' @examples
-#' df <- sRCT(n_sites=3)
-#' rrGcomp(df,"outcome","Var1","age","site",50)
+#' df <- sRCT(n_sites=3,n_pop=50)
+#' rrGcomp(df,"outcome","Var1","age","site",10)
 #'
 #' @aliases print.rrGcomp
 #'

@@ -7,7 +7,7 @@
 ortable(x, d, d_p, intercept, simple)
 }
 \arguments{
-\item{x}{Utlises the output from a glm-function. (\code{glm-output})}
+\item{x}{Utilises the output from a glm-function. (\code{glm-output})}
 
 \item{d}{Refers to the number of digits for odds ratio and confidence intervals. Default is \code{2}. (\code{numeric})}
 

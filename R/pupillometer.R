@@ -1,93 +1,117 @@
-# NeurOpticsTM PLR-3000 pupillometer
-# pupil_import <- function(df){
+# ==== DOCUMENTATION ====
+
+#' NeurOpticsTM PLR-3000 pupillometer file to dataframe (PLR3000)
+#'
+#' `PLR3000()` is a function which converts the XLS file imported from the eurOpticsTM PLR-3000 pupillometer to a nested list with two dataframes.
+#'
+#' @name PLR3000
+#'
+#' @usage PLR3000(filename = NULL, df = NULL)
+#'
+#' @param filename path to the XLS-file with the measurements
+#' @param df the dataframe can also be used for the function if data is already imported.
+#'
+#' @return Returns a list with two dataframe, one with the measurements (pupils) and one with the markers (markers).
+#'
+#' @examples
+#'  \dontrun{
+#'    PLR3000("C:/PLR3000/R_20200105_205901.xls")
+#'  }
+#'
+#' @importFrom utils read.csv2
+#' @export
 #
-#    dilation_raw[] <- lapply(df, as.character)
-#
-#    #Reverse newlines
-#    linenumber <- NULL
-#    for(i in c(2:7)){
-#       linenumber <- c(linenumber,which(is.na(dilation_raw[,i])))
-#    }
-#    linenumber <- c(linenumber,which(!is.na(dilation_raw[,8])))
-#    linenumber <- unique(sort(linenumber))
-#
-#    if(length(linenumber) > 0){
-#       dilation_raw2 <- dilation_raw[linenumber,]
-#       dilation_raw <- dilation_raw[-linenumber,]
-#       dilation_raw2[] <- lapply(dilation_raw2, as.character)
-#       temp_ncol <-  ncol(dilation_raw2)
-#       temp_df <- as.data.frame(matrix(ncol=temp_ncol, nrow=nrow(dilation_raw)))
-#       for(i in c(1:length(linenumber))){
-#          temp_ln <- linenumber[[i]]-i
-#          temp_df[temp_ln,] <- dilation_raw2[i,]
-#       }
-#       dilation_raw <- cbind(dilation_raw,temp_df)
-#    }
-#
-#    #remove empty columns
-#    dilation_raw[,c(2,4:5,7,8:23)] <- NULL
-#
-#    #Create the final dataframe
-#    pupils_data <- NULL
-#
-#    #defining the loop
-#    for(i in c(1:nrow(dilation_raw))){
-#       #Select the data
-#       temp_raw <- dilation_raw[i,]
-#
-#       #Transpose form columns to rows
-#       temp_raw <- as.data.frame(t(temp_raw))
-#
-#       #Select information
-#       temp_record_id <- as.character(temp_raw[1,])
-#       temp_patient_id <- as.character(temp_raw[2,])
-#       temp_pupil <- as.character(temp_raw[3,])
-#
-#       #Identify number of measurements
-#       temp_no <- as.numeric(as.character(temp_raw[4,]))
-#
-#       #Select time stamps
-#       temp_x <- temp_raw[c(5:(temp_no+4)),]
-#
-#       #Select pupil size
-#       temp_y <- temp_raw[c((temp_no+5):(temp_no+temp_no+4)),]
-#
-#       #Identify number of markers
-#       temp_no_markers <- as.numeric(as.character(temp_raw[(temp_no+temp_no+5),]))
-#
-#       #Select time stamps for markers
-#       temp_x_markers <- temp_raw[c((temp_no+temp_no+6):(temp_no+temp_no+5+temp_no_markers)),]
-#
-#       #Select button pushed
-#       temp_y_markers <- temp_raw[c((temp_no+temp_no+6+temp_no_markers):(temp_no+temp_no+5+temp_no_markers+temp_no_markers)),]
-#
-#       #Convert data to numeric when relevant
-#       temp_x <- as.numeric(as.character(temp_x))
-#       temp_y <- as.numeric(as.character(temp_y))
-#       temp_x_markers <- as.numeric(as.character(temp_x_markers))
-#
-#       #Create dataframe for dilation data
-#       temp_pupils <- cbind(temp_x,temp_y)
-#       temp_pupils <- cbind(temp_pupil,temp_pupils)
-#       temp_pupils <- cbind(temp_record_id,temp_pupils)
-#       temp_pupils <- cbind(temp_patient_id,temp_pupils)
-#
-#       #Convert from vector to data frame
-#       temp_pupils <- as.data.frame(temp_pupils)
-#
-#       #For each marker insert button direction into
-#       for(j in c(1:temp_no_markers)){
-#          temp_pupils$marker[temp_pupils$temp_x == temp_x_markers[j]] <- as.character(temp_y_markers[j])
-#       }
-#
-#       #Insert into final data frame
-#       if(is.null(pupils_data)){
-#          pupils_data <- temp_pupils
-#       }else{
-#          pupils_data <- rbind(pupils_data,temp_pupils)
-#       }
-#    }
-#
-#    colnames(pupils_data) <- c("patient_id","record_id","side","time","size","marker")
-#    return(pupils_data)
-# }
+# ==== FUNCTION ====
+
+PLR3000 <- function(filename=NULL, df=NULL){
+   if(is.null(df) & is.null(filename)){
+      stop("Please provide either a dataframe or the filename")
+   }
+   if(is.null(df) & !is.null(filename)){
+      df <- read.csv2(filename, sep="\t", header=FALSE, skip=1, na.strings=c("","NA"))
+   }
+
+   df[] <- lapply(df, as.character)
+
+   #Reverse newlines
+   linenumber <- suppressWarnings(which(!is.na(as.numeric(df[,2]))))
+
+
+   if(length(linenumber) > 0){
+      df2 <- df[linenumber,]
+      df <- df[-linenumber,]
+      df2[] <- lapply(df2, as.character)
+      temp_ncol <-  ncol(df2)
+      temp_df <- as.data.frame(matrix(ncol=temp_ncol, nrow=nrow(df)))
+      for(i in c(1:length(linenumber))){
+         temp_ln <- linenumber[[i]]-i
+         temp_df[temp_ln,] <- df2[i,]
+      }
+      df <- cbind(df,temp_df)
+   }
+
+   #Create the final dataframe
+   pupils_data <- NULL
+   markers_data <- NULL
+
+   #defining the loop
+   for(i in c(1:nrow(df))){
+      #Select the data
+      temp_raw <- df[i,]
+
+      #Transpose form columns to rows
+      temp_raw <- as.data.frame(t(temp_raw))
+
+      #Select information
+      temp_record_id <- as.character(temp_raw[1,])
+      temp_patient_id <- as.character(temp_raw[3,])
+      temp_date <- as.character(temp_raw[4,])
+      temp_pupil <- as.character(temp_raw[6,])
+
+      #Identify number of measurements
+      temp_no <- as.numeric(as.character(temp_raw[24,]))
+
+      #Select time stamps
+      temp_x <- temp_raw[c(25:(temp_no+24)),]
+
+      #Select pupil size
+      temp_y <- temp_raw[c((temp_no+25):(temp_no+temp_no+24)),]
+
+      #Identify number of markers
+      temp_no_markers <- as.numeric(as.character(temp_raw[(temp_no+temp_no+25),]))
+
+      #Select time stamps for markers
+      temp_x_markers <- temp_raw[c((temp_no+temp_no+26):(temp_no+temp_no+25+temp_no_markers)),]
+
+      #Select button pushed
+      temp_y_markers <- temp_raw[c((temp_no+temp_no+26+temp_no_markers):(temp_no+temp_no+25+temp_no_markers+temp_no_markers)),]
+
+      #Convert data to numeric when relevant
+      temp_x <- as.numeric(as.character(temp_x))
+      temp_y <- as.numeric(as.character(temp_y))
+      temp_x_markers <- as.numeric(as.character(temp_x_markers))
+
+      #Create dataframe for dilation data
+      temp_pupils <- cbind(temp_x,temp_y)
+      temp_pupils <- cbind(temp_record_id,temp_patient_id,temp_date,temp_pupil,temp_pupils)
+      temp_pupils <- as.data.frame(temp_pupils)
+
+      #Create marker dataframe
+      temp_markers <- cbind(temp_x_markers,temp_y_markers)
+      temp_markers <- cbind(temp_record_id,temp_patient_id,temp_date,temp_markers)
+      temp_markers <- as.data.frame(temp_markers)
+
+      colnames(temp_pupils) <- c("record_id","pt_id","date","side","time","size")
+      colnames(temp_markers) <- c("record_id","pt_id","date","time","size")
+
+      pupils_data <- rbind(pupils_data,temp_pupils)
+      markers_data <- rbind(markers_data,temp_markers)
+
+   }
+
+   results <- NULL
+   results$pupils <- pupils_data
+   results$markers <- markers_data
+
+   return(results)
+}
