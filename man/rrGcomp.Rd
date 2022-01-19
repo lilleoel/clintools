@@ -5,10 +5,9 @@
 \alias{print.rrGcomp}
 \title{Relative risk derived by G-computation (rrGcomp)}
 \usage{
-rrGcomp(df, outcome_col = NULL,
-group_col = NULL,fixed_strata = NULL,
-random_strata = NULL, nbrIter = 5000,
-conf_level = 0.95)
+rrGcomp(df, outcome_col, group_col,
+fixed_strata = NULL, random_strata = NULL,
+nbrIter = 5000, conf_level = 0.95)
 }
 \arguments{
 \item{df}{the individual participant dataframe}

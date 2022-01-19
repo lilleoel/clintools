@@ -6,10 +6,9 @@
 #'
 #' @name rrGcomp
 #'
-#' @usage rrGcomp(df, outcome_col = NULL,
-#' group_col = NULL,fixed_strata = NULL,
-#' random_strata = NULL, nbrIter = 5000,
-#' conf_level = 0.95)
+#' @usage rrGcomp(df, outcome_col, group_col,
+#' fixed_strata = NULL, random_strata = NULL,
+#' nbrIter = 5000, conf_level = 0.95)
 #'
 #' @param df the individual participant dataframe
 #' @param outcome_col column name for the outcome column
@@ -39,43 +38,34 @@
 
 #
 
-rrGcomp <- function(df, outcome_col = NULL, group_col = NULL,
+rrGcomp <- function(df, outcome_col, group_col,
                     fixed_strata = NULL, random_strata = NULL,
                     nbrIter = 5000, conf_level = 0.95){
    ETA <- Sys.time()
    results <- NULL
 
-   df_y <- df
-   df_y[df_y[[group_col]]==1,group_col]=0
-   df_z <- df
-   df_z[df_z[[group_col]]==0,group_col]=1
-
-   if(length(fixed_strata > 0)){
+   #Create formula
+   if(!is.null(fixed_strata)){
       f_strata <- paste("+",paste(fixed_strata, collapse=" + "))
-      formel <- formula(paste(outcome_col,"~",group_col,f_strata))
+      results$formel <- formula(paste(outcome_col,"~",group_col,f_strata))
    }
-   if(length(random_strata > 0)){
+   if(!is.null(random_strata)){
       r_strata <- paste("+ (1 |",paste(random_strata, collapse=") + (1 | "),")")
-      formel <- formula(paste(outcome_col,"~",group_col,f_strata,r_strata))
+      results$formel <- formula(paste(outcome_col,"~",group_col,f_strata,r_strata))
+   }
+   if(is.null(random_strata) & is.null(fixed_strata)){
+      results$formel <- formula(paste(outcome_col,"~",group_col))
    }
 
-   #FOR RR
-   if(length(random_strata) > 0){
-      f1 <- suppressMessages(lme4::glmer(formel, family = binomial() , data = df))
-   }else{
-     f1 <- glm(formel, family=binomial(), data=df)
-   }
+   getRR <- function(df, formel, random_strata){
+      output <- NULL
 
-   pre_y <- predict(f1,df_y,type="response")
-   pre_z <- predict(f1,df_z,type="response")
-   results$rr <- mean(pre_z/pre_y)
-
-   testF <- function(df, formel, random_strata){
-      if(length(random_strata) > 0){
+      if(!is.null(random_strata)){
          f1 <- suppressMessages(lme4::glmer(formel, family = binomial() , data = df))
       }else{
          f1 <- glm(formel, family=binomial(), data=df)
       }
+
       df_y <- df
       df_y[df_y[[group_col]]==1,group_col]=0
       df_z <- df
@@ -83,19 +73,25 @@ rrGcomp <- function(df, outcome_col = NULL, group_col = NULL,
       pre_y <- predict(f1,df_y,type="response")
       pre_z <- predict(f1,df_z,type="response")
 
-      return(mean(pre_z)/mean(pre_y))
+      output$rr <- mean(pre_z)/mean(pre_y)
+      output$f1 <- f1
+      return(output)
    }
 
-   simRRs <- replicate(nbrIter, testF(df[sample(1:nrow(df), replace = T),],formel,random_strata))
+   real_analysis <- getRR(df,results$formel,random_strata)
+   results$rr <- real_analysis$rr
 
-   results$simRR <- quantile(simRRs,probs=c(0.5))
-   results$simLCL <- quantile(simRRs,probs=c((1-conf_level)/2))
-   results$simUCL <- quantile(simRRs,probs=c(1-(1-conf_level)/2))
-
-
-   p_df <- data.frame(summary(f1)$coefficients)
+   p_df <- data.frame(summary(real_analysis$f1)$coefficients)
    results$p_val <- p_df$Pr...z..[row.names(p_df) == group_col]
-   results$formel <- formel
+
+   simRRs <- replicate(nbrIter, getRR(df[sample(1:nrow(df), replace = T),],
+                                      results$formel,random_strata)$rr)
+
+   sim_quantiles <- quantile(simRRs,probs=c(0.5, (1-conf_level)/2, 1-(1-conf_level)/2))
+   results$simRR <- sim_quantiles[[1]]
+   results$simLCL <- sim_quantiles[[2]]
+   results$simUCL <- sim_quantiles[[3]]
+
    results$secs_it_took <- as.numeric(difftime(Sys.time(),ETA,units="secs"))
 
    class(results) <- "rrGcomp"

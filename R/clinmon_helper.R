@@ -299,11 +299,11 @@
                          by=c("period","epoch"))
       }
       if(any(variables == "cpp") & any(variables == "mcav")){
-         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_mean"),"Mx"),
+         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_mean"),"Mxc"),
                          by=c("period","epoch"))
-         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_max"),"Sx"),
+         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_max"),"Sxc"),
                          by=c("period","epoch"))
-         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_min"),"Dx"),
+         df.cor <- merge(df.cor,Z.correlation_analyses(df.block,cor_by=c("cpp_mean","mcav_min"),"Dxc"),
                          by=c("period","epoch"))
       }
       if(any(variables == "abp") & any(variables == "icp")){

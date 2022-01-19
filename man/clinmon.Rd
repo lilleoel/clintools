@@ -118,7 +118,7 @@ cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial bl
 \emph{Required variables:} \code{cpp}/\code{abp}, \code{mcav}; \emph{Required output:} \code{epoch}, \code{period}.
 
 Mean flow index (\code{Mx}) is calculated utilizing the method described by Czosnyka et al. [5]:
-\deqn{Mx = cor( mean CPP / mean MCAv ) }
+\deqn{Mxc = cor( mean CPP / mean MCAv ) }
 \deqn{Mxa = cor( mean ABP / mean MCAv ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 }

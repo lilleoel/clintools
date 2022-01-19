@@ -30,12 +30,17 @@ PLR3000 <- function(filename=NULL, df=NULL){
    if(is.null(df) & !is.null(filename)){
       df <- read.csv2(filename, sep="\t", header=FALSE, skip=1, na.strings=c("","NA"))
    }
+   if(ncol(df) == 1){
+      df <- read.csv2(filename, header=FALSE, skip=1, na.strings=c("","NA"))
+   }
 
    df[] <- lapply(df, as.character)
 
    #Reverse newlines
    linenumber <- suppressWarnings(which(!is.na(as.numeric(df[,2]))))
-
+   linenumber <- c(linenumber,which(df[,2] %in% c("UP","DOWN","LEFT","RIGHT","SELECT")))
+   linenumber <- c(linenumber,which(is.na(df[,2])))
+   linenumber <- linenumber[order(linenumber)]
 
    if(length(linenumber) > 0){
       df2 <- df[linenumber,]
