@@ -108,7 +108,7 @@ ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 \emph{Required variables:} \code{cpp}/\code{abp}, \code{mcav}; \emph{Required output:} \code{epoch}, \code{period}.
 
 Diastolic flow index (\code{Dx}) is calculated utilizing the method described by Reinhard et al. [4]:
-\deqn{Dx = cor( mean CPP / min MCAv ) }
+\deqn{Dxc = cor( mean CPP / min MCAv ) }
 \deqn{Dxa = cor( mean ABP / min MCAv ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 }
@@ -163,7 +163,7 @@ MCAv: middle cerebral artery blood velocity.
 \emph{Required variables:} \code{cpp}/\code{abp}, \code{mcav}; \emph{Required output:} \code{epoch}, \code{period}.
 
 Systolic flow index (\code{Sx}) is calculated utilizing the method described by Czosnyka et al. [5]:
-\deqn{Sx = cor( mean CPP / systolic MCAv ) }
+\deqn{Sxc = cor( mean CPP / systolic MCAv ) }
 \deqn{Sxa = cor( mean ABP / systolic MCAv ) }
 cor: correlation coefficient; CPP: cerebral perfusion pressure; ABP: arterial blood pressure; MCAv: middle cerebral artery blood velocity.
 }
