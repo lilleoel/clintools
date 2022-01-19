@@ -18,6 +18,18 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.2
+----------------------------------------------------------------
+
+* Updated `clinmon` documentation
+
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.1
+----------------------------------------------------------------
+
+* Optimised `rrGcomp`
+* Updated `clinmon` documentation
+* Minor bugfixing for `PLR3000` 
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.0
 ----------------------------------------------------------------
 
