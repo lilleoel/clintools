@@ -32,6 +32,6 @@ Returns a list with relative risk (rr), simulated rr (simRR), lower- and upper c
 }
 \examples{
 df <- sRCT(n_sites=3,n_pop=50)
-rrGcomp(df,"outcome","Var1","age","site",10)
+rrGcomp(df,outcome_col="outcome",group_col="Var1",random_strata="site",nbrIter=10)
 
 }

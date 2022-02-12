@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.3
+----------------------------------------------------------------
+
+* Updated `sRCT` function and documentation. Now applies random effect of site, and add relative risks together using ln-number instead of absolute numbers
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.2
 ----------------------------------------------------------------
 

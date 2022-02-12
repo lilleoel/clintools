@@ -4,41 +4,34 @@
 \alias{sRCT}
 \title{simulated Randomised Clinical Trial (sRCT)}
 \usage{
-sRCT(part_tbl = NULL, all_sizes = NULL,
-n_pop = 100,n_sites = 1,design = c(2,2,2),
-rrr = c(0.05,0.05,0), interaction = c(`1<-2` = 0.05, `1<>2` = -0.05),
-strata_var = c("age","sex"), strata_site = T,
-strata_risk = c(age=0.3,sex=0.5),
-outcome_risk = 0.492)
+sRCT(all_sizes = NULL, n_pop = 1000,
+n_sites = 10, design = c(2,2,2),
+rrr = c(0.05,0.05,0), outcome_risk = 0.492,
+interaction = c(`1-2` = 0.05, `1-2-3` = -0.05),
+site_re = 0.05)
 }
 \arguments{
-\item{part_tbl}{Here a participation data frame should be imported. \verb{[TODO: NOT FUNCTIONAL]}}
-
 \item{all_sizes}{Size of blocks in allocation table. If left empty the three lowest possible block sizes will be randomly assigned.}
 
 \item{n_pop}{Number of participants included in the trial.}
 
 \item{n_sites}{Number of sites}
 
-\item{design}{Number of sites as a list where each element corresponds to an intervention and the number in the element is the number of groups. So for a 2x2 factorial design \code{c(2,2)} should be used. \verb{[TODO: THREE GROUPS]}}
+\item{design}{Number of sites as a list where each element corresponds to an intervention and the number in the element is the number of groups. So for a 2x2 factorial design \code{c(2,2)} should be used.}
 
-\item{rrr}{relative risk reduction for each intervention so for the abovementioned 2x2 factorial desing with RRR of 0.05 and 0.10 we would use \code{c(0.05,0.10)}.}
+\item{rrr}{relative risk reduction for each intervention so for the abovementioned 2x2 factorial design with RRR of 0.05 and 0.10 we would use \code{c(0.05,0.10)}.}
 
-\item{interaction}{Interaction between interventions with a named list. If intervention 2 increases the RRR of intervention 1 we would use \code{1<-2 = 0.05}.}
+\item{outcome_risk}{The baseline risk (probability in absolute percentage) of the dichotomous primary outcome.}
 
-\item{strata_var}{Variable which would be used for stratification.}
+\item{interaction}{Interaction between interventions with a named list. If interaction exists between intervention 1 and 2 we would use \code{1-2 = 0.05}.}
 
-\item{strata_site}{If randomisation should be stratified by site}
-
-\item{strata_risk}{The frequency of a dichotomised strata. Named list where the name must correspond to a strata var.}
-
-\item{outcome_risk}{The baseline risk of the dichotomous primary outcome.}
+\item{site_re}{The size of the random effect of site, default is \code{0.05}.}
 }
 \value{
 Returns a dataframe with an individual participant data frame.
 }
 \description{
-\code{sRCT()} is a function which simulates a randomised clinical trial with a binary outome and returns a dataframe. This version is validated to be used for analysis of interaction in a factorial design.
+\code{sRCT()} is a function which simulates a randomised clinical trial with a binary outcome and returns a dataframe. This version is validated to be used for analysis of interaction in a factorial design.
 }
 \details{
 The sRCT function is continuously being developed to answer specific questions in simulation studies. sRCT will be updated and tested for each specific question. For each update the function will be validated for the current purpose and all previous purposes. sRCT is not validated for all simulation studies

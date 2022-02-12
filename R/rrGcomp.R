@@ -22,7 +22,7 @@
 #'
 #' @examples
 #' df <- sRCT(n_sites=3,n_pop=50)
-#' rrGcomp(df,"outcome","Var1","age","site",10)
+#' rrGcomp(df,outcome_col="outcome",group_col="Var1",random_strata="site",nbrIter=10)
 #'
 #' @aliases print.rrGcomp
 #'
@@ -47,17 +47,14 @@ rrGcomp <- function(df, outcome_col, group_col,
    #Create formula
    if(!is.null(fixed_strata)){
       f_strata <- paste("+",paste(fixed_strata, collapse=" + "))
-      results$formel <- formula(paste(outcome_col,"~",group_col,f_strata))
-   }
+   }else{ f_strata <- NULL}
    if(!is.null(random_strata)){
       r_strata <- paste("+ (1 |",paste(random_strata, collapse=") + (1 | "),")")
-      results$formel <- formula(paste(outcome_col,"~",group_col,f_strata,r_strata))
-   }
-   if(is.null(random_strata) & is.null(fixed_strata)){
-      results$formel <- formula(paste(outcome_col,"~",group_col))
-   }
+   }else{ r_strata <- NULL }
 
-   getRR <- function(df, formel, random_strata){
+   results$formel <- formula(paste(outcome_col,"~",group_col,f_strata,r_strata))
+
+   getRR <- function(df, formel, random_strata, group_col){
       output <- NULL
 
       if(!is.null(random_strata)){
@@ -78,14 +75,14 @@ rrGcomp <- function(df, outcome_col, group_col,
       return(output)
    }
 
-   real_analysis <- getRR(df,results$formel,random_strata)
+   real_analysis <- getRR(df,results$formel,random_strata,group_col)
    results$rr <- real_analysis$rr
 
    p_df <- data.frame(summary(real_analysis$f1)$coefficients)
    results$p_val <- p_df$Pr...z..[row.names(p_df) == group_col]
 
    simRRs <- replicate(nbrIter, getRR(df[sample(1:nrow(df), replace = T),],
-                                      results$formel,random_strata)$rr)
+                                      results$formel,random_strata, group_col)$rr)
 
    sim_quantiles <- quantile(simRRs,probs=c(0.5, (1-conf_level)/2, 1-(1-conf_level)/2))
    results$simRR <- sim_quantiles[[1]]
