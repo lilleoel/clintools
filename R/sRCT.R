@@ -54,7 +54,7 @@ sRCT <- function(all_sizes = NULL, n_pop = 1000,
       site_id <- replicate(n_sites, paste0(paste(sample(LETTERS,5, replace=TRUE),collapse=""),paste(sample(c(0:9),2, replace=TRUE),collapse="")))
 
    #Generate site probability ----
-      site_prop <- rnorm(n_sites,mean=10,sd=7)
+      site_prop <- rnorm(n_sites,mean=10,sd=5)
       site_prop[site_prop < 0] <- 0
       while(any(round(site_prop,digits=2) == 0)){
          site_prop[round(site_prop,digits=2) == 0 ] <- 0.02

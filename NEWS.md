@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.4
+----------------------------------------------------------------
+
+* Added the `dilations` function and documentation. Used to assess dilations from `PLR3000`.
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.3
 ----------------------------------------------------------------
 
