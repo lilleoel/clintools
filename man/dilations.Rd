@@ -8,7 +8,8 @@ dilations(pupils, markers,
   remove_markers = NULL, add_markers = NULL,
   not_assess = NULL, artefacts = c(0.55,9.95),
   time_assess = c(`1` = 10, `3` = 5),
-  sig.level = 0.05, min_change = NULL)
+  sig.level = 0.05, min_change = NULL,
+  resting_delay = c(`3` = 0))
 }
 \arguments{
 \item{pupils}{recording of pupillary function. long format dataframe with at least three columns: record_id, time, and size.}
@@ -28,6 +29,8 @@ dilations(pupils, markers,
 \item{sig.level}{This is the significance level to be used when comparing the size of the period-of-interest. The significance level corresponds to the Wilcox.test used.}
 
 \item{min_change}{This is the minimum size of mm which needs to change before a dilation can be identified. Default is no minimum requirement.}
+
+\item{resting_delay}{This can be used if the subsequent resting period to compare should be delayed, i.e. if we should wait 5 second for those investigations with three periods of interest create a named list with periods of interest as names and seconds to delay as input.}
 }
 \value{
 Returns a nested list one dataframe of the results ($dilations), plot ($plot$id[record id]), and a markdown output ($plot$markdown$id[record_id]). The dilations dataframe include the following columns: Record ID (record_id); Patient ID (pt_id); Date (date); pupil side (side); start of the period (min); end of the period (max); length of period (rec_length); number of measurements (n); median size (median); P value when comparing with the previous period (p_before); P value when comparing with the following period (p_after); and if dilation is identified (dilation, 1 is successful dilation and 0 is no dilation).

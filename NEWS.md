@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.5
+----------------------------------------------------------------
+
+* Added the a `resting_delay` setting to the `dilations` function and documentation. Used to assess delay the subsequent period for assessment.
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.4
 ----------------------------------------------------------------
 

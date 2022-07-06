@@ -10,7 +10,8 @@
 #'   remove_markers = NULL, add_markers = NULL,
 #'   not_assess = NULL, artefacts = c(0.55,9.95),
 #'   time_assess = c(`1` = 10, `3` = 5),
-#'   sig.level = 0.05, min_change = NULL)
+#'   sig.level = 0.05, min_change = NULL,
+#'   resting_delay = c(`3` = 0))
 #'
 #' @param pupils recording of pupillary function. long format dataframe with at least three columns: record_id, time, and size.
 #' @param markers time of markers. long format dataframe with at least two columns: record_id and time.
@@ -21,6 +22,7 @@
 #' @param time_assess This named list define the number of seconds which should be used in the assessment of dilatios. The name is the number of periods-of-interest and the value is the seconds.
 #' @param sig.level This is the significance level to be used when comparing the size of the period-of-interest. The significance level corresponds to the Wilcox.test used.
 #' @param min_change This is the minimum size of mm which needs to change before a dilation can be identified. Default is no minimum requirement.
+#' @param resting_delay This can be used if the subsequent resting period to compare should be delayed, i.e. if we should wait 5 second for those investigations with three periods of interest create a named list with periods of interest as names and seconds to delay as input.
 #'
 #' @return Returns a nested list one dataframe of the results ($dilations), plot ($plot$id\[record id\]), and a markdown output ($plot$markdown$id\[record_id\]). The dilations dataframe include the following columns: Record ID (record_id); Patient ID (pt_id); Date (date); pupil side (side); start of the period (min); end of the period (max); length of period (rec_length); number of measurements (n); median size (median); P value when comparing with the previous period (p_before); P value when comparing with the following period (p_after); and if dilation is identified (dilation, 1 is successful dilation and 0 is no dilation).
 #'
@@ -40,16 +42,8 @@
 #'
 #'  }
 #'
-#' @importFrom stats median
-#' @importFrom stats wilcox.test
-#' @importFrom ggplot2 ggplot
-#' @importFrom ggplot2 geom_vline
-#' @importFrom ggplot2 aes_string
-#' @importFrom ggplot2 annotate
-#' @importFrom ggplot2 geom_line
-#' @importFrom ggplot2 theme_classic
-#' @importFrom ggplot2 ylab
-#' @importFrom ggplot2 xlab
+#' @importFrom stats median wilcox.test
+#' @importFrom ggplot2 ggplot geom_vline aes_string annotate geom_line theme_classic ylab xlab
 #' @export
 #
 # ==== FUNCTION ====
@@ -58,7 +52,7 @@ dilations <- function(pupils, markers,
                       remove_markers = NULL, add_markers = NULL,
                       not_assess = NULL, artefacts = c(0.55,9.95),
                       time_assess = c(`1` = 10, `3` = 5), sig.level = 0.05,
-                      min_change = NULL){
+                      min_change = NULL, resting_delay = c(`3` = 0)){
    results <- NULL
 
    #Control colnames
@@ -79,6 +73,7 @@ dilations <- function(pupils, markers,
    }
 
    for(i in unique(pupils$record_id)){
+      print(i)
       #Do not continue
       if(i %in% not_assess) next;
 
@@ -88,6 +83,7 @@ dilations <- function(pupils, markers,
       tmp_m <- markers[markers$record_id == i,c("time"),]
       tmp_m <- unique(tmp_m)
       tmp_m <- round(as.numeric(tmp_m),1)
+      tmp_m <- tmp_m[!is.na(tmp_m)]
 
       if(!is.null(remove_markers)){
          tmp_remove <- as.numeric(remove_markers[[2]][remove_markers[[1]] == i])
@@ -124,30 +120,40 @@ dilations <- function(pupils, markers,
       t <- NULL
       tmp$assessing <- NA
       for(m in unique(tmp$period)){
+         # print(m)
          t_min <- min(tmp$time[tmp$period == m])
          t_max <- max(tmp$time[tmp$period == m])
          t_rec_length <- t_max-t_min
          t_n <- length(tmp$time[tmp$period == m])
-         if(m %% 2 == 1){
+         if(m %% 2 == 1 & m < max(unique(tmp$period))){
             t_assess <- unname(time_assess[names(time_assess) == (length(unique(tmp$period))-1)/2])
+            t_delay <- unname(resting_delay[names(resting_delay) == (length(unique(tmp$period))-1)/2])
+            if(length(t_delay) == 0) t_delay <- 0
+
             if(length(t_assess) == 1){
                before <- tmp$size[tmp$period == m-1 &
                                      tmp$time > max(tmp$time[tmp$period == m-1])-t_assess]
                current <- tmp$size[tmp$period == m &
                                       tmp$time < min(tmp$time[tmp$period == m])+t_assess]
                after <- tmp$size[tmp$period == m+1 &
-                                    tmp$time < min(tmp$time[tmp$period == m+1])+t_assess]
+                                    tmp$time >= min(tmp$time[tmp$period == m+1])+t_delay &
+                                    tmp$time < min(tmp$time[tmp$period == m+1])+t_assess+t_delay]
                tmp$assessing[tmp$period == m-1 &
                                 tmp$time > max(tmp$time[tmp$period == m-1])-t_assess] <- before
                tmp$assessing[tmp$period == m &
                                 tmp$time < min(tmp$time[tmp$period == m])+t_assess] <- current
                tmp$assessing[tmp$period == m+1 &
-                                tmp$time < min(tmp$time[tmp$period == m+1])+t_assess] <- after
+                                tmp$time >= min(tmp$time[tmp$period == m+1])+t_delay &
+                                tmp$time < min(tmp$time[tmp$period == m+1])+t_assess+t_delay] <- after
             }else{
                before <- tmp$size[tmp$period == m-1]
                current <-  tmp$size[tmp$period == m]
-               after <- tmp$size[tmp$period == m+1]
-               tmp$assessing <- tmp$size
+               after <- tmp$size[tmp$period == m+1 & !is.na(tmp$time) &
+                              tmp$time >= min(tmp$time[tmp$period == m+1],na.rm=T)+t_delay]
+               tmp$assessing[tmp$period == m-1] <- before
+               tmp$assessing[tmp$period == m] <- current
+               tmp$assessing[tmp$period == m+1 & !is.na(tmp$time) &
+                              tmp$time >= min(tmp$time[tmp$period == m+1],na.rm=T)+t_delay] <- after
             }
             before_median <- median(before,na.rm=T)
             current_median <- median(current,na.rm=T)
