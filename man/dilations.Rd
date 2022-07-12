@@ -6,7 +6,8 @@
 \usage{
 dilations(pupils, markers,
   remove_markers = NULL, add_markers = NULL,
-  not_assess = NULL, artefacts = c(0.55,9.95),
+  not_assess = NULL, artefacts_static = c(0.55,9.95),
+  artefacts_dynamic = c(`1` = 1.5, `0.66` = 1, `0.33` = 0.5),
   time_assess = c(`1` = 10, `3` = 5),
   sig.level = 0.05, min_change = NULL,
   resting_delay = c(`3` = 0))
@@ -22,7 +23,9 @@ dilations(pupils, markers,
 
 \item{not_assess}{a list of record ids which should no be assessed.}
 
-\item{artefacts}{a list of the limits of the artefacts. The first number in the list is the minimum size to be assessed and the second is the maximum size to be assessed}
+\item{artefacts_static}{a list of the limits of the artefacts. The first number in the list is the minimum size to be assessed and the second is the maximum size to be assessed}
+
+\item{artefacts_dynamic}{a named list where max change in millimeter within the duration (name in list) is removed. Will use the first 1 second of the recording to create a baseline, thus suspectible to artefacts in the start of the recording.}
 
 \item{time_assess}{This named list define the number of seconds which should be used in the assessment of dilatios. The name is the number of periods-of-interest and the value is the seconds.}
 

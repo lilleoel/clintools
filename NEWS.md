@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.6
+----------------------------------------------------------------
+
+* Added the a `dynamic_artefacts` setting to the `dilations` function and documentation. Used to dynamically assess artefacts. Also renamed `artefacts` to `static_artefacts`.
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.5
 ----------------------------------------------------------------
 

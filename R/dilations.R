@@ -8,7 +8,8 @@
 #'
 #' @usage dilations(pupils, markers,
 #'   remove_markers = NULL, add_markers = NULL,
-#'   not_assess = NULL, artefacts = c(0.55,9.95),
+#'   not_assess = NULL, artefacts_static = c(0.55,9.95),
+#'   artefacts_dynamic = c(`1` = 1.5, `0.66` = 1, `0.33` = 0.5),
 #'   time_assess = c(`1` = 10, `3` = 5),
 #'   sig.level = 0.05, min_change = NULL,
 #'   resting_delay = c(`3` = 0))
@@ -18,7 +19,8 @@
 #' @param remove_markers markers which should be removed. long format dataframe with at least two columns: record_id and time. The time column need one decimal.
 #' @param add_markers markers which should be added. long format dataframe with at least two columns: record_id and time. The time column need one decimal.
 #' @param not_assess a list of record ids which should no be assessed.
-#' @param artefacts a list of the limits of the artefacts. The first number in the list is the minimum size to be assessed and the second is the maximum size to be assessed
+#' @param artefacts_static a list of the limits of the artefacts. The first number in the list is the minimum size to be assessed and the second is the maximum size to be assessed
+#' @param artefacts_dynamic a named list where max change in millimeter within the duration (name in list) is removed. Will use the first 1 second of the recording to create a baseline, thus suspectible to artefacts in the start of the recording.
 #' @param time_assess This named list define the number of seconds which should be used in the assessment of dilatios. The name is the number of periods-of-interest and the value is the seconds.
 #' @param sig.level This is the significance level to be used when comparing the size of the period-of-interest. The significance level corresponds to the Wilcox.test used.
 #' @param min_change This is the minimum size of mm which needs to change before a dilation can be identified. Default is no minimum requirement.
@@ -50,9 +52,11 @@
 
 dilations <- function(pupils, markers,
                       remove_markers = NULL, add_markers = NULL,
-                      not_assess = NULL, artefacts = c(0.55,9.95),
+                      not_assess = NULL, artefacts_static = c(0.55,9.95),
+                      artefacts_dynamic = c(`1` = 1.5, `0.66` = 1, `0.33` = 0.5),
                       time_assess = c(`1` = 10, `3` = 5), sig.level = 0.05,
-                      min_change = NULL, resting_delay = c(`3` = 0)){
+                      min_change = NULL, resting_delay = c(`3` = 0)
+                      ){
    results <- NULL
 
    #Control colnames
@@ -73,7 +77,7 @@ dilations <- function(pupils, markers,
    }
 
    for(i in unique(pupils$record_id)){
-      print(i)
+      # print(i)
       #Do not continue
       if(i %in% not_assess) next;
 
@@ -112,9 +116,29 @@ dilations <- function(pupils, markers,
       tmp$period <- round((tmp$period_2)/2)
       tmp$period_2 <- NULL
 
-      #DELETE ARTEFACTS
-      tmp$size[tmp$size < artefacts[[1]]] <- NA
-      tmp$size[tmp$size > artefacts[[2]]] <- NA
+      #DELETE ARTEFACTS - STATIC
+      tmp$size[tmp$size < artefacts_static[[1]]] <- NA
+      tmp$size[tmp$size > artefacts_static[[2]]] <- NA
+
+      #DELTE ARTEFACTS - DYNAMIC
+      if(!is.null(artefacts_dynamic)){
+         for(ad in 1:length(artefacts_dynamic)){
+            dur <- as.numeric(names(artefacts_dynamic)[ad])
+            chng <- as.numeric(artefacts_dynamic[ad])
+            for(ada in 1:(nrow(tmp)-1)){
+               if(tmp$time[ada] < dur+min(tmp$time,na.rm=T)){
+                  bl <- mean(tmp$size[tmp$time < dur+min(tmp$time,na.rm=T)],na.rm=T)
+               }else{
+                  bl <- mean(tmp$size[tmp$time > tmp$time[ada]-dur &
+                                      tmp$time < tmp$time[ada]],na.rm=T)
+               }
+               if(!is.nan(bl) & !is.na(tmp$size[ada]) &
+                  abs(tmp$size[ada]-bl) > chng){
+                     tmp$size[ada] <- NA
+               }
+            }
+         }
+      }
 
       even <- nrow(tmp_m) %% 2 == 0
       t <- NULL
