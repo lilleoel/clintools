@@ -18,6 +18,12 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.7
+----------------------------------------------------------------
+
+* Updated `PLR3000` to accept recordings without marking.
+
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.6
 ----------------------------------------------------------------
 

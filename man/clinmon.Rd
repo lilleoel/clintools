@@ -58,8 +58,10 @@ The columns of the output are:
 \code{clinmon()} uses a \emph{continuous} recording and returns a dataframe with hemodynamic indices for every period, epoch or block depending on the input. Calculates \code{COest}, \code{CPPopt}, \code{CVRi}, \code{Dx}, \code{Mx}, \code{PI}, \code{PRx}, \code{PWA}, \code{RI}, and \code{Sx} (see \emph{Hemodynamic indices}).
 }
 \details{
-Using a \emph{continuous} raw recording, \code{clinmon()} calculates hemodynamic indices for every period, epoch or block depending on the chosen output.\preformatted{View(data)
-}\tabular{rrr}{
+Using a \emph{continuous} raw recording, \code{clinmon()} calculates hemodynamic indices for every period, epoch or block depending on the chosen output.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{View(data)
+}\if{html}{\out{</div>}}\tabular{rrr}{
    \code{time} \tab \code{abp} \tab \code{mcav} \cr
    \code{7.00} \tab \code{78} \tab \code{45} \cr
    \code{7.01} \tab \code{78} \tab \code{46} \cr
@@ -69,8 +71,10 @@ Using a \emph{continuous} raw recording, \code{clinmon()} calculates hemodynamic
 }
 
 
-To calculate the indices insert the data and select the relevant variables.\preformatted{clinmon(df=data, variables=c("abp","mcav"))
-}
+To calculate the indices insert the data and select the relevant variables.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{clinmon(df=data, variables=c("abp","mcav"))
+}\if{html}{\out{</div>}}
 
 See \strong{Value} for output description.
 }

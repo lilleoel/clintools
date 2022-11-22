@@ -99,6 +99,7 @@ sRCT <- function(all_sizes = NULL, n_pop = 1000,
                                                  nrow(block)),])
             alloc_seq <- rbind(alloc_seq,block)
          }
+         if(length(design) == 1) colnames(alloc_seq) <- "Var1"
          trial[trial$site == i,colnames(alloc_seq)] <- alloc_seq[c(1:tmp_n),]
 
          #Define site specific outcome risk

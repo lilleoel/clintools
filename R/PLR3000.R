@@ -28,7 +28,7 @@ PLR3000 <- function(filename=NULL, df=NULL){
       stop("Please provide either a dataframe or the filename")
    }
    if(is.null(df) & !is.null(filename)){
-      df <- read.csv2(filename, sep="\t", header=FALSE, skip=1, na.strings=c("","NA"))
+      df <- read.csv2(filename, sep="\t", header=FALSE, skip=1, na.strings=c("NA"))
    }
    if(ncol(df) == 1){
       df <- read.csv2(filename, header=FALSE, skip=1, na.strings=c("","NA"))
@@ -85,32 +85,38 @@ PLR3000 <- function(filename=NULL, df=NULL){
       #Identify number of markers
       temp_no_markers <- as.numeric(as.character(temp_raw[(temp_no+temp_no+25),]))
 
-      #Select time stamps for markers
-      temp_x_markers <- temp_raw[c((temp_no+temp_no+26):(temp_no+temp_no+25+temp_no_markers)),]
+      if(!is.na(temp_no_markers)){
+         #Select time stamps for markers
+         temp_x_markers <- temp_raw[c((temp_no+temp_no+26):(temp_no+temp_no+25+temp_no_markers)),]
 
-      #Select button pushed
-      temp_y_markers <- temp_raw[c((temp_no+temp_no+26+temp_no_markers):(temp_no+temp_no+25+temp_no_markers+temp_no_markers)),]
+         #Select button pushed
+         temp_y_markers <- temp_raw[c((temp_no+temp_no+26+temp_no_markers):(temp_no+temp_no+25+temp_no_markers+temp_no_markers)),]
 
+      }
       #Convert data to numeric when relevant
       temp_x <- as.numeric(as.character(temp_x))
       temp_y <- as.numeric(as.character(temp_y))
-      temp_x_markers <- as.numeric(as.character(temp_x_markers))
+      if(!is.na(temp_no_markers)){
+         temp_x_markers <- as.numeric(as.character(temp_x_markers))
+      }
 
       #Create dataframe for dilation data
       temp_pupils <- cbind(temp_x,temp_y)
       temp_pupils <- cbind(temp_record_id,temp_patient_id,temp_date,temp_pupil,temp_pupils)
       temp_pupils <- as.data.frame(temp_pupils)
+      colnames(temp_pupils) <- c("record_id","pt_id","date","side","time","size")
+      pupils_data <- rbind(pupils_data,temp_pupils)
 
       #Create marker dataframe
-      temp_markers <- cbind(temp_x_markers,temp_y_markers)
-      temp_markers <- cbind(temp_record_id,temp_patient_id,temp_date,temp_markers)
-      temp_markers <- as.data.frame(temp_markers)
+      if(!is.na(temp_no_markers)){
+         temp_markers <- cbind(temp_x_markers,temp_y_markers)
+         temp_markers <- cbind(temp_record_id,temp_patient_id,temp_date,temp_markers)
+         temp_markers <- as.data.frame(temp_markers)
 
-      colnames(temp_pupils) <- c("record_id","pt_id","date","side","time","size")
-      colnames(temp_markers) <- c("record_id","pt_id","date","time","size")
+         colnames(temp_markers) <- c("record_id","pt_id","date","time","size")
+         markers_data <- rbind(markers_data,temp_markers)
+      }
 
-      pupils_data <- rbind(pupils_data,temp_pupils)
-      markers_data <- rbind(markers_data,temp_markers)
 
    }
 

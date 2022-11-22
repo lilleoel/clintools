@@ -109,8 +109,10 @@ Plot format output table which can be used to draw figures with gain, phase and 
 \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis from a \emph{continuous} recording. This function follows the recommendations from Claassen et al. [1] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). \code{TFA()} also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see \strong{details}).
 }
 \details{
-Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al [1] and mimicks the matlab script created by David Simpsons in 2015.\preformatted{View(data)
-}\tabular{rrr}{
+Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebral autoregulation trough a transfer function analysis. This function utilizes the recommendations from Claassen et al [1] and mimicks the matlab script created by David Simpsons in 2015.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{View(data)
+}\if{html}{\out{</div>}}\tabular{rrr}{
    \code{time} \tab \code{abp} \tab \code{mcav} \cr
    \code{7.00} \tab \code{78} \tab \code{45} \cr
    \code{7.01} \tab \code{78} \tab \code{46} \cr
@@ -120,8 +122,10 @@ Using a \emph{continuous} raw recording, \code{TFA()} calculates dynamic cerebra
 }
 
 
-To calculate the variables insert the data and select the relevant variables.\preformatted{TFA(df=data, variables=c("abp","mcav"))
-}
+To calculate the variables insert the data and select the relevant variables.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{TFA(df=data, variables=c("abp","mcav"))
+}\if{html}{\out{</div>}}
 
 See \strong{Value} for output description.
 }
