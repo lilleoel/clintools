@@ -2,7 +2,7 @@
 
 #' Transfer function analysis of dynamic cerebral autoregulation (TFA)
 #'
-#' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function follows the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015 (\href{http://www.car-net.org/content/resources#tabTools}{Matlab TFA function}). `TFA()` also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see **details**).
+#' `TFA()` calculates dynamic cerebral autoregulation trough a transfer function analysis from a *continuous* recording. This function follows the recommendations from Claassen et al. \[1\] and mimicks the matlab script created by David Simpsons in 2015 (\href{https://www.car-net.org/tools}{Matlab TFA function}). `TFA()` also includes the possibility to analyse raw recordings with application of cyclic (beat-to-beat) average with the possiblity of utilizing interpolation. (see **details**).
 #'
 #' @name TFA
 #'

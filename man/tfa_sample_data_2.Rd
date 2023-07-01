@@ -23,7 +23,7 @@ TFA(tfa_sample_data_2[,c(1:3)], variables=c("abp","mcav"), freq=10)
 }
 \references{
 \itemize{
-\item Simpsons D (2015) (\href{http://www.car-net.org/content/resources}{Cerebral Autoregulation Research Network})
+\item Simpsons D (2015) (\href{https://www.car-net.org/tools}{Cerebral Autoregulation Research Network})
 \item Claassen et al. (2016) J Cereb Blood Flow Metab. 2016 Apr;36(4):665-80. (\href{https://pubmed.ncbi.nlm.nih.gov/26782760/}{PubMed})
 }
 }

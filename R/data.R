@@ -95,7 +95,7 @@
 #' @keywords datasets
 #'
 #' @references
-#' * Simpsons D (2015) (\href{http://www.car-net.org/content/resources}{Cerebral Autoregulation Research Network})
+#' * Simpsons D (2015) (\href{https://www.car-net.org/tools}{Cerebral Autoregulation Research Network})
 #' * Claassen et al. (2016) J Cereb Blood Flow Metab. 2016 Apr;36(4):665-80. (\href{https://pubmed.ncbi.nlm.nih.gov/26782760/}{PubMed})
 #'
 #' @source \href{https://github.com/lilleoel/clintools}{GitHub}
@@ -122,7 +122,7 @@
 #' @keywords datasets
 #'
 #' @references
-#' * Simpsons D (2015) (\href{http://www.car-net.org/content/resources}{Cerebral Autoregulation Research Network})
+#' * Simpsons D (2015) (\href{https://www.car-net.org/tools}{Cerebral Autoregulation Research Network})
 #' * Claassen et al. (2016) J Cereb Blood Flow Metab. 2016 Apr;36(4):665-80. (\href{https://pubmed.ncbi.nlm.nih.gov/26782760/}{PubMed})
 #'
 #' @source \href{https://github.com/lilleoel/clintools}{GitHub}
@@ -150,7 +150,7 @@
 #' @keywords datasets
 #'
 #' @references
-#' * Simpsons D (2015) (\href{http://www.car-net.org/content/resources}{Cerebral Autoregulation Research Network})
+#' * Simpsons D (2015) (\href{https://www.car-net.org/tools}{Cerebral Autoregulation Research Network})
 #' * Claassen et al. (2016) J Cereb Blood Flow Metab. 2016 Apr;36(4):665-80. (\href{https://pubmed.ncbi.nlm.nih.gov/26782760/}{PubMed})
 #'
 #' @source \href{https://github.com/lilleoel/clintools}{GitHub}

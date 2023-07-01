@@ -25,6 +25,7 @@ devtools::check_win_devel()
 devtools::document()
 devtools::spell_check()
 devtools::check()
+## UPLOADE
 devtools::release()
 
 #Save data
