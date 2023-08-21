@@ -13,8 +13,9 @@
 #' @return Returns x, but without any output
 #'
 #' @examples
+#' \dontrun{
 #' tmp <- quietly(print("hello"))
-#'
+#' }
 #' @export
 #
 # ==== FUNCTION ====

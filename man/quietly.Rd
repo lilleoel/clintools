@@ -16,6 +16,7 @@ Returns x, but without any output
 \code{quietly()} is a small function which suppresses any output
 }
 \examples{
+\dontrun{
 tmp <- quietly(print("hello"))
-
+}
 }

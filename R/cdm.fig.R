@@ -25,8 +25,8 @@
 #'       site="maternal_trial_site")
 #'    cdm.fig(df,col="Gestational Age at birth",
 #'       site="maternal_trial_site")
-#'
-#'    knitr::kable(cdm.fig(df,col="Mode of birth",
+#'    library(knitr)
+#'    kable(cdm.fig(df,col="Mode of birth",
 #'       site="maternal_trial_site",output = ""),row.names=F)
 #' }
 #'
