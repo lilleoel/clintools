@@ -4,7 +4,10 @@
 \alias{tbl}
 \title{Create a table (tbl)}
 \usage{
-tbl(df,strata,vars,cols,tests = NA,digs = 2,digs_p = 3)
+tbl(df,strata,vars,render.numeric,
+render.factor, tests, paired,
+   digs_n,digs_f, digs_p, digs_s,
+   only_stats, strata.fixed, strata.random)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -13,13 +16,28 @@ tbl(df,strata,vars,cols,tests = NA,digs = 2,digs_p = 3)
 
 \item{vars}{Column names of variables of interest (\code{list})}
 
-\item{cols}{the methods on how to aggregate data (\code{list})}
+\item{render.numeric}{list of presentation of numeric variables (\code{list})}
 
-\item{tests}{Tests - functional are 'wilcox', 'ttest', and 'auc' (\code{list})}
+\item{render.factor}{presentation of factors, with \code{simple} removing one factor when only two exists}
 
-\item{digs}{digits in output (\code{numeric})}
+\item{tests}{list of tests carried out, currently the following works: \code{t.test}, \code{wilcox.test}, \code{fisher.test}, \code{auc}, \code{lm}, and \code{glm}. (\code{list})}
 
-\item{digs_p}{digits in output for p-values (\code{numeric})}
+\item{paired}{if tests should be paired (\code{boolean})}
+
+\item{digs_n}{digits for numeric (\code{numeric})}
+
+\item{digs_f}{digits for factors (\code{numeric})}
+
+\item{digs_p}{digits for p-values (\code{numeric})}
+
+\item{digs_s}{digits for statistics (\code{numeric})}
+
+\item{only_stats}{if only stats should be presented (\code{booolean})}
+
+\item{strata.fixed}{list of columns which should be used as fixed stratification (\code{list})}
+
+\item{strata.random}{list of columns which should be used as random stratification (\code{list})
+#'}
 }
 \value{
 Returns summarised information in dataframe.
@@ -30,11 +48,11 @@ word or presented in as a summary table.
 }
 \examples{
 \dontrun{
-   hmm <- tbl1(df,strata="group",
-      vars=c("WBC_renset","Ratio_WBC"),
-      cols=c("No","Missing","median [IQR]"),
-      tests=c("Wilcox.test","AUC"))
-   knitr::kable(hmm)
+   hmm <- tbl(df,strata="group",
+   vars = c("Gestational Age at birth","Maternal preeclampsia"),
+   tests=c("wilcox.test","glm"),only_stats=F,strata.random = "site")
+   library(pander)
+   pander(hej, keep.line.breaks = TRUE,split.tables=Inf, row.names = F)
 }
 
 }

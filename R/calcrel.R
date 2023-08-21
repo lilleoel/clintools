@@ -50,14 +50,14 @@ calcrel <- function(d1,d2){
   if("try-error" %in% class(fit)){
     fit <- glm(value~1 ,family=poisson(link="log"),data=diff)
     res$SRD <- c(`est`=unname(qt(0.975, degfree-1)*sqrt(exp(coef(fit)))),
-                 `lcl`=qt(0.975, degfree-1)*sqrt(exp(confint.default(fit)))[1],
-                 `ucl`=qt(0.975, degfree-1)*sqrt(exp(confint.default(fit)))[2])
+                 `lcl`=qt(0.975, degfree-1)*sqrt(exp(suppressMessages(confint(fit))))[1],
+                 `ucl`=qt(0.975, degfree-1)*sqrt(exp(suppressMessages(confint(fit))))[2])
     res$SRD_family <- "poisson"
 
   }else{
     res$SRD <- c(`est`=unname(qt(0.975, degfree-1)*sqrt(exp(coef(fit)))),
-                `lcl`=qt(0.975, degfree-1)*sqrt(exp(confint.default(fit)))[1],
-                `ucl`=qt(0.975, degfree-1)*sqrt(exp(confint.default(fit)))[2])
+                `lcl`=qt(0.975, degfree-1)*sqrt(exp(suppressMessages(confint(fit))))[1],
+                `ucl`=qt(0.975, degfree-1)*sqrt(exp(suppressMessages(confint(fit))))[2])
     res$SRD_family <- "gamma"
   }
 
@@ -103,6 +103,13 @@ calcrel <- function(d1,d2){
   res$BA_estimates <- c(`bias`=bias[1],
                         `lloa`=bias[2],
                         `uloa`=bias[3])
+
+  # 5) Paired T-test
+  ttest <- t.test(d1,d2, paired=T)
+  res$t.test <- c(`est`=ttest$estimate[[1]],
+                  `lcl`=ttest$conf.int[1],
+                  `ucl`=ttest$conf.int[2],
+                  `pval`=ttest$p.value)
 
   class(res) <- "calcrel"
   return(res)

@@ -18,6 +18,14 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.9
+----------------------------------------------------------------
+
+* Updated `calcrel` to use `confint`for SRD instead of `confint.default`
+* Added paired `t.test` to `calcrel` for internal consistency.
+* Revamped `tbl` to include both summary statistics and statistical analyses.
+* Added `cdm.miss` and `cdm.fig`
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.8
 ----------------------------------------------------------------
 
