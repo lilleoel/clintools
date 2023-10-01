@@ -36,4 +36,5 @@ Imports: signal (>= 0.7-6),
          nlme (>= 3.1-160),
          parameters (>= 0.19.0),
          stringi (>= 1.7.8),
-         scales (>= 1.2.1)
+         scales (>= 1.2.1),
+         dplyr (>= 1.1.2)

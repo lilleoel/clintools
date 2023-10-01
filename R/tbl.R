@@ -10,7 +10,8 @@
 #' @usage tbl(df,strata,vars,render.numeric,
 #' render.factor, tests, paired,
 #'    digs_n,digs_f, digs_p, digs_s,
-#'    only_stats, strata.fixed, strata.random)
+#'    only_stats, strata.fixed, strata.random,
+#'    present.missing)
 #'
 #' @param df dataframe. (`df`)
 #' @param strata Column name of stratification (`string`)
@@ -28,7 +29,8 @@
 #'
 #' @param strata.fixed list of columns which should be used as fixed stratification (`list`)
 #' @param strata.random list of columns which should be used as random stratification (`list`)
-#'#'
+#' @param present.missing default is dynamic where non-missing variables are not presented.
+#'
 #' @return Returns summarised information in dataframe.
 #'
 #' @examples
@@ -47,14 +49,30 @@
 #' @export
 #
 # ==== FUNCTION ====
+
+# df=pt
+# strata="LOS_group"
+# vars = c("Age","ASA","Previous craniotomies",
+#          "Tumor location","Preoperative Prednisolone",
+#          "Preoperative opioid","Type of tumor")
+# tests=c("wilcox.test","fisher.test")
+# only_stats=F
+# render.factor = F
+# render.numeric = c("median [IQR]","mean (95%CI)")
+# paired = F
+# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2
+# only_stats = F; strata.fixed = NA; strata.random = NA
+# present.missing = "dynamic"
 tbl <- function(df,strata,vars,
                 render.numeric = c("median [IQR]","mean (95%CI)"),
                 render.factor = "simple", tests = NA, paired = F,
                 digs_n = 2, digs_f = 1, digs_p = 3, digs_s = 2,
-                only_stats = T, strata.fixed = NA, strata.random = NA){
+                only_stats = T, strata.fixed = NA, strata.random = NA,
+                present.missing = "dynamic"){
    d <- df
    d[[strata]] <- as.factor(d[[strata]])
    strata_list <- levels(d[[strata]])
+   strata_list <- strata_list[strata_list != ""]
    render.numeric <- c(render.numeric,"missing")
 
    tbl <- NULL
@@ -139,7 +157,16 @@ tbl <- function(df,strata,vars,
          }
       }
    }
-   tbl <- data.frame(tbl)
+   tbl <- data.frame(tbl,check.names = F)
+
+   if(present.missing == "dynamic"){
+      tmp <- tbl[tbl$var2 == "missing",]
+      for(m in strata_list){
+         tmp[[m]] <- as.numeric(gsub("[^0-9]", "",tmp[[m]]))
+      }
+      tmp$allmiss <- rowSums(tmp[,strata_list])
+      tbl <- tbl[!row.names(tbl) %in% row.names(tmp[tmp$allmiss == 0,]),]
+   }
 
    #Add subheaders
    if(length(vars) > length(unique(tbl$var))){
@@ -184,6 +211,9 @@ tbl <- function(df,strata,vars,
          out$estci <- paste0(est, " (",lcl,";",ucl,")")
          out$pval <- format(round(tst$p.value,digs_p),nsmall=digs_p)
       }else if(test=="auc"){
+         y <- d[[var]][d[[strata]] == strata_list[1]]
+         x <- d[[var]][d[[strata]] == strata_list[2]]
+
          dfauc <- data.frame(rbind(cbind("x",x),cbind("y",y)))
          colnames(dfauc) <- c("group","val")
          dfauc$val <- as.numeric(dfauc$val)
@@ -202,7 +232,7 @@ tbl <- function(df,strata,vars,
       }else if(test %in% c("lm")){
 
          formel <- paste0("`",strata,"`")
-         if(!is.na(strata.fixed)){
+         if(any(!is.na(strata.fixed))){
             formel <- paste(formel,"+",paste0("`",strata.fixed,"`",collapse=" + "))
          }
          if(!is.na(strata.random)){
@@ -248,11 +278,21 @@ tbl <- function(df,strata,vars,
       if(test %in% c("fisher.test")){
          x <- d[[strata]]
          y <- d[[j]]
-         tst <- fisher.test(table(x,y))
 
-         est <- format(round(tst$estimate[[1]],digs_s),nsmall=digs_s)
-         lcl <- format(round(tst$conf.int[[1]],digs_s),nsmall=digs_s)
-         ucl <- format(round(tst$conf.int[[2]],digs_s),nsmall=digs_s)
+         tst <- tryCatch(fisher.test(table(y,x))
+            ,error=function(e) e, warning=function(w) w)
+
+         if(any(class(tst) %in% c("error","try-error","warning"))){
+            tst <- fisher.test(table(y,x),simulate.p.value=TRUE,B=10^(digs_p+1))
+         }
+         if(!is.null(tst$estimate)){
+            est <- format(round(tst$estimate[[1]],digs_s),nsmall=digs_s)
+            lcl <- format(round(tst$conf.int[[1]],digs_s),nsmall=digs_s)
+            ucl <- format(round(tst$conf.int[[2]],digs_s),nsmall=digs_s)
+         }else{
+            est <- "-"; lcl <- "-"; ucl <- "-";
+         }
+
 
          out$txt <- "fisher.test"
          out$estci <- paste0(est, " (",lcl,";",ucl,")")
@@ -354,6 +394,7 @@ tbl <- function(df,strata,vars,
          tmp <- data.frame(tmp)
          tsts <- merge(tsts,tmp,by="var",all=T)
       }
+      tsts[tsts == "- (-;-)"] <- NA
       tsts <- tsts[,colSums(is.na(tsts))<nrow(tsts)]
       tsts <- tsts[rowSums(is.na(tsts))<ncol(tsts)-1,]
 

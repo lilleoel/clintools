@@ -7,7 +7,8 @@
 tbl(df,strata,vars,render.numeric,
 render.factor, tests, paired,
    digs_n,digs_f, digs_p, digs_s,
-   only_stats, strata.fixed, strata.random)
+   only_stats, strata.fixed, strata.random,
+   present.missing)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -36,8 +37,9 @@ render.factor, tests, paired,
 
 \item{strata.fixed}{list of columns which should be used as fixed stratification (\code{list})}
 
-\item{strata.random}{list of columns which should be used as random stratification (\code{list})
-#'}
+\item{strata.random}{list of columns which should be used as random stratification (\code{list})}
+
+\item{present.missing}{default is dynamic where non-missing variables are not presented.}
 }
 \value{
 Returns summarised information in dataframe.

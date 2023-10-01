@@ -4,12 +4,12 @@
 \alias{cdm.fig}
 \title{Central data monitoring to assess deviations (cdm.fig)}
 \usage{
-cdm.fig(df, col, site, meta_title, seedno, output, nmin)
+cdm.fig(df, cols, site, meta_title, seedno, output, nmin)
 }
 \arguments{
 \item{df}{dateframe to be assessed for missing data}
 
-\item{col}{column to be assessed}
+\item{cols}{columns to be assessed}
 
 \item{site}{column with sites}
 
@@ -30,12 +30,12 @@ Returns a full markdown output.
 }
 \examples{
 \dontrun{
-   cdm.fig(df,col="Mode of birth",
+   cdm.fig(df,cols="Mode of birth",
       site="maternal_trial_site")
-   cdm.fig(df,col="Gestational Age at birth",
+   cdm.fig(df,cols="Gestational Age at birth",
       site="maternal_trial_site")
    library(knitr)
-   kable(cdm.fig(df,col="Mode of birth",
+   kable(cdm.fig(df,cols="Mode of birth",
       site="maternal_trial_site",output = ""),row.names=F)
 }
 
