@@ -39,12 +39,19 @@
 #
 # ==== FUNCTION ====
 
+cols=c("mechvent","F05_weightatfollowup")
+site="site_id"
+meta_title=c("Mechanical Ventilation","Weight")
+seedno=NA
+output = "fig"
+nmin = 5
+
 cdm.fig <- function(df, cols, site = NA, meta_title = NA, seedno=NA,
                     output = "fig", nmin = 5){
-   for(col in cols){
-      tmp <- df[,c(site,col)]
-      tmp <- tmp[!is.na(tmp[[col]]),]
-      tmp[nchar(tmp[[col]]) == 0 | is.na(tmp[[col]]),col] <- NA
+   for(i in 1:length(cols)){
+      tmp <- df[,c(site,cols[[i]])]
+      tmp <- tmp[!is.na(tmp[[cols[[i]]]]),]
+      tmp[nchar(as.character(tmp[[cols[[i]]]])) == 0 | is.na(tmp[[cols[[i]]]]),cols[[i]]] <- NA
       if(!is.na(site)){
          if(is.na(seedno)) seedno <- as.numeric(Sys.Date())
          tmp[[site]] <- as.character(tmp[[site]])
@@ -55,8 +62,8 @@ cdm.fig <- function(df, cols, site = NA, meta_title = NA, seedno=NA,
          blind$blind <- unique(stringi::stri_rand_strings(999, 2))[1:length(blind$site)]
          blind <- as.data.frame(blind)
          tmp$blind_site <- tmp[[site]]
-         for(i in 1:nrow(blind)){
-            tmp$blind_site[tmp$blind_site == blind$site[i]] <- blind$blind[i]
+         for(j in 1:nrow(blind)){
+            tmp$blind_site[tmp$blind_site == blind$site[j]] <- blind$blind[j]
          }
          zite <- "blind_site"
       }else{
@@ -64,12 +71,12 @@ cdm.fig <- function(df, cols, site = NA, meta_title = NA, seedno=NA,
          zite <- "zite"
       }
 
-      for(i in unique(tmp[[zite]])){
+      for(j in unique(tmp[[zite]])){
          tmp[[zite]] <- as.character(tmp[[zite]])
-         antal <- length(tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == i,zite])
-         if(antal < nmin) tmp[tmp[[zite]] == i,col] <- NA
+         antal <- length(tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == j,zite])
+         if(antal < nmin) tmp[tmp[[zite]] == j,cols[[i]]] <- NA
 
-         tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == i,zite] <- paste0(tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == i,zite], " (n=", antal,")")
+         tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == j,zite] <- paste0(tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == j,zite], " (n=", antal,")")
          tmp[[zite]] <- as.factor(tmp[[zite]])
       }
 
@@ -78,13 +85,13 @@ cdm.fig <- function(df, cols, site = NA, meta_title = NA, seedno=NA,
          colnames(blind) <- c("Site ID","Blinded name")
          return(blind)
       }
-      if(is.na(meta_title)) meta_title <- col
+      if(is.na(meta_title[[i]])) meta_title[[i]] <- cols[[i]]
 
       #Continuous
-      if(class(tmp[[col]]) %in% c("numeric","integer")){
-         meanval <- mean(tmp[[col]],na.rm=T)
+      if(class(tmp[[cols[[i]]]]) %in% c("numeric","integer")){
+         meanval <- mean(tmp[[cols[[i]]]],na.rm=T)
          g1 <- ggplot() +
-            geom_boxplot(aes(y=tmp[[col]],x=tmp[[zite]])) +
+            geom_boxplot(aes(y=tmp[[cols[[i]]]],x=tmp[[zite]])) +
             geom_hline(aes(yintercept=meanval),color="red",linetype="dotted") +
             theme_classic() +
             labs(y=meta_title) +
@@ -94,23 +101,25 @@ cdm.fig <- function(df, cols, site = NA, meta_title = NA, seedno=NA,
       }
 
       #Categorical
-      if(class(tmp[[col]]) %in% c("factor","character")){
-         tmp[[col]] <- factor(tmp[[col]])
-
+      if(class(tmp[[cols[[i]]]]) %in% c("factor","character")){
+         tmp[[cols[[i]]]] <- factor(tmp[[cols[[i]]]])
          g1 <- ggplot() +
-            geom_bar(aes(x=tmp[[zite]],fill=tmp[[col]]), position="fill") +
-            scale_fill_brewer(palette="Paired") +
-            scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+            geom_bar(aes(x=tmp[[zite]],fill=tmp[[cols[[i]]]])) +
+            scale_fill_brewer(palette="Paired",na.translate = F) +
             theme_classic() +
             labs(y=meta_title) +
             theme(axis.title.x = element_blank(),
                   axis.ticks.y = element_blank(),
                   axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
                   legend.title = element_blank(),
-                  legend.position = "bottom")
+                  legend.position = "top")
       }
-      suppressWarnings(
-         print(g1))
-      cat("\n\n")
+      if(length(cols) > 1){
+         suppressWarnings(
+            print(g1))
+         cat("\n\n")
+      }else{
+         return(g1)
+      }
    }
 }

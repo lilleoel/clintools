@@ -11,7 +11,7 @@
 #' render.factor, tests, paired,
 #'    digs_n,digs_f, digs_p, digs_s,
 #'    only_stats, strata.fixed, strata.random,
-#'    present.missing)
+#'    time.to, present.missing, markdown, caption)
 #'
 #' @param df dataframe. (`df`)
 #' @param strata Column name of stratification (`string`)
@@ -29,7 +29,10 @@
 #'
 #' @param strata.fixed list of columns which should be used as fixed stratification (`list`)
 #' @param strata.random list of columns which should be used as random stratification (`list`)
+#' @param time.to Column name of the time column for cox regression (`list`)
 #' @param present.missing default is dynamic where non-missing variables are not presented.
+#' @param markdown default is true and output is pander, while false output is a dataframe (`boolean`)
+#' @param caption Table caption only in use when markdown is true (`string`)
 #'
 #' @return Returns summarised information in dataframe.
 #'
@@ -37,42 +40,46 @@
 #' \dontrun{
 #'    hmm <- tbl(df,strata="group",
 #'    vars = c("Gestational Age at birth","Maternal preeclampsia"),
-#'    tests=c("wilcox.test","glm"),only_stats=F,strata.random = "site")
-#'    library(pander)
-#'    pander(hej, keep.line.breaks = TRUE,split.tables=Inf, row.names = F)
+#'    tests=c("wilcox.test","glm"),only_stats=F,strata.random = "site",
+#'    markdown=F)
+#'    pander::pander(hmm, keep.line.breaks = TRUE,split.tables=Inf, row.names = F)
 #' }
 #'
 #' @importFrom stats as.formula na.omit reshape t.test lm fisher.test quasipoisson
 #' @importFrom parameters p_value
 #' @importFrom pROC auc ci.auc
 #' @importFrom lme4 lmer glmer fixef glmerControl
+#' @importFrom pander pander
 #' @export
 #
 # ==== FUNCTION ====
 
-# df=pt
-# strata="LOS_group"
-# vars = c("Age","ASA","Previous craniotomies",
-#          "Tumor location","Preoperative Prednisolone",
-#          "Preoperative opioid","Type of tumor")
-# tests=c("wilcox.test","fisher.test")
-# only_stats=F
-# render.factor = F
+# d <- dftrials
+# strata = NULL
+# vars=c("Journal","Design","Number randomized_total",
+#        "Type of participants/diagnosis","Trial intervention length")
 # render.numeric = c("median [IQR]","mean (95%CI)")
-# paired = F
-# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2
-# only_stats = F; strata.fixed = NA; strata.random = NA
-# present.missing = "dynamic"
-tbl <- function(df,strata,vars,
+# render.factor = "simple"; tests = NA; paired = F;
+# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2;
+# only_stats = T; strata.fixed = NA; strata.random = NA;
+# time.to = NA; present.missing = "dynamic";
+# markdown=T; caption=""
+
+tbl <- function(df,strata = NULL,vars,
                 render.numeric = c("median [IQR]","mean (95%CI)"),
                 render.factor = "simple", tests = NA, paired = F,
                 digs_n = 2, digs_f = 1, digs_p = 3, digs_s = 2,
                 only_stats = T, strata.fixed = NA, strata.random = NA,
-                present.missing = "dynamic"){
+                time.to = NA, present.missing = "dynamic",
+                markdown=T, caption=""){
    d <- df
-   d[[strata]] <- as.factor(d[[strata]])
-   strata_list <- levels(d[[strata]])
-   strata_list <- strata_list[strata_list != ""]
+   if(!is.null(strata)){
+      d[[strata]] <- as.factor(d[[strata]])
+      strata_list <- levels(d[[strata]])
+      strata_list <- strata_list[strata_list != ""]
+   }else{
+      strata_list <- "Overall"
+   }
    render.numeric <- c(render.numeric,"missing")
 
    tbl <- NULL
@@ -142,11 +149,12 @@ tbl <- function(df,strata,vars,
          for(j in c(lvls,"missing")){
             tbl$var <- c(tbl$var,i)
             tbl$var2 <- c(tbl$var2,j)
-
             for(k in strata_list){
-               if(!is.null(strata)){
+               if(is.null(strata)){
+                  dt <- d
+               }else{
                   dt <- d[d[[strata]] == k,]
-               }else{ dt <- d }
+               }
                if(j != "missing"){ nmb <- sum(dt[[i]] == j & !is.na(dt[[i]]))
                }else{ nmb <- sum(is.na(dt[[i]])) }
                nmb <- paste0(nmb, " (",
@@ -154,6 +162,7 @@ tbl <- function(df,strata,vars,
                              "%)")
                tbl[[k]] <- c(tbl[[k]],nmb)
             }
+
          }
       }
    }
@@ -164,7 +173,11 @@ tbl <- function(df,strata,vars,
       for(m in strata_list){
          tmp[[m]] <- as.numeric(gsub("[^0-9]", "",tmp[[m]]))
       }
-      tmp$allmiss <- rowSums(tmp[,strata_list])
+      if(length(strata_list) < 2){
+         tmp$allmiss <- tmp[,strata_list]
+      }else{
+         tmp$allmiss <- rowSums(tmp[,strata_list])
+      }
       tbl <- tbl[!row.names(tbl) %in% row.names(tmp[tmp$allmiss == 0,]),]
    }
 
@@ -184,7 +197,26 @@ tbl <- function(df,strata,vars,
       tbl <- tmp
    }
 
+   #Longify
+   tmp <- aggregate(tbl$var,by=list(tbl$var),length)
+   for(i in tmp$Group.1){
+      if(all(tbl$var2[tbl$var == i] != " ")){
+         if(min(which(tbl$var %in% i)) == 1){
+            tbl <- rbind(c(i,rep(" ",ncol(tbl)-1)),
+                         tbl[min(which(tbl$var %in% i)):nrow(tbl),])
+         }else{
+            tbl <- rbind(tbl[1:(min(which(tbl$var %in% i))-1),],
+                         c(i,rep(" ",ncol(tbl)-1)),
+                         tbl[min(which(tbl$var %in% i)):nrow(tbl),])
+         }
+      }
+   }
+
+
    tbl$var[duplicated(tbl$var)] <- ""
+
+   tbl$var[tbl$var == ""] <- paste0("   ", tbl$var2[tbl$var == ""])
+   tbl$var2 <- NULL
 
    # STATISTICS ----
    #   HELPER
@@ -273,14 +305,14 @@ tbl <- function(df,strata,vars,
    }
 
    factorXgroups <- function(d,var,strata,strata_list,test,digs_s,digs_p,
-                             paired,strata.fixed,strata.random){
+                             paired,strata.fixed,strata.random,time.to){
       out <- NULL
       if(test %in% c("fisher.test")){
          x <- d[[strata]]
          y <- d[[j]]
 
          tst <- tryCatch(fisher.test(table(y,x))
-            ,error=function(e) e, warning=function(w) w)
+                         ,error=function(e) e, warning=function(w) w)
 
          if(any(class(tst) %in% c("error","try-error","warning"))){
             tst <- fisher.test(table(y,x),simulate.p.value=TRUE,B=10^(digs_p+1))
@@ -299,7 +331,7 @@ tbl <- function(df,strata,vars,
          out$pval <- format(round(tst$p.value,digs_p),nsmall=digs_p)
       }else if(test %in% c("glm") & length(strata_list) == 2){
          formel <- paste0("`",strata,"`")
-         if(!is.na(strata.fixed)){
+         if(any(!is.na(strata.fixed))){
             formel <- paste(formel,"+",paste0("`",strata.fixed,"`",collapse=" + "))
          }
          if(!is.na(strata.random)){
@@ -311,15 +343,15 @@ tbl <- function(df,strata,vars,
 
          if(!is.na(strata.random)){
             m1 <- tryCatch(lme4::glmer(formel, data = m,
-                                 family=binomial(log)),error=function(e) e, warning=function(w) w)
+                                       family=binomial(log)),error=function(e) e, warning=function(w) w)
 
             if(any(class(m1) %in% c("error","try-error","warning"))){
                m1 <- tryCatch(lme4::glmer(formel, data = m,
-                                     family=binomial(log), nAGQ = 0),error=function(e) e, warning=function(w) w)
+                                          family=binomial(log), nAGQ = 0),error=function(e) e, warning=function(w) w)
             }
             if(any(class(m1) %in% c("error","try-error","warning"))){
                m1 <- tryCatch(lme4::glmer(formel, data = m,
-                                     family=binomial(log), control=glmerControl(optimizer="bobyqa")),error=function(e) e, warning=function(w) w)
+                                          family=binomial(log), control=glmerControl(optimizer="bobyqa")),error=function(e) e, warning=function(w) w)
             }
             if(!(any(class(m1) %in% c("error","try-error","warning")))){ out$txt <- "glmer" }
             if(any(class(m1) %in% c("error","try-error","warning"))){
@@ -359,12 +391,29 @@ tbl <- function(df,strata,vars,
          }
          out$estci <- paste0(est, " (",lcl,";",ucl,")")
          out$pval <- format(round(pval,digs_p),nsmall=digs_p)
+      }else if(test %in% c("cox")){
+         #COX
+         d[[var]] <- as.numeric(d[[var]])-1
+         SurvVar <- survival::Surv(d[[time.to]],d[[var]])
+
+         formel <- paste0("`",c(strata,strata.fixed),"`",collapse=" + ")
+         formel <- formula(paste0("`SurvVar`~",formel))
+         m1 <- survival::coxph(formel, data = d)
+         m1est <- exp(m1$coefficients)
+         m1ci <- exp(confint(m1))
+
+         est <- format(round(m1est[[1]],digs_s),nsmall=digs_s)
+         lcl <- format(round(m1ci[1,1],digs_s),nsmall=digs_s)
+         ucl <- format(round(m1ci[1,2],digs_s),nsmall=digs_s)
+
+         out$txt <- "cox"
+         out$estci <- paste0(est, " (",lcl,";",ucl,")")
+         out$pval <- format(round(parameters::p_value(m1)[1,2],digs_p),nsmall=digs_p)
+
       }
 
       return(out)
    }
-
-
 
 
    # ACTUAL ----
@@ -383,7 +432,7 @@ tbl <- function(df,strata,vars,
                                      paired,strata.fixed,strata.random)
             }else if(class(d[[j]]) %in% c("factor","character")){
                res <- factorXgroups(d,var=j,strata,strata_list,test=i,digs_s,digs_p,
-                                    paired,strata.fixed,strata.random)
+                                    paired,strata.fixed,strata.random,time.to)
             }
             if(!is.null(res)){
                tmp$var <- c(tmp$var,j)
@@ -411,16 +460,19 @@ tbl <- function(df,strata,vars,
       tbl <- tbl[,!(colnames(tbl) %in% strata_list)]
       tbl$var2 <- NULL
       tbl <- tbl[rowSums(tbl == " ")<nrow(tbl),]
-   }else{
+   }else if(!is.null(strata)){
       for(i in strata_list){
          colnames(tbl)[colnames(tbl) == i] <-
             paste0("**",i,"**\\\n*n = ",sum(d[[strata]] == i),"*")
       }
+   }else{
+      colnames(tbl)[colnames(tbl) == strata_list] <-
+         paste0("**",strata_list,"**\\\n*n = ",nrow(d),"*")
    }
 
 
    # BEAUTIFY
-   nmz <- c(`var` = " ", `var2` = " ",
+   nmz <- c(`var` = " ",
             `paired.t.test` = "**Paired t-test**\\\n*mean diff. (95%CI)*",
             `unpaired.t.test` = "**Unpaired t-test**\\\n*mean diff. (95%CI)*",
             `paired.wilcox.test` = "**Wilcoxon signed rank test**\\\n*median diff. (95%HLCI)*",
@@ -430,7 +482,8 @@ tbl <- function(df,strata,vars,
             `lmer` = "**Mixed effects linear regression**\\\n*estimate (95%CI)*",
             `glm` = "**Logistic regression**\\\n*RR (95%CI)*",
             `glmer` = "**Mixed effects logistic regression**\\\n*RR (95%CI)*",
-            `auroc` = "**AUROC**\\\n*AUC (95%CI)*")
+            `auroc` = "**AUROC**\\\n*AUC (95%CI)*",
+            `cox` = "**Cox Proportional-Hazards Model**\\\n*HR (95%CI)*")
 
    txt_pval <- "*p*"
    colnames(tbl)[grepl("pval\\.",colnames(tbl))] <- txt_pval
@@ -455,6 +508,11 @@ tbl <- function(df,strata,vars,
       colnames(tbl) <- gsub("\\.[[:digit:]]","",colnames(tbl))
    }
 
-
-   return(tbl)
+   if(markdown){
+      tbl[,1] <- gsub(" ","&nbsp;",tbl[,1])
+      pander::pander(tbl, keep.line.breaks = TRUE,split.tables=Inf, row.names = F,
+                     caption=caption)
+   }else{
+      return(tbl)
+   }
 }

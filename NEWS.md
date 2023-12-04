@@ -18,6 +18,13 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.10
+----------------------------------------------------------------
+
+* Revamped `tbl` to include Cox proportional hazards model
+* Added `comparerel` to compare reliability estimates
+* Minor Bug fixes
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.9
 ----------------------------------------------------------------
 

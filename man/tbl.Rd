@@ -8,7 +8,7 @@ tbl(df,strata,vars,render.numeric,
 render.factor, tests, paired,
    digs_n,digs_f, digs_p, digs_s,
    only_stats, strata.fixed, strata.random,
-   present.missing)
+   time.to, present.missing, markdown, caption)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -39,7 +39,13 @@ render.factor, tests, paired,
 
 \item{strata.random}{list of columns which should be used as random stratification (\code{list})}
 
+\item{time.to}{Column name of the time column for cox regression (\code{list})}
+
 \item{present.missing}{default is dynamic where non-missing variables are not presented.}
+
+\item{markdown}{default is true and output is pander, while false output is a dataframe (\code{boolean})}
+
+\item{caption}{Table caption only in use when markdown is true (\code{string})}
 }
 \value{
 Returns summarised information in dataframe.
@@ -52,9 +58,9 @@ word or presented in as a summary table.
 \dontrun{
    hmm <- tbl(df,strata="group",
    vars = c("Gestational Age at birth","Maternal preeclampsia"),
-   tests=c("wilcox.test","glm"),only_stats=F,strata.random = "site")
-   library(pander)
-   pander(hej, keep.line.breaks = TRUE,split.tables=Inf, row.names = F)
+   tests=c("wilcox.test","glm"),only_stats=F,strata.random = "site",
+   markdown=F)
+   pander::pander(hmm, keep.line.breaks = TRUE,split.tables=Inf, row.names = F)
 }
 
 }
