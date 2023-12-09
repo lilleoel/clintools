@@ -34,7 +34,7 @@
 # ==== FUNCTION ====
 
 cdm.miss <- function(df, id, cols, date = NULL, lostFU = NULL, filter = "all"){
-   df <- data.frame(df)
+   df <- data.frame(df,check.names = F)
    if(length(cols) > 25) stop("No more than 25 columns can be monitored")
 
    #Create new dataframe
