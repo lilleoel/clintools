@@ -2,9 +2,9 @@
 % Please edit documentation in R/questionaire.R
 \name{questionaire}
 \alias{questionaire}
-\title{Calculate scores from questionaire (questionaire)}
+\title{Calculate scores from questionaires (questionaire)}
 \usage{
-questionaire(df,id,questions,scale,setting,prefix)
+questionaire(df,id,questions,scale,prefix,...)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -15,15 +15,56 @@ questionaire(df,id,questions,scale,setting,prefix)
 
 \item{scale}{name of the questionaire (\code{string})}
 
-\item{setting}{questionaire specific settings (\code{string})}
-
 \item{prefix}{prefix of column names of questionaire scores (\code{string})}
+
+\item{...}{additional questionaire specific parameters}
 }
 \value{
 Returns summarised information in dataframe.
 }
 \description{
 \code{questionaire()} is a function which calculates scores from a questionaire.
+}
+\details{
+\subsection{PARCA-R (Parent Report of Children’s Abilities-Revised)}{
+
+This only calculates the scores for the 34 Non-verbal cognitive score. The questionaire needs to have 34 questions, \code{scale = "PARCA-R"}, and the following additional parameters need to be set:
+\itemize{
+\item \code{birthday} | The name of the column for the birthday; if children are born before 37 weeks of gestatoin it is suggested to have corrected age; and then the column should be date of term.
+\item \code{date} | The name of the column for the date of when the participants went through the questionaire.
+\item \code{sex} | The name of the column for the sex of the participants. Male's must be coded as \code{M} and females as \code{F}.
+}
+
+The calculation summarizes both the raw score and the standard score. As per the PARCA-R manual from 2019 and from the protocol from SafeBoosC-III follow-up study \href{https://pubmed.ncbi.nlm.nih.gov/37805539/}{Rasmussen et al. 2029} moderate-or-severe cognitive impairment is defined as < -2SD. This corresponds to a standard score below 70.
+}
+
+\subsection{CBI (Copenhagen Burnout Inventory)}{
+
+Using the 19 questions from the CBI it will both calculate \code{score} and \code{group}.
+
+Using setting it can either be the English version (default; \code{score = 'english'})
+or the Danish version (\code{score = 'danish'}). In the English version the Likert-scale
+is converted to 100, 75, 50, 25, 0. Here, no more than 3 questions may be missing
+in each subscore \href{https://nfa.dk/da/Vaerktoejer/Sporgeskemaer/Sporgeskema-til-maaling-af-udbraendthed/Copenhagen-Burnout-Inventory-CBI}{English CBI}.
+
+The groups are based on the average score:
+\itemize{
+\item 0-25: 'no burnout'
+\item 25-50: 'light burnout'
+\item 50-75: 'moderate burnout'
+\item 75-100: 'severe burnout'
+}
+
+In the Danish score the questions are summed up from 0 to 4 points. Here, all questions must be answered. \href{https://nfa.dk/da/Vaerktoejer/Sporgeskemaer/Sporgeskema-til-maaling-af-udbraendthed}{Danish CBI}
+
+The groups are based on the summed score:
+\itemize{
+\item 0-5: 'no burnout' (0-6 for Work-related burnout)
+\item 6-11: 'light burnout' (7-13 for Work-related burnout)
+\item 12-17: 'moderate burnout' (14-20 for Work-related burnout)
+\item 18+: 'severe burnout' (21+ for Work-related burnout)
+}
+}
 }
 \examples{
 \dontrun{

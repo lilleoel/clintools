@@ -39,4 +39,5 @@ Imports: signal (>= 0.7-6),
          scales (>= 1.2.1),
          dplyr (>= 1.1.2),
          survival (>= 3.4-0),
-         pander (>= 0.6.5)
+         pander (>= 0.6.5),
+         ggpubr (>= 0.4.0)

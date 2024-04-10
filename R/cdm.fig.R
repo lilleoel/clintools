@@ -34,12 +34,14 @@
 #' @importFrom ggplot2 geom_boxplot geom_hline labs geom_bar scale_fill_brewer
 #' @importFrom ggplot2 scale_y_continuous
 #' @importFrom scales percent_format
+#' @importFrom ggpubr ggarrange
 #'
 #' @export
 #
 # ==== FUNCTION ====
-
-# cols=c("mechvent","F05_weightatfollowup")
+# df <- df2
+# df$F03_mechanicvent <- as.factor(df$F03_mechanicvent)
+# col=c("F03_mechanicvent")
 # site="site_id"
 # meta_title=c("Mechanical Ventilation","Weight")
 # seedno=NA
@@ -73,22 +75,25 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
    tmp$col[nchar(as.character(tmp$col)) == 0 | is.na(tmp$col)] <- NA
    tmp <- tmp[!is.na(tmp$col),]
 
+   zite_size <- NULL
    for(j in unique(tmp[[zite]])){
       tmp[[zite]] <- as.character(tmp[[zite]])
       antal <- length(tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == j,zite])
       if(antal < nmin) tmp$col[tmp[[zite]] == j] <- NA
 
+      zite_size <- c(zite_size,antal)
+
       tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == j,zite] <-
          paste0(tmp[!is.na(tmp[[zite]]) & tmp[[zite]] == j,zite], " (n=", antal,")")
       tmp[[zite]] <- as.factor(tmp[[zite]])
    }
-
    if(output != "fig"){
       blind <- blind[order(blind$blind),]
       colnames(blind) <- c("Site ID","Blinded name")
       return(blind)
    }
 
+   if(all(zite_size < nmin)) return(cat("No sites large enough to present data for",col,"\n"))
    #Figures
    if(is.na(meta_title)) meta_title <- col
 
@@ -108,16 +113,38 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
    #Categorical
    if(class(tmp$col) %in% c("factor","character")){
       tmp$col <- factor(tmp$col)
-      g1 <- ggplot() +
+
+      ga <- ggplot() +
+         geom_bar(aes(x=paste0("All (n=",nrow(tmp),")"), fill=tmp$col)) +
+         scale_fill_brewer(palette="Paired",na.translate = F) +
+         scale_y_continuous(expand=c(0,0)) +
+         theme_classic() +
+         labs(y=paste(meta_title,"\n(n)")) +
+         theme(axis.title.x = element_blank(),
+               axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
+               legend.title = element_blank(),
+               legend.position = "top",
+               plot.margin = margin())
+
+      gb <- ggplot() +
          geom_bar(aes(x=tmp[[zite]],fill=tmp$col)) +
          scale_fill_brewer(palette="Paired",na.translate = F) +
+         scale_y_continuous(expand=c(0,0)) +
          theme_classic() +
          labs(y=meta_title) +
          theme(axis.title.x = element_blank(),
-               axis.ticks.y = element_blank(),
                axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
                legend.title = element_blank(),
-               legend.position = "top")
+               legend.position = "top",
+               plot.margin = margin())
+
+      if(length(unique(tmp[[zite]])) > 1){
+         g1 <- ggarrange(ga,gb + theme(axis.title.y=element_blank()),align="h",common.legend = T, legend="top")
+      }else{
+         g1 <- gb
+      }
+
+
    }
    return(g1)
 }

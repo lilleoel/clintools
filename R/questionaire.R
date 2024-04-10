@@ -1,21 +1,56 @@
 # ==== DOCUMENTATION ====
 
-#' Calculate scores from questionaire (questionaire)
+#' Calculate scores from questionaires (questionaire)
 #'
 #' `questionaire()` is a function which calculates scores from a questionaire.
 #'
 #' @name questionaire
 #'
-#' @usage questionaire(df,id,questions,scale,setting,prefix)
+#' @usage questionaire(df,id,questions,scale,prefix,...)
 #'
 #' @param df dataframe. (`df`)
 #' @param id Column name of participant id (`string`)
 #' @param questions Column names of ordered list of questions (`list`)
 #' @param scale name of the questionaire (`string`)
-#' @param setting questionaire specific settings (`string`)
 #' @param prefix prefix of column names of questionaire scores (`string`)
+#' @param ... additional questionaire specific parameters
 #'
 #' @return Returns summarised information in dataframe.
+#'
+#' @details
+#'
+#' ## PARCA-R (Parent Report of Children’s Abilities-Revised)
+#'
+#' This only calculates the scores for the 34 Non-verbal cognitive score. The questionaire needs to have 34 questions, `scale = "PARCA-R"`, and the following additional parameters need to be set:
+#' * `birthday` | The name of the column for the birthday; if children are born before 37 weeks of gestatoin it is suggested to have corrected age; and then the column should be date of term.
+#' * `date` | The name of the column for the date of when the participants went through the questionaire.
+#' * `sex` | The name of the column for the sex of the participants. Male's must be coded as `M` and females as `F`.
+#'
+#' The calculation summarizes both the raw score and the standard score. As per the PARCA-R manual from 2019 and from the protocol from SafeBoosC-III follow-up study \href{https://pubmed.ncbi.nlm.nih.gov/37805539/}{Rasmussen et al. 2029} moderate-or-severe cognitive impairment is defined as < -2SD. This corresponds to a standard score below 70.
+#'
+#' ## CBI (Copenhagen Burnout Inventory)
+#'
+#' Using the 19 questions from the CBI it will both calculate `score` and `group`.
+#'
+#' Using setting it can either be the English version (default; `score = 'english'`)
+#' or the Danish version (`score = 'danish'`). In the English version the Likert-scale
+#' is converted to 100, 75, 50, 25, 0. Here, no more than 3 questions may be missing
+#' in each subscore \href{https://nfa.dk/da/Vaerktoejer/Sporgeskemaer/Sporgeskema-til-maaling-af-udbraendthed/Copenhagen-Burnout-Inventory-CBI}{English CBI}.
+#'
+#' The groups are based on the average score:
+#' * 0-25: 'no burnout'
+#' * 25-50: 'light burnout'
+#' * 50-75: 'moderate burnout'
+#' * 75-100: 'severe burnout'
+#'
+#' In the Danish score the questions are summed up from 0 to 4 points. Here, all questions must be answered. \href{https://nfa.dk/da/Vaerktoejer/Sporgeskemaer/Sporgeskema-til-maaling-af-udbraendthed}{Danish CBI}
+#'
+#' The groups are based on the summed score:
+#' * 0-5: 'no burnout' (0-6 for Work-related burnout)
+#' * 6-11: 'light burnout' (7-13 for Work-related burnout)
+#' * 12-17: 'moderate burnout' (14-20 for Work-related burnout)
+#' * 18+: 'severe burnout' (21+ for Work-related burnout)
+#'
 #'
 #' @examples
 #' \dontrun{
@@ -32,11 +67,115 @@
 #
 # ==== FUNCTION ====
 
-#Function - Questionaire
-questionaire <- function(df,id,questions,scale,setting=NA,prefix=""){
-   d <- df[,c(questions,id)]
+questionaire <- function(df,id,questions,scale,prefix="",...){
+
+   if(!exists("setting")) setting <- NA
+
    o <- NULL
-   if(scale == "Kidscreen-52"){
+   if(scale == "PARCA-R"){
+      if(length(questions) != 34) stop("There must be 34 questions to calculate PARCAR.")
+      if(!exists("age")) stop("There must be a column for age in the data frame.")
+      d <- df[,c(id,age,questions)]
+      d$`PARCA-R raw` <- rowSums(d[,questions],na.rm=T)
+      d[rowSums(is.na(d[,questions])) > 4,"PARCA-R raw"] <- NA
+      if(age >= 23*30.5+16 & age <= 24*30.5+15 & sex == "M"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+           `0`=49,`1`=49,`2`=49,`3`=49,`4`=49,`5`=49,`6`=49,`7`=49,`8`=49,`9`=49,
+           `10`=49,`11`=50,`12`=52,`13`=54,`14`=57,`15`=59,`16`=62,`17`=65,`18`=68,`19`=72,
+           `20`=75,`21`=78,`22`=81,`23`=84,`24`=87,`25`=91,`26`=95,`27`=98,`28`=102,`29`=107,
+           `30`=112,`31`=117,`32`=124,`33`=130,`34`=137)
+      }else if(age >= 23*30.5+16 & age <= 24*30.5+15 & sex == "F"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+            `0`=10,`1`=10,`2`=10,`3`=10,`4`=10,`5`=12,`6`=17,`7`=22,`8`=26,`9`=31,
+            `10`=35,`11`=39,`12`=42,`13`=46,`14`=49,`15`=53,`16`=56,`17`=59,`18`=62,`19`=66,
+            `20`=69,`21`=72,`22`=75,`23`=79,`24`=82,`25`=86,`26`=89,`27`=93,`28`=97,`29`=102,
+            `30`=107,`31`=112,`32`=118,`33`=124,`34`=133)
+      }else if(age >= 24*30.5+16 & age <= 25*30.5+15 & sex == "M"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+            `0`=49,`1`=49,`2`=49,`3`=49,`4`=49,`5`=49,`6`=49,`7`=49,`8`=49,`9`=49,
+            `10`=49,`11`=50,`12`=51,`13`=53,`14`=55,`15`=58,`16`=61,`17`=64,`18`=67,`19`=70,
+            `20`=73,`21`=76,`22`=79,`23`=82,`24`=86,`25`=89,`26`=93,`27`=97,`28`=101,`29`=105,
+            `30`=110,`31`=115,`32`=122,`33`=129,`34`=135)
+      }else if(age >= 24*30.5+16 & age <= 25*30.5+15 & sex == "F"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+            `0`=10,`1`=10,`2`=10,`3`=10,`4`=10,`5`=12,`6`=16,`7`=21,`8`=25,`9`=30,
+            `10`=34,`11`=38,`12`=41,`13`=45,`14`=48,`15`=52,`16`=55,`17`=58,`18`=61,`19`=64,
+            `20`=68,`21`=71,`22`=74,`23`=78,`24`=81,`25`=85,`26`=88,`27`=92,`28`=96,`29`=101,
+            `30`=106,`31`=111,`32`=117,`33`=124,`34`=132)
+      }else if(age >= 25*30.5+16 & age <= 26*30.5+15 & sex == "M"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+             `0`=49,`1`=49,`2`=49,`3`=49,`4`=49,`5`=49,`6`=49,`7`=49,`8`=49,`9`=49,
+             `10`=49,`11`=49,`12`=50,`13`=52,`14`=54,`15`=57,`16`=59,`17`=62,`18`=65,`19`=68,
+             `20`=71,`21`=75,`22`=78,`23`=81,`24`=84,`25`=88,`26`=91,`27`=95,`28`=99,`29`=103,
+             `30`=108,`31`=114,`32`=120,`33`=128,`34`=133)
+      }else if(age >= 25*30.5+16 & age <= 26*30.5+15 & sex == "F"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+            `0`=10,`1`=10,`2`=10,`3`=10,`4`=10,`5`=11,`6`=15,`7`=19,`8`=24,`9`=28,
+            `10`=32,`11`=36,`12`=40,`13`=43,`14`=47,`15`=50,`16`=53,`17`=57,`18`=60,`19`=63,
+            `20`=66,`21`=69,`22`=73,`23`=76,`24`=79,`25`=83,`26`=87,`27`=90,`28`=95,`29`=99,
+            `30`=104,`31`=109,`32`=116,`33`=123,`34`=130)
+      }else if(age >= 26*30.5+16 & age <= 27*30.5+15 & sex == "M"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+            `0`=49,`1`=49,`2`=49,`3`=49,`4`=49,`5`=49,`6`=49,`7`=49,`8`=49,`9`=49,
+            `10`=49,`11`=49,`12`=50,`13`=52,`14`=54,`15`=56,`16`=59,`17`=62,`18`=65,`19`=68,
+            `20`=71,`21`=74,`22`=77,`23`=80,`24`=84,`25`=87,`26`=90,`27`=94,`28`=98,`29`=103,
+            `30`=107,`31`=113,`32`=120,`33`=127,`34`=132)
+      }else if(age >= 26*30.5+16 & age <= 27*30.5+15 & sex == "F"){
+         d$`PARCA-R standard` <- dplyr::recode(d$`PARCA-R raw`,
+            `0`=10,`1`=10,`2`=10,`3`=10,`4`=10,`5`=11,`6`=13,`7`=18,`8`=22,`9`=27,
+            `10`=31,`11`=35,`12`=38,`13`=42,`14`=45,`15`=48,`16`=52,`17`=55,`18`=58,`19`=61,
+            `20`=65,`21`=68,`22`=71,`23`=74,`24`=78,`25`=81,`26`=85,`27`=89,`28`=93,`29`=97,
+            `30`=102,`31`=108,`32`=114,`33`=122,`34`=127)
+      }
+   }else if(scale == "CBI"){
+      if(length(questions) != 19) stop("There must be 19 questions to calculate CBI.")
+      d <- df[,c(id,questions)]
+      d[,questions] <- lapply(d[,questions],function(x)
+         dplyr::recode(x,`0`=0,`1`=1,`2`=2,`3`=3,`4`=4,`25`=1,`50`=2,`75`=3,`100`=4))
+
+      if(!is.na(setting) & setting == "danish"){
+         d$`Personal burnout` <- rowSums(d[,questions[1:6]])
+         d$`Personal burnout - group`[d$`Personal burnout` %in% c(0:5)] <- "No burnout"
+         d$`Personal burnout - group`[d$`Personal burnout` %in% c(6:11)] <- "Light burnout"
+         d$`Personal burnout - group`[d$`Personal burnout` %in% c(12:17)] <- "Moderate burnout"
+         d$`Personal burnout - group`[d$`Personal burnout` >= 18] <- "Severe burnout"
+
+         d$`Work-related burnout` <- rowSums(d[,questions[7:13]],na.rm=T)
+         d$`Work-related burnout - group`[d$`Work-related burnout` %in% c(0:6)] <- "No burnout"
+         d$`Work-related burnout - group`[d$`Work-related burnout` %in% c(7:13)] <- "Light burnout"
+         d$`Work-related burnout - group`[d$`Work-related burnout` %in% c(14:20)] <- "Moderate burnout"
+         d$`Work-related burnout - group`[d$`Work-related burnout` >= 21] <- "Severe burnout"
+
+         d$`Patient-related burnout` <- rowSums(d[,questions[14:19]],na.rm=T)
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` %in% c(0:5)] <- "No burnout"
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` %in% c(6:11)] <- "Light burnout"
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` %in% c(12:17)] <- "Moderate burnout"
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` >= 18] <- "Severe burnout"
+      }else{
+         d$`Personal burnout` <- rowMeans(d[,questions[1:6]],na.rm=T)*25
+         d$`Personal burnout`[rowSums(is.na(d[,questions[1:6]])) > 3] <- NA
+         d$`Personal burnout - group`[d$`Personal burnout` < 25] <- "No burnout"
+         d$`Personal burnout - group`[d$`Personal burnout` >= 25 & d$`Personal burnout` < 50] <- "Light burnout"
+         d$`Personal burnout - group`[d$`Personal burnout` >= 50 & d$`Personal burnout` < 75] <- "Moderate burnout"
+         d$`Personal burnout - group`[d$`Personal burnout` >= 75] <- "Severe burnout"
+
+         d$`Work-related burnout` <- rowMeans(d[,questions[7:13]],na.rm=T)*25
+         d$`Work-related burnout`[rowSums(is.na(d[,questions[7:13]])) > 3] <- NA
+         d$`Work-related burnout - group`[d$`Work-related burnout` < 25] <- "No burnout"
+         d$`Work-related burnout - group`[d$`Work-related burnout` >= 25 & d$`Work-related burnout` < 50] <- "Light burnout"
+         d$`Work-related burnout - group`[d$`Work-related burnout` >= 50 & d$`Work-related burnout` < 75] <- "Moderate burnout"
+         d$`Work-related burnout - group`[d$`Work-related burnout` >= 75] <- "Severe burnout"
+
+         d$`Patient-related burnout` <- rowMeans(d[,questions[14:19]],na.rm=T)*25
+         d$`Patient-related burnout`[rowSums(is.na(d[,questions[14:19]])) > 3] <- NA
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` < 25] <- "No burnout"
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` >= 25 & d$`Patient-related burnout` < 50] <- "Light burnout"
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` >= 50 & d$`Patient-related burnout` < 75] <- "Moderate burnout"
+         d$`Patient-related burnout - group`[d$`Patient-related burnout` >= 75] <- "Severe burnout"
+      }
+      o <- d[,!(colnames(d) %in% questions)]
+
+   }else if(scale == "Kidscreen-52"){
       #Reverse scoring
       d[,questions[c(1,12:18,21:23,50:52)]] <- lapply(d[,questions[c(1,12:18,21:23,50:52)]],
          FUN=function(x){dplyr::recode(x, `1`="5",`2`="4",`3`="2",`4`="3",`5`="1")})
@@ -156,12 +295,14 @@ questionaire <- function(df,id,questions,scale,setting=NA,prefix=""){
             `3`=10.99,`4`=18.72,`5`=22.38,`6`=24.99,`7`=27.15,
             `8`=29.13,`9`=31.08,`10`=33.13,`11`=35.44,`12`=38.29,
             `13`=42.20,`14`=48.07,`15`=58.85)
+         o <- cbind(d[[id]],data.frame(o))
+         colnames(o)[1] <- id
       }else{
          stop("For Kidscreen-52 'setting' must be either 'proxy' or 'self'")
       }
    }
-   o <- cbind(d[[id]],data.frame(o))
-   colnames(o)[1] <- id
+
+
    return(o)
 }
 

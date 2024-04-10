@@ -54,15 +54,11 @@
 #
 # ==== FUNCTION ====
 
-# d <- dftrials
-# strata = NULL
-# vars=c("Journal","Design","Number randomized_total",
-#        "Type of participants/diagnosis","Trial intervention length")
 # render.numeric = c("median [IQR]","mean (95%CI)")
-# render.factor = "simple"; tests = NA; paired = F;
-# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2;
-# only_stats = T; strata.fixed = NA; strata.random = NA;
-# time.to = NA; present.missing = "dynamic";
+# render.factor = "simple"; tests = NA; paired = F
+# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2
+# only_stats = T; strata.fixed = NA; strata.random = NA
+# time.to = NA; present.missing = "dynamic"
 # markdown=T; caption=""
 
 tbl <- function(df,strata = NULL,vars,
@@ -93,9 +89,9 @@ tbl <- function(df,strata = NULL,vars,
          out$missing = paste0(sum(is.na(x))," (",round(sum(is.na(x))/length(x)*100,1),"%)")
          out$mean = mean(x,na.rm=T)
          out$sd = sd(x,na.rm=T)
-         out$lcl = if(all(is.na(x)) | out$sd == 0){ NA
+         out$lcl = if(all(is.na(x)) | out$sd == 0 | is.na(out$sd)){ NA
          }else{ t.test(na.omit(x))$conf.int[[1]] }
-         out$ucl = if(all(is.na(x)) | out$sd == 0){ NA
+         out$ucl = if(all(is.na(x)) | out$sd == 0 | is.na(out$sd)){ NA
          }else{ t.test(na.omit(x))$conf.int[[2]] }
          out$median = median(x,na.rm=T)
          out$min = quantile(x,na.rm=T)[["0%"]]
@@ -211,8 +207,6 @@ tbl <- function(df,strata = NULL,vars,
          }
       }
    }
-
-
    tbl$var[duplicated(tbl$var)] <- ""
 
    tbl$var[tbl$var == ""] <- paste0("   ", tbl$var2[tbl$var == ""])
@@ -276,7 +270,12 @@ tbl <- function(df,strata = NULL,vars,
             m1 <- lme4::lmer(formel,data=d)
             est <- format(round(fixef(m1)[grepl(strata,names(fixef(m1)))],digs_s),nsmall=digs_s)
 
-            ci <- confint(m1)
+            ci <- tryCatch(confint(m1)
+                     ,error=function(e) e, warning=function(w) w)
+            if(any(class(ci) %in% c("error","try-error","warning"))){
+               ci <- confint(m1, method="Wald")
+            }
+
             lcl <- format(round(ci[grepl(strata,rownames(ci)),1],digs_s),nsmall=digs_s)
             ucl <- format(round(ci[grepl(strata,rownames(ci)),2],digs_s),nsmall=digs_s)
 
@@ -452,8 +451,24 @@ tbl <- function(df,strata = NULL,vars,
       tbl <- merge(tbl,tsts,by="var",all=T,)
       tbl <- tbl[order(tbl$id),]
       tbl$id <- NULL
-      tbl[is.na(tbl)] <- " "
+      tbl[is.na(tbl)] <- ""
    }
+
+   #Shorten for those with only one line apart from missing
+   for(i in 1:nrow(tbl)){
+      if(substr(tbl[i,1],1,2) == "  " & !grepl("missing",tbl[(i),1])){
+         if(substr(tbl[(i-1),1],1,2) != "  " &
+            (substr(tbl[(i+1),1],1,2) != "  " | grepl("missing",tbl[(i+1),1]))){
+            tbl[(i-1),1] <- paste(tbl[(i-1),1],"-",gsub("^.{0,3}", "",tbl[(i),1]))
+            tbl[(i),1] <- ""
+            for(j in strata_list){
+               tbl[(i-1),j] <- tbl[(i),j]
+               tbl[(i),j] <- ""
+            }
+         }
+      }
+   }
+   tbl <- tbl[rowSums(tbl == "") != ncol(tbl), ]
 
    # ADD N to groups
    if(only_stats & all(!is.na(tests))){
@@ -507,6 +522,8 @@ tbl <- function(df,strata = NULL,vars,
       tbl <- tbl[,colSums(tbl == " ")<nrow(tbl)]
       colnames(tbl) <- gsub("\\.[[:digit:]]","",colnames(tbl))
    }
+
+
 
    if(markdown){
       tbl[,1] <- gsub(" ","&nbsp;",tbl[,1])
