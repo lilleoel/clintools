@@ -18,6 +18,11 @@ And constructed with the following guidelines:
 
 * Bug fixes and misc changes bumps the patch
 
+<b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.10.2
+----------------------------------------------------------------
+
+* Added Kidscreen-52 to `questionaire`
+
 <b>CHANGES</b> IN <a href="https://github.com/lilleoel/clintools" target="_blank">clintools</a> VERSION 0.9.10.1
 ----------------------------------------------------------------
 

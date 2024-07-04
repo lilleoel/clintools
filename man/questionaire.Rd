@@ -65,6 +65,11 @@ The groups are based on the summed score:
 \item 18+: 'severe burnout' (21+ for Work-related burnout)
 }
 }
+
+\subsection{KIDSCREEN-52}{
+
+Works, but not documented
+}
 }
 \examples{
 \dontrun{

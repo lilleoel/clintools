@@ -5,10 +5,10 @@
 \title{Create a table (tbl)}
 \usage{
 tbl(df,strata,vars,render.numeric,
-render.factor, tests, paired,
+render.factor, tests, test.vars, paired,
    digs_n,digs_f, digs_p, digs_s,
    only_stats, strata.fixed, strata.random,
-   time.to, present.missing, markdown, caption)
+   time.to, present.missing, conf.level, markdown, caption)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -22,6 +22,8 @@ render.factor, tests, paired,
 \item{render.factor}{presentation of factors, with \code{simple} removing one factor when only two exists}
 
 \item{tests}{list of tests carried out, currently the following works: \code{t.test}, \code{wilcox.test}, \code{fisher.test}, \code{auc}, \code{lm}, and \code{glm}. (\code{list})}
+
+\item{test.vars}{a list of variable names from vars, where analyses should be carried out. If left NA all variable will be analysed (\code{list})}
 
 \item{paired}{if tests should be paired (\code{boolean})}
 
@@ -41,7 +43,9 @@ render.factor, tests, paired,
 
 \item{time.to}{Column name of the time column for cox regression (\code{list})}
 
-\item{present.missing}{default is dynamic where non-missing variables are not presented.}
+\item{present.missing}{default is dynamic where non-missing variables are not presented. \code{FALSE} removes missingness from presentation.}
+
+\item{conf.level}{confidence intervals which should be presented (\code{numeric}).}
 
 \item{markdown}{default is true and output is pander, while false output is a dataframe (\code{boolean})}
 

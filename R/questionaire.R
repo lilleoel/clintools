@@ -51,6 +51,8 @@
 #' * 12-17: 'moderate burnout' (14-20 for Work-related burnout)
 #' * 18+: 'severe burnout' (21+ for Work-related burnout)
 #'
+#' ## KIDSCREEN-52
+#' Works, but not documented
 #'
 #' @examples
 #' \dontrun{
@@ -66,6 +68,16 @@
 #' @export
 #
 # ==== FUNCTION ====
+
+# FOR TESTS
+# df <- readxl::read_xlsx("C:/Oel/Artikler/!old/KIDSCREEN_faroe/ff1ksres_extract.xlsx")
+# df$uniqueid <- paste(df$id,df$gen,df$gr,df$lvl,df$time)
+# tmp <- questionaire(df,id="uniqueid",questions=colnames(df)[grepl("^K",colnames(df))],
+#          "Kidscreen-52",setting="self")
+# df <- merge(df,tmp,all=T)
+# df$uniqueid <- NULL
+#
+# FOR TESTS
 
 questionaire <- function(df,id,questions,scale,prefix="",...){
 
@@ -177,8 +189,12 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
    }else if(scale == "Kidscreen-52"){
       #Reverse scoring
+      if(length(questions) != 52) stop("There must be 52 questions to calculate KIDSCREEN-52.")
+      d <- df[,c(id,questions)]
+      d[,questions] <- lapply(d[,questions],as.numeric)
       d[,questions[c(1,12:18,21:23,50:52)]] <- lapply(d[,questions[c(1,12:18,21:23,50:52)]],
-         FUN=function(x){dplyr::recode(x, `1`="5",`2`="4",`3`="2",`4`="3",`5`="1")})
+         FUN=function(x){dplyr::recode(x, `1`=5,`2`=4,`3`=2,`4`=3,`5`=1,
+                                       .default = NA_real_)})
       d[,questions] <- lapply(d[,questions],as.numeric)
 
       if(setting == "proxy"){

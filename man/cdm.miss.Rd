@@ -4,7 +4,7 @@
 \alias{cdm.miss}
 \title{Quiet any output (cdm.miss)}
 \usage{
-cdm.miss(df, id, cols, date, lostFU, filter)
+cdm.miss(df, id, cols, fudate, lostFU, filter, blind)
 }
 \arguments{
 \item{df}{dateframe to be assessed for missing data}
@@ -13,13 +13,15 @@ cdm.miss(df, id, cols, date, lostFU, filter)
 
 \item{cols}{columns to be assessed for missing data}
 
-\item{date}{column with the date of follow-up, i.e. when data is missing}
+\item{fudate}{column with the date of follow-up, i.e. when data is missing}
 
 \item{lostFU}{column for patients lost to follow up, TRUE/FALSE in the column}
 
 \item{filter}{how many should be shown in figures - 'all' for all, 'waiting'
 for those with missing or waiting for data, and 'missing' for only those
 with missing data}
+
+\item{blind}{boolean if TRUE, participant IDs will be blinded.}
 }
 \value{
 Returns a full markdown output.
@@ -30,7 +32,7 @@ Returns a full markdown output.
 \examples{
 \dontrun{
    cdm.miss(data,id=idcols[[1]],cols=missing.cols,lostFU="lostFU",
-   date = "follow_up_date", filter="missing")
+   fudate = "follow_up_date", filter="missing")
 }
 
 }
