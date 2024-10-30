@@ -8,7 +8,9 @@ tbl(df,strata,vars,render.numeric,
 render.factor, tests, test.vars, paired,
    digs_n,digs_f, digs_p, digs_s,
    only_stats, strata.fixed, strata.random,
-   time.to, present.missing, conf.level, markdown, caption)
+   time.to, present.missing, conf.level,
+   zeroonetoyn,
+   markdown, caption)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -46,6 +48,8 @@ render.factor, tests, test.vars, paired,
 \item{present.missing}{default is dynamic where non-missing variables are not presented. \code{FALSE} removes missingness from presentation.}
 
 \item{conf.level}{confidence intervals which should be presented (\code{numeric}).}
+
+\item{zeroonetoyn}{for factor variables which are 0 and 1, convert them to No and Yes (\code{boolean})}
 
 \item{markdown}{default is true and output is pander, while false output is a dataframe (\code{boolean})}
 

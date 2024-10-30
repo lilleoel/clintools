@@ -28,6 +28,12 @@
 
 calcrel <- function(d1,d2){
   res <- NULL
+  allhere <- !(is.na(d1) | is.na(d2))
+  res$n <- c(`overall`=length(allhere),`included`=sum(allhere))
+
+  d1 <- d1[allhere]
+  d2 <- d2[allhere]
+
   tmp_long <- data.frame(rbind(cbind(1:length(d1),1,d1),cbind(1:length(d2),2,d2)))
   colnames(tmp_long) <- c("ID","group","value")
   tmp1 <- data.frame(cbind(1:length(d1),1,d1))
@@ -119,7 +125,7 @@ calcrel <- function(d1,d2){
 #' @method print calcrel
 #' @export
 print.calcrel <- function(x,...){
-   cat("Calculation of reliability between two measures\n")
+   cat(paste0("Calculation of reliability between two measures (",x$n[2]," of ",x$n[1]," analysed):\n"))
    cat(paste0("- Smallest real difference (SRD; 95%CI): ",round(x$SRD[1],2)," (",round(x$SRD[2],2),";",round(x$SRD[3],2),")\n"))
    cat(paste0("- Coefficient of variance (CV; 95%CI): ",round(x$CV[1],2)," (",round(x$CV[2],2),";",round(x$CV[3],2),")\n"))
    cat(paste0("- Intraclass correlation coefficient (ICC; 95%CI): ",round(x$ICC[1],2)," (",round(x$ICC[2],2),";",round(x$ICC[3],2),")\n"))

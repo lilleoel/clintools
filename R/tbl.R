@@ -11,7 +11,9 @@
 #' render.factor, tests, test.vars, paired,
 #'    digs_n,digs_f, digs_p, digs_s,
 #'    only_stats, strata.fixed, strata.random,
-#'    time.to, present.missing, conf.level, markdown, caption)
+#'    time.to, present.missing, conf.level,
+#'    zeroonetoyn,
+#'    markdown, caption)
 #'
 #' @param df dataframe. (`df`)
 #' @param strata Column name of stratification (`string`)
@@ -33,6 +35,7 @@
 #' @param time.to Column name of the time column for cox regression (`list`)
 #' @param present.missing default is dynamic where non-missing variables are not presented. `FALSE` removes missingness from presentation.
 #' @param conf.level confidence intervals which should be presented (`numeric`).
+#' @param zeroonetoyn for factor variables which are 0 and 1, convert them to No and Yes (`boolean`)
 #' @param markdown default is true and output is pander, while false output is a dataframe (`boolean`)
 #' @param caption Table caption only in use when markdown is true (`string`)
 #'
@@ -47,7 +50,7 @@
 #'    pander::pander(hmm, keep.line.breaks = TRUE,split.tables=Inf, row.names = F)
 #' }
 #'
-#' @importFrom stats as.formula na.omit reshape t.test lm fisher.test quasipoisson
+#' @importFrom stats as.formula na.omit reshape t.test lm fisher.test quasipoisson dbinom pbinom
 #' @importFrom parameters p_value
 #' @importFrom pROC auc ci.auc
 #' @importFrom lme4 lmer glmer fixef glmerControl
@@ -55,13 +58,16 @@
 #' @export
 #
 # ==== FUNCTION ====
-
-# strata=NULL; render.numeric = c("median [IQR]","mean (95%CI)")
-# render.factor = "simple"; tests = NA; paired = F
-# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2
-# only_stats = T; strata.fixed = NA; strata.random = NA
-# time.to = NA; present.missing = F
+#
+# strata = NULL;
+# render.numeric = c("median [IQR]","mean (%CI)");
+# render.factor = "simple"; tests = NA; test.vars = NA; paired = F;
+# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2;
+# only_stats = F; strata.fixed = NA; strata.random = NA;
+# time.to = NA; present.missing = "dynamic"; conf.level = 0.95;
+# zeroonetoyn =T
 # markdown=T; caption=""
+
 
 
 
@@ -69,8 +75,9 @@ tbl <- function(df,strata = NULL,vars,
                 render.numeric = c("median [IQR]","mean (%CI)"),
                 render.factor = "simple", tests = NA, test.vars = NA, paired = F,
                 digs_n = 2, digs_f = 1, digs_p = 3, digs_s = 2,
-                only_stats = T, strata.fixed = NA, strata.random = NA,
+                only_stats = F, strata.fixed = NA, strata.random = NA,
                 time.to = NA, present.missing = "dynamic", conf.level = 0.95,
+                zeroonetoyn = T,
                 markdown=T, caption=""){
    d <- df
    if(!is.null(strata)){
@@ -108,7 +115,31 @@ tbl <- function(df,strata = NULL,vars,
       return(out)
    }
 
-   #   ACTUAL
+   # NAMED VARS
+   if(!is.null(names(vars))){
+      for(i in 1:length(vars)){
+         if(nchar(names(vars)[i]) > 0){
+            d[[names(vars)[i]]] <- d[[vars[i]]]
+            vars[i] <- names(vars)[i]
+         }
+      }
+   }
+
+   # Convert 0 and 1 to No and Yes
+   if(zeroonetoyn){
+      for(i in 1:length(vars)){
+         if(!is.null(d[[vars[i]]]) &
+            length(na.omit(unique(d[[vars[i]]]))) == 2 &
+            levels(as.factor(d[[vars[i]]]))[1] == "0" &
+            levels(as.factor(d[[vars[i]]]))[2] == "1" &
+            class(d[[vars[i]]]) %in% c("character","factor")){
+            d[[vars[i]]] <- as.factor(d[[vars[i]]])
+            levels(d[[vars[i]]]) <- c("No","Yes")
+         }
+      }
+   }
+
+   # ACTUAL
    for(i in vars){
 
       #NUMERIC
@@ -327,7 +358,7 @@ tbl <- function(df,strata = NULL,vars,
       out <- NULL
       if(test %in% c("fisher.test")){
          x <- d[[strata]]
-         y <- d[[j]]
+         y <- d[[var]]
 
          tst <- tryCatch(fisher.test(table(y,x),conf.level=conf.level)
                          ,error=function(e) e, warning=function(w) w)
@@ -409,6 +440,30 @@ tbl <- function(df,strata = NULL,vars,
          }
          out$estci <- paste0(est, " (",lcl,";",ucl,")")
          out$pval <- format(round(pval,digs_p),nsmall=digs_p)
+      }else if(test %in% c("midp") & paired == T & length(strata_list) == 2){
+         midP <- function(n) {
+
+            if (n[1, 2] == n[2, 1]) {
+               midP <- 1 - 0.5 * dbinom(n[1, 2], n[1, 2] + n[2, 1], 0.5)
+            } else {
+               P <- 2 * pbinom(min(n[1, 2], n[2, 1]), n[1, 2] + n[2, 1], 0.5)
+               P <- min(P, 1)
+               midP <- P - dbinom(n[1, 2], n[1, 2] + n[2, 1], 0.5)
+            }
+
+            return( midP )
+         }
+
+         x <- d[[strata]]
+         y <- d[[var]]
+         res_midp <- midP(table(d[d[[strata]] == strata_list[1],var],
+                                d[d[[strata]] == strata_list[2],var]))
+
+         out$txt <- "midp"
+         out$estci <- format(round(res_midp,digs_p),nsmall=digs_p)
+         out$pval <- ""
+
+
       }else if(test %in% c("cox")){
          #COX
          d[[var]] <- as.numeric(d[[var]])-1
@@ -462,6 +517,7 @@ tbl <- function(df,strata = NULL,vars,
                tmp[[paste0("pval.",res$txt)]] <- c(tmp[[paste0("pval.",res$txt)]],res$pval)
             }
          }
+         if(length(unique(lengths(tmp))) > 1) stop("Some statistical analysis did not converge, try to run analyses one at a time!")
          tmp <- data.frame(tmp)
          tsts <- merge(tsts,tmp,by="var",all=T)
       }
@@ -483,6 +539,7 @@ tbl <- function(df,strata = NULL,vars,
          if(substr(tbl[(i-1),1],1,2) != "  " &
             (i == nrow(tbl) | substr(tbl[(i+1),1],1,2) != "  " | grepl("missing",tbl[(i+1),1]))){
             tbl[(i-1),1] <- paste(tbl[(i-1),1],"-",gsub("^.{0,3}", "",tbl[(i),1]))
+            tbl[(i-1),1] <- gsub(" - Yes","",tbl[(i-1),1])
             tbl[(i),1] <- ""
             for(j in strata_list){
                tbl[(i-1),j] <- tbl[(i),j]
@@ -491,7 +548,9 @@ tbl <- function(df,strata = NULL,vars,
          }
       }
    }
-   tbl <- tbl[rowSums(tbl == "") != ncol(tbl), ]
+   tbl <- tbl[rowSums(tbl == "" | is.na(tbl)) != ncol(tbl), ]
+   tbl <- tbl[ ,colSums(tbl == "" | is.na(tbl)) != nrow(tbl)]
+
 
    # ADD N to groups
    if(only_stats & all(!is.na(tests))){
@@ -517,6 +576,7 @@ tbl <- function(df,strata = NULL,vars,
       `paired.wilcox.test` = paste0("**Wilcoxon signed rank test**\\\n*median diff. (",nmzci,"%HLCI)*"),
       `unpaired.wilcox.test` = paste0("**Wilcoxon rank sum test**\\\n*median diff. (",nmzci,"%HLCI)*"),
       `fisher.test` = paste0("**Fisher's exact test**\\\n*OR (",nmzci,"%CI)*"),
+      `midp` = paste0("**McNemar's test**\\\n*p*-value"),
       `lm` = paste0("**Linear regression**\\\n*estimate (",nmzci,"%CI)*"),
       `lmer` = paste0("**Mixed effects linear regression**\\\n*estimate (",nmzci,"%CI)*"),
       `glm` = paste0("**Logistic regression**\\\n*RR (",nmzci,"%CI)*"),
