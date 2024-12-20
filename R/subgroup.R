@@ -295,7 +295,7 @@
 #                                strata.random,interactions=NA,time.to,conf.level)
 #       tmp_full <- quickStat(d[!is.na(d[[i]]),],outcome,
 #                             group,test,digs_s,digs_p,
-#                             paired,strata.fixed=i,strata.random,interactions=c(i,strata),
+#                             paired,strata.fixed=i,strata.random,interactions=c(i,group),
 #                             time.to,conf.level)
 #
 #       lrt <- anova(tmp_reduced$model, tmp_full$model, test = "LRT")
@@ -341,6 +341,3 @@
 #       return(tbl2)
 #    }
 # }
-#
-# #TODO: Figure, facet wrap, facet title=Variable; left y-axis subgroup names and (n=x); right y-axis estci; middle forest plot; p-value for interaction on title and p-values in general on the right side.
-# #TODO: Add informative caption on analyse type an stratification.

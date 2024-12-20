@@ -54,6 +54,14 @@
 #' ## KIDSCREEN-52
 #' Works, but not documented
 #'
+#' ## SF-36
+#' Works, but not documented. However, used \href{this documentation}{https://www.rand.org/health-care/surveys_tools/mos/36-item-short-form/scoring.html}
+#'
+#' ## CBCL
+#' Not yet documented
+#'
+#' ## AFEQ
+#'
 #' @examples
 #' \dontrun{
 #'
@@ -69,15 +77,42 @@
 #
 # ==== FUNCTION ====
 
-# FOR TESTS
-# df <- readxl::read_xlsx("C:/Oel/Artikler/!old/KIDSCREEN_faroe/ff1ksres_extract.xlsx")
-# df$uniqueid <- paste(df$id,df$gen,df$gr,df$lvl,df$time)
-# tmp <- questionaire(df,id="uniqueid",questions=colnames(df)[grepl("^K",colnames(df))],
-#          "Kidscreen-52",setting="self")
-# df <- merge(df,tmp,all=T)
-# df$uniqueid <- NULL
+# # FOR TESTS
+# setwd("C:/Oel/Artikler/CTU/CTU_DANPACT/Questionaires/")
+# id <- "ssid"
+# prefix <- ""
 #
-# FOR TESTS
+# df <- read.csv2("AFEQ_raw.csv")
+# df <- df[,grepl("ssid|BASE",colnames(df)) &
+#             !grepl("_",colnames(df))]
+# scale <- "AFEQ"
+# colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))][
+#    nchar(colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))]) == 10] <-
+#    paste0(substr(colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))][nchar(colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))]) == 10],1,9),0,
+#           substr(colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))][
+#    nchar(colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))]) == 10],10,10))
+# questions <- colnames(df)[grepl("BASE.AFEQ[0-9]",colnames(df))]
+# questions <- questions[order(questions)]
+# out <- questionaire()
+# # write.csv2(o,"CBCL_calc.csv",row.names = F)
+#
+#
+# df <- read.csv2("CBCL.csv")
+# scale <- "CBCL"
+# colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) & !grepl("a",colnames(df))][
+#    nchar(colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) & !grepl("a",colnames(df))]) == 10
+# ] <- paste0(substr(colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) & !grepl("a",colnames(df))][
+#    nchar(colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) & !grepl("a",colnames(df))]) == 10
+# ],1,9),0,
+#            substr(colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) & !grepl("a",colnames(df))][
+#               nchar(colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) & !grepl("a",colnames(df))]) == 10
+#            ],10,10))
+# questions <- colnames(df)[grepl("BASE.CBCL[0-9]",colnames(df)) &
+#                            !grepl("a|BASE.CBCL100",colnames(df))]
+# questions <- questions[order(questions)]
+#
+#
+# # FOR TESTS
 
 questionaire <- function(df,id,questions,scale,prefix="",...){
 
@@ -85,6 +120,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
    o <- NULL
    if(scale == "PARCA-R"){
+   #########################
+   # PARCA-R ###############
+   #########################
       if(length(questions) != 34) stop("There must be 34 questions to calculate PARCAR.")
       if(!exists("age")) stop("There must be a column for age in the data frame.")
       d <- df[,c(id,age,questions)]
@@ -140,6 +178,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             `30`=102,`31`=108,`32`=114,`33`=122,`34`=127)
       }
    }else if(scale == "CBI"){
+   #########################
+   # CBI ###################
+   #########################
       if(length(questions) != 19) stop("There must be 19 questions to calculate CBI.")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],function(x)
@@ -188,6 +229,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       o <- d[,!(colnames(d) %in% questions)]
 
    }else if(scale == "Kidscreen-52"){
+   #########################
+   # Kidscreen-52 ##########
+   #########################
       #Reverse scoring
       if(length(questions) != 52) stop("There must be 52 questions to calculate KIDSCREEN-52.")
       d <- df[,c(id,questions)]
@@ -316,9 +360,107 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }else{
          stop("For Kidscreen-52 'setting' must be either 'proxy' or 'self'")
       }
+   }else if(scale == "SF-36"){
+   #########################
+   # SF-36 #################
+   #########################
+      if(length(questions) != 36) stop("There must be 36 questions to calculate SF-36")
+      d <- df[,c(id,questions)]
+      d[,questions] <- lapply(d[,questions],as.numeric)
+
+      # Calculate normative values
+      recoding_rules <- list(
+        list(indices=c(1,2,20,22,34,36), mapping=setNames(c(4:0/4*100),c(1:5))),
+        list(indices=c(3,4,5,6,7,8,9,10,11,12), mapping=setNames(c(0:2/2*100),c(1:3))),
+        list(indices=c(13,14,15,16,17,18,19), mapping=setNames(c(0:1/1*100),c(1:2))),
+        list(indices=c(21,23,26,27,30), mapping=setNames(c(5:0/5*100),c(1:6))),
+        list(indices = c(24,25,28,29,31), mapping=setNames(c(0:5/5*100),c(1:6))),
+        list(indices = c(32,33,35), mapping=setNames(c(0:4/4*100),c(1:5)))
+      )
+      for (rule in recoding_rules) {
+         d[,questions[rule$indices]] <- lapply(d[,questions[rule$indices]],
+                                                function(x) dplyr::recode(x, !!!rule$mapping))
+      }
+
+      # Calculate domains
+      domains <- list(
+         `Physical functioning`=c(3,4,5,6,7,8,9,10,11,12),
+         `Role limitations due to physical health`=c(13,14,15,16),
+         `Role limitations due to emotional problems`=c(17,18,19),
+         `Energy/fatigue`=c(23,27,29,31),
+         `Emotional well-being`=c(24,25,26,28,30),
+         `Social functioning`=c(20,32),
+         `Pain`=c(21,22),
+         `General health`=c(33,34,35,36),
+         `Physical Component Score`=c(3,4,5,6,7,8,9,10,11,12,13,14,15,16,21,22,33,34,35,36),
+         `Mental Component Score`=c(17,18,19,20,23,24,25,26,27,28,29,30,31,32)
+      )
+      for(i in 1:length(domains)){
+         # Calculate values
+         d[[names(domains)[i]]] <- rowMeans(d[,domains[[i]]],na.rm=T)
+         # Ensure more than 50% of the questions has been answered
+         d[[names(domains)[i]]][rowSums(is.na(d[,domains[[i]]])) > length(domains[[i]])/2] <- NA
+      }
+
+      # Create output
+      o <- d[,!(colnames(d) %in% questions)]
+
+   }else if(scale == "CBCL"){
+   #########################
+   # CBCL ##################
+   #########################
+      if(length(questions) != 99) stop("There must be 99 questions to calculate SF-36")
+      d <- df[,c(id,questions)]
+      d[,questions] <- lapply(d[,questions],as.numeric)
+
+      # Calculate domains
+      domains <- list(
+         `CBCL totalscore` = 1:99,
+         `CBCL internaliserende score` = c(1,2,4,7,10,12,19,21,23,24,33,37,39,43,45,46,47,51,52,
+                                           62,67,68,70,71,78,79,82,83,86,87,90,92,93,97,98,99),
+         `CBCL eksternaliserende score` = c(5,6,8,15,16,18,20,27,29,35,40,42,44,53,56,58,59,66,
+                                            69,81,85,88,95,96),
+         `CBCL affective problems` = c(13,24,38,43,49,50,71,74,89,90),
+         `CBCL anxiety problem scale` = c(10,22,28,32,37,47,48,51,87,99),
+         `CBCL pervasive developmental problem scale` = c(3,4,7,21,23,25,63,67,70,76,80,92,98),
+         `CBCL att.def/hyperact. problem scale` = c(5,6,8,16,36,59),
+         `CBCL oppositional defiant problem scale` = c(15,20,44,81,85,88),
+         `CBCL sleep problem scale` = c(22,38,48,64,74,84,94)
+      )
+
+      for(i in 1:length(domains)){
+         # Calculate values
+         d[[names(domains)[i]]] <- rowSums(d[,questions[domains[[i]]]],na.rm=T)
+         # Ensure more than 50% of the questions has been answered
+         d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > length(domains[[i]])/10] <- NA
+      }
+
+      # Create output
+      o <- d[,!(colnames(d) %in% questions)]
+
+   }else if(scale == "AFEQ"){
+   #########################
+   # AFEQ ##################
+   #########################
+      if(length(questions) != 48) stop("There must be 48 questions to calculate AFEQ")
+      d <- df[,c(id,questions)]
+      d[,questions] <- lapply(d[,questions],as.numeric)
+#
+#       # Calculate normative values
+#       tl <- c(1,6,8,9,11,12,14,15,22,27,30,32,36)
+#       d[,questions[tl]] <- lapply(d[,questions[tl]],
+#                                   FUN=function(x){dplyr::recode(x, `1`=5,`2`=4,`3`=2,`4`=3,`5`=1,
+#                                                                 .default = NA_real_)})
+#
+#
+#
+#
+#          afeq_exp	Domæne "Experience of being a parent"
+#          afeq_fl	Domæne "Family Life"
+#          afeq_cdus	Domæne "Child Development, Understanding and Social Relationships
+# afeq_cs	Domæne "Child Symptoms"
+# afeq_tot	Total AFEQ score
    }
-
-
    return(o)
 }
 
