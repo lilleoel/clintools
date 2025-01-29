@@ -70,6 +70,21 @@ The groups are based on the summed score:
 
 Works, but not documented
 }
+
+\subsection{SF-36}{
+
+Works, but not documented. However, used \href{this documentation}{https://www.rand.org/health-care/surveys_tools/mos/36-item-short-form/scoring.html}
+}
+
+\subsection{CBCL}{
+
+Not yet documented
+}
+
+\subsection{AFEQ}{
+
+Not yet documented
+}
 }
 \examples{
 \dontrun{

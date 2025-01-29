@@ -1,7 +1,7 @@
 Type: Package
 Package: clintools
 Title: Tools for Clinical Research
-Version: 0.9.10.2
+Version: 0.9.10.3
 Authors@R: c(
     person("Markus Harboe", "Olsen", email = "oel@oelfam.com", role = c("cre","aut")),
     person("Christian", "Riberholt", role = "ctb"),
@@ -24,7 +24,7 @@ Depends:
 Encoding: UTF-8
 Language: en-US
 LazyData: true
-RoxygenNote: 7.2.2
+RoxygenNote: 7.3.2
 Roxygen: list(markdown = TRUE)
 Suggests: knitr, rmarkdown
 Imports: signal (>= 0.7-6),
