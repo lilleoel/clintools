@@ -59,19 +59,19 @@
 #
 # ==== FUNCTION ====
 #
-strata = NULL;
-render.numeric = c("median [IQR]","mean (%CI)");
-render.factor = "simple"; tests = NA; test.vars = NA; paired = F;
-digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2;
-only_stats = F; strata.fixed = NA; strata.random = NA;
-time.to = NA; present.missing = "dynamic"; conf.level = 0.95;
-zeroonetoyn =T
-markdown=T; caption=""
-
-strata="group"
-vars = c("Primary outcome (short)")
-tests=c("glm")
-strata.random = "site"
+# strata = NULL;
+# render.numeric = c("median [IQR]","mean (%CI)");
+# render.factor = "simple"; tests = NA; test.vars = NA; paired = F;
+# digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2;
+# only_stats = F; strata.fixed = NA; strata.random = NA;
+# time.to = NA; present.missing = "dynamic"; conf.level = 0.95;
+# zeroonetoyn =T
+# markdown=T; caption=""
+#
+# strata="group"
+# vars = c("Primary outcome (short)")
+# tests=c("glm")
+# strata.random = "site"
 
 
 
