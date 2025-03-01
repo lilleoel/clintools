@@ -4,7 +4,7 @@
 \alias{cdm.miss.strata}
 \title{Quiet any output (cdm.miss)}
 \usage{
-cdm.miss.strata(df, id, cols, strata, fudate, lostFU, filter, blind)
+cdm.miss.strata(df, id, cols, strata, fudate, lostFU, filter, blind, n_sites, setting)
 }
 \arguments{
 \item{df}{dateframe to be assessed for missing data}
@@ -24,6 +24,10 @@ for those with missing or waiting for data, and 'missing' for only those
 with missing data}
 
 \item{blind}{boolean if TRUE, participant IDs will be blinded.}
+
+\item{n_sites}{number of sites presented per figure}
+
+\item{setting}{setting if it is a full report "full" or if it a public report "short" or if it is site specific where the site name is set, e.g. "SKM".}
 }
 \value{
 Returns a full markdown output.

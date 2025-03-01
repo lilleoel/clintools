@@ -6,7 +6,7 @@
 #'
 #' @name cdm.fig
 #'
-#' @usage cdm.fig(df, col, site, meta_title, seedno, output, nmin)
+#' @usage cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting)
 #'
 #' @param df      dateframe to be assessed for missing data
 #' @param col     column to be assessed
@@ -16,6 +16,7 @@
 #' @param output  if 'fig' then the figure is the output, any other will output
 #' the blinded site table
 #' @param nmin    minimum number of variables in site to be presented
+#' @param setting if "full" as default it will show all data, if anything else than "full" no site strata will be presented.
 #'
 #' @return Returns a full markdown output.
 #'
@@ -32,24 +33,24 @@
 #'
 #' @importFrom stringi stri_rand_strings
 #' @importFrom ggplot2 geom_boxplot geom_hline labs geom_bar scale_fill_brewer
-#' @importFrom ggplot2 scale_y_continuous
+#' @importFrom ggplot2 scale_y_continuous sec_axis position_stack coord_flip
 #' @importFrom scales percent_format
 #' @importFrom ggpubr ggarrange
 #'
 #' @export
 #
 # ==== FUNCTION ====
-# df <- df2
-# df$F03_mechanicvent <- as.factor(df$F03_mechanicvent)
-# col=c("F03_mechanicvent")
-# site="site_id"
-# meta_title=c("Mechanical Ventilation","Weight")
-# seedno=NA
-# output = "fig"
-# nmin = 5
+# df=df
+# col=longnames[1]
+# site="site"
+# meta_title = NA
+# seedno = NA
+# output="fig"
+# nmin=5
+# setting="SKM"
 
 cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
-                    output = "fig", nmin = 5){
+                    output = "fig", nmin = 5, setting="full"){
    if(is.na(seedno)) seedno <- as.numeric(Sys.Date())
 
    tmp <- NULL
@@ -99,51 +100,102 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
 
    #Continuous
    if(class(tmp$col) %in% c("numeric","integer")){
-      meanval <- mean(tmp$col,na.rm=T)
+      if(setting=="full"){
+         meanval <- mean(tmp$col,na.rm=T)
+         tmp_all <- cbind(paste0("All (n=",nrow(tmp),")"),as.character(tmp$col))
+         colnames(tmp_all) <- c(zite,"col")
+         tmp <- data.frame(rbind(tmp[,c(zite,"col")],tmp_all))
+      }else{
+         tmp[[zite]] <- paste0("All (n=",nrow(tmp),")")
+      }
+
+      tmp$col <- as.numeric(tmp$col)
+      tmp[[zite]] <- as.factor(tmp[[zite]])
+      tmp[[zite]] <- factor(tmp[[zite]], levels=unique(c(tmp[grepl("^All",tmp[[zite]]),zite],
+                                                         tmp[!grepl("^All",tmp[[zite]]),zite])))
+
       g1 <- ggplot() +
          geom_boxplot(aes(y=tmp$col,x=tmp[[zite]])) +
-         geom_hline(aes(yintercept=meanval),color="red",linetype="dotted") +
          theme_classic() +
          labs(y=meta_title) +
-         theme(axis.title.x = element_blank(),
-               axis.ticks.y = element_blank(),
+         theme(axis.ticks.y = element_blank(),
                axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0))
+
+      if(setting=="full"){
+         g1 <- g1 +
+            geom_vline(aes(xintercept=1.5), linetype="dashed",alpha=0.1) +
+            geom_hline(aes(yintercept=meanval),color="red",linetype="dotted", alpha=0.5) +
+            theme(axis.title.x = element_blank())
+      }else{
+         g1 <- g1 + coord_flip() +
+            theme(axis.title.y = element_blank())
+      }
+
    }
 
    #Categorical
    if(class(tmp$col) %in% c("factor","character")){
-      tmp$col <- factor(tmp$col)
-
-      ga <- ggplot() +
-         geom_bar(aes(x=paste0("All (n=",nrow(tmp),")"), fill=tmp$col)) +
-         scale_fill_brewer(palette="Paired",na.translate = F) +
-         scale_y_continuous(expand=c(0,0)) +
-         theme_classic() +
-         labs(y=paste(meta_title,"\n(n)")) +
-         theme(axis.title.x = element_blank(),
-               axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
-               legend.title = element_blank(),
-               legend.position = "top",
-               plot.margin = margin())
-
-      gb <- ggplot() +
-         geom_bar(aes(x=tmp[[zite]],fill=tmp$col)) +
-         scale_fill_brewer(palette="Paired",na.translate = F) +
-         scale_y_continuous(expand=c(0,0)) +
-         theme_classic() +
-         labs(y=meta_title) +
-         theme(axis.title.x = element_blank(),
-               axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
-               legend.title = element_blank(),
-               legend.position = "top",
-               plot.margin = margin())
-
-      if(length(unique(tmp[[zite]])) > 1){
-         g1 <- ggarrange(ga,gb + theme(axis.title.y=element_blank()),align="h",common.legend = T, legend="top")
+      if(setting=="full"){
+         tmp_all <- cbind(paste0("All (n=",nrow(tmp),")"),as.character(tmp$col))
+         colnames(tmp_all) <- c(zite,"col")
+         tmp <- data.frame(table(rbind(tmp[,c(zite,"col")],tmp_all)))
       }else{
-         g1 <- gb
+         tmp[[zite]] <- paste0("All (n=",nrow(tmp),")")
+         tmp <- data.frame(table(tmp[,c(zite,"col")]))
+
       }
 
+      for(i in unique(tmp[[zite]])){
+         tmp$sum[tmp[[zite]] == i] <- sum(tmp$Freq[tmp[[zite]] == i])
+      }
+      tmp$prop <- tmp$Freq/tmp$sum
+      tmp$perc <- paste0(round(tmp$prop*100),"%")
+
+      tmp[[zite]] <- as.factor(tmp[[zite]])
+      tmp[[zite]] <- factor(tmp[[zite]], levels=unique(c(tmp[grepl("^All",tmp[[zite]]),zite],
+                                                  tmp[!grepl("^All",tmp[[zite]]),zite])))
+
+      tmp$n_Freq <- tmp$Freq
+      tmp$perc[grepl("NaN%|^0%$",tmp$perc)] <- ""
+
+      # second axis
+      if(setting == "full"){
+         allvssite <- max(tmp[!grepl("^All",tmp[[zite]]),"sum"])/
+            max(tmp[grepl("^All",tmp[[zite]]),"sum"])
+         tmp[!grepl("^All",tmp[[zite]]),"n_Freq"] <- tmp[!grepl("^All",tmp[[zite]]),"Freq"]/allvssite
+      }
+
+      g1 <- ggplot() +
+      geom_bar(aes(x=tmp[[zite]], y=tmp$n_Freq, fill=tmp$col), stat = "identity",
+               position = position_stack(reverse = TRUE)) +
+      ggfittext::geom_bar_text(aes(x=tmp[[zite]], y=tmp$n_Freq,label= tmp$perc),
+                    position="stack",
+                     color = "black",
+                    vjust = 1.2,
+                    size = 3 * ggplot2::.pt,
+                    min.size = 3 * ggplot2::.pt,
+                    padding.x = grid::unit(0, "pt"),
+                    padding.y = grid::unit(0, "pt"),
+                    outside = TRUE) +
+         scale_fill_brewer(palette="Paired",na.translate = F) +
+         theme_classic() +
+         labs(y=paste(meta_title,"\n(n)")) +
+         theme(
+               axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
+               legend.title = element_blank(),
+               legend.position = "top",
+               plot.margin = margin())
+
+      if(setting=="full"){
+         g1 <- g1 +  scale_y_continuous(expand=c(0,0),
+            sec.axis = sec_axis(~ . * allvssite)) +
+         geom_vline(aes(xintercept=1.5), linetype="dashed") +
+            theme(axis.title.x = element_blank())
+      }else{
+         g1 <- g1 + coord_flip() +
+            scale_y_continuous(expand=c(0,0)) +
+            theme(axis.title.y = element_blank())
+      }
 
    }
    return(g1)

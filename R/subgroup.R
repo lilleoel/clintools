@@ -120,6 +120,9 @@ subgroups <- function(df,group,subgroups,outcome,
 
       formel <- generate_formula(outcome, group, strata.fixed, strata.random,
                                  interactions)
+      formelf <- generate_formula(outcome, group, strata.fixed=c(strata.fixed, strata.random),
+                                 strata.random = NA,
+                                 interactions)
 
       # Continuous outcome
       if(class(d[[outcome]]) %in% c("numeric","integer") & length(group_list) == 2){
@@ -223,12 +226,16 @@ subgroups <- function(df,group,subgroups,outcome,
                   out$txt <- "glmer" }
 
                if(any(class(m1) %in% c("error","try-error","warning"))){
-                  formel <- paste0(deparse(formel),collapse="")
-                  formel <- gsub("\\(1 \\|","",formel)
-                  formel <- gsub("\\)","",formel)
+                  # formel <- paste0(deparse(formel),collapse="")
+                  # formel <- gsub("\\(1 \\|","",formel)
+                  # formel <- gsub("\\) ","",formel)
+                  # formel <- generate_formula(outcome, group,
+                  #                            strata.fixed=c(strata.fixed,strata.random),
+                  #                            strata.random=NA,
+                  #                            interactions=interactions)
                   tmp_d <- d
                   tmp_d[[outcome]] <- as.numeric(as.factor(tmp_d[[outcome]]))-1
-                  m1 <- glm(as.formula(formel), data = tmp_d, family=quasipoisson)
+                  m1 <- glm(as.formula(formelf), data = tmp_d, family=quasipoisson)
                   out$txt <- "glm"
                }
             }else{
@@ -253,7 +260,7 @@ subgroups <- function(df,group,subgroups,outcome,
 
                pval <- parameters::p_value(m1)
                pval <- pval[grepl(group,pval$Parameter) &
-                               !grepl(":",names(coef(m1))),"p"]
+                               !grepl(":",pval$Parameter),"p"]
 
             }else if(out$txt == "glmer"){
                res <- exp(cbind(fixef(m1), confint(m1, method = 'Wald',

@@ -97,7 +97,7 @@ cdm.status <- function(d, sample.size, planned.years=2, rolling.average=10){
                      " participants has been included."  )
 
    if(!is.na(rolling.average) & max(tmp$cum.n,na.rm=T) > rolling.average){
-      out$txt <- paste(out$txt,paste0("Based on the last ", rolling.average, " participants there is an average of ", avg.days, " days between each inclusion. Thus, inclusion must be continued for another ", round(days.to.end/365.25,1), " years (", max(tmp$Date,na.rm=T),") to reach the required sample size (n=", sample.size,").\n\n"))
+      out$txt <- paste(out$txt,paste0("Based on the last ", rolling.average, " participants there is an average of ", avg.days, " days between each inclusion. Thus, inclusion must be continued for another ", round(days.to.end/365.25,1), " years (", rlx[2],") to reach the required sample size (n=", sample.size,").\n\n"))
    }
 
    return(out)

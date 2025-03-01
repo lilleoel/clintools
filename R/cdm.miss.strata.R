@@ -6,7 +6,7 @@
 #'
 #' @name cdm.miss.strata
 #'
-#' @usage cdm.miss.strata(df, id, cols, strata, fudate, lostFU, filter, blind)
+#' @usage cdm.miss.strata(df, id, cols, strata, fudate, lostFU, filter, blind, n_sites, setting)
 #'
 #' @param df      dateframe to be assessed for missing data
 #' @param id      column-name for unique id's
@@ -18,6 +18,8 @@
 #' for those with missing or waiting for data, and 'missing' for only those
 #' with missing data
 #' @param blind boolean if TRUE, participant IDs will be blinded.
+#' @param n_sites number of sites presented per figure
+#' @param setting setting if it is a full report "full" or if it a public report "short" or if it is site specific where the site name is set, e.g. "SKM".
 #'
 #' @return Returns a full markdown output.
 #'
@@ -36,7 +38,22 @@
 
 # fudate = NULL; lostFU = NULL; filter = "all"; blind = F
 
-cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, filter = "all", blind = F){
+cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, filter = "all", blind = F, n_sites=15,setting="full"){
+
+   # # TEST
+   # df = dff[!is.na(dff$rand_date),]
+   # id = "pt_id"
+   # cols = form_longnames
+   # strata = "site"
+   # fudate = names(form_longnames)
+   # lostFU = "lostfu"
+   # filter = "missing"
+   # blind=F
+   # n_sites=13
+   # setting=report_type
+   # TEST
+
+
    df <- data.frame(df,check.names = F)
    if(length(cols) > 25) stop("No more than 25 columns can be monitored")
 
@@ -80,7 +97,18 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
       tmp[tmp[[cols[i]]] == 3,cols[i]] <- "Lost"
    }
 
-   # Create df with percentage missingness of all
+   # All new data for overall
+   tmp_all <- tmp
+   tmp_all[[strata]] <- "All "
+   tmp <- rbind(tmp_all,tmp)
+   # Create dftmp_eligible# Create df with percentage missingness of all
+
+   if(setting == "short"){
+      tmp <- tmp[tmp[[strata]] == "All ",]
+   }else if(setting != "full"){
+      tmp <- tmp[tmp[[strata]] %in% c("All ",setting),]
+   }
+
    tmp1 <- aggregate(tmp[[cols[i]]],by=list(tmp[[strata]]),length)
    colnames(tmp1) <- c(strata,"n")
    for(i in 1:length(cols)){
@@ -95,9 +123,14 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
    tmp <- tmp1
    id <- strata
 
+   # ADD EMPTY LINE BETWEEN ALL AND REST
+   tmp <- rbind(tmp[1,],rbind(c(paste(" ",collapse=""),rep(NA,ncol(tmp)-1)),
+                             tmp[2:nrow(tmp),]))
+
    #Ensure rounded to 50
-   add.n <- ceiling(nrow(tmp)/25)*25-nrow(tmp)
-   for(i in 1:add.n) tmp <-rbind(tmp,c(paste(rep(" ",i),collapse=""),rep(NA,ncol(tmp)-1)))
+   add.n <- ceiling(nrow(tmp)/n_sites)*n_sites-nrow(tmp)
+   for(i in 1:add.n) tmp <-rbind(tmp,c(paste(rep(" ",i+2),collapse=""),rep(NA,ncol(tmp)-1)))
+   siteorder <- tmp[[id]]
 
    #Control if no missing data
    if(!is.null(tmp[[id]])){
@@ -114,20 +147,21 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
 
       #Order
       tmp[[id]] <- as.factor(tmp[[id]])
+      tmp[[id]] <- factor(tmp[[id]],levels=siteorder)
       newlvls <- unique(tmp[!is.na(tmp$variable) & order(tmp[[id]]),id])
-      if(add.n > 0){
-         tmplvls2 <- levels(tmp[[id]])[c(1:add.n)]
-         newlvls <- c(as.character(newlvls),tmplvls2)
-      }
-      tmp[[id]] <- factor(tmp[[id]], levels=newlvls)
+      # if(add.n > 0){
+      #    tmplvls2 <- levels(tmp[[id]])[c(1:add.n)]
+      #    newlvls <- c(as.character(newlvls),tmplvls2)
+      # }
+      # tmp[[id]] <- factor(tmp[[id]], levels=newlvls)
 
       pts <- levels(tmp[[id]])
 
       tmp$variable[is.na(tmp$variable)] <- 0
       tmp$variable <- as.numeric(tmp$variable)
 
-      for(i in 1:(length(pts)/25)){
-         tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*25+1):(i*25))]),]
+      for(i in 1:(length(pts)/n_sites)){
+         tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*n_sites+1):(i*n_sites))]),]
          suppressWarnings(
             print(
                ggplot(tmp2,

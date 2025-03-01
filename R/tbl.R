@@ -496,7 +496,7 @@ tbl <- function(df,strata = NULL,vars,
    # ACTUAL ----
    if(any(!is.na(tests))){
       tsts <- NULL
-      if(is.na(test.vars)){
+      if(any(is.na(test.vars))){
          tsts$var <- vars
       }else{
          tsts$var <- test.vars

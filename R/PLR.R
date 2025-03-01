@@ -1,21 +1,22 @@
 # ==== DOCUMENTATION ====
 
-#' NeurOpticsTM PLR-3000 pupillometer file to dataframe (PLR3000)
+#' NeurOpticsTM PLR-3000 or PLR-4000 pupillometer file to dataframe (PLR)
 #'
-#' `PLR3000()` is a function which converts the XLS file imported from the eurOpticsTM PLR-3000 pupillometer to a nested list with two dataframes.
+#' `PLR()` is a function which converts the XLS file imported from the NeurOpticsTM PLR-3000 or PLR-4000 pupillometer to a nested list with two dataframes.
 #'
-#' @name PLR3000
+#' @name PLR
 #'
-#' @usage PLR3000(filename = NULL, df = NULL)
+#' @usage PLR(filename = NULL, df = NULL, version)
 #'
 #' @param filename path to the XLS-file with the measurements
 #' @param df the dataframe can also be used for the function if data is already imported.
+#' @param version needed to define if it is either "3000" or "4000"
 #'
 #' @return Returns a list with two dataframe, one with the measurements (pupils) and one with the markers (markers).
 #'
 #' @examples
 #'  \dontrun{
-#'    PLR3000("C:/PLR3000/R_20200105_205901.xls")
+#'    PLR0("C:/PLR3000/R_20200105_205901.xls")
 #'  }
 #'
 #' @importFrom utils read.csv2
@@ -23,7 +24,10 @@
 #
 # ==== FUNCTION ====
 
-PLR3000 <- function(filename=NULL, df=NULL){
+# filename = "C:/Oel/Artikler/NIA/DK_Poul_pupillometry/PLR3000 eksempel.xls"
+# version = "4000"
+# tmp <- PLR(filename,version="4000")
+PLR <- function(filename=NULL, df=NULL, version){
    if(is.null(df) & is.null(filename)){
       stop("Please provide either a dataframe or the filename")
    }
@@ -37,7 +41,7 @@ PLR3000 <- function(filename=NULL, df=NULL){
    df[] <- lapply(df, as.character)
 
    #Reverse newlines
-   linenumber <- suppressWarnings(which(!is.na(as.numeric(df[,2]))))
+   linenumber <- suppressWarnings(which(!is.na(as.numeric(df[,2])) | is.na(as.numeric(df[,1]))))
    linenumber <- c(linenumber,which(df[,2] %in% c("UP","DOWN","LEFT","RIGHT","SELECT")))
    linenumber <- c(linenumber,which(is.na(df[,2])))
    linenumber <- linenumber[order(linenumber)]
