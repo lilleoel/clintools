@@ -41,4 +41,6 @@ Imports: signal (>= 0.7-6),
          survival (>= 3.4-0),
          pander (>= 0.6.5),
          ggpubr (>= 0.4.0),
-         ggfittext (>= 0.10.2)
+         ggfittext (>= 0.10.2),
+         patchwork (>= 1.3.0),
+         utils (>= 4.4.2)

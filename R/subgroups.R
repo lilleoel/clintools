@@ -9,7 +9,7 @@
 #'
 #' @usage subgroups(df,group,subgroups,outcome,test,time.to,
 #'                   strata.fixed,strata.random,digs_p,digs_s,
-#'                   conf.level, paired,markdown, caption)
+#'                   conf.level, paired,markdown, caption, fig)
 #'
 #' @param df dataframe. (`df`)
 #' @param group Column name of stratification (`string`)
@@ -25,6 +25,7 @@
 #' @param conf.level confidence intervals which should be presented (`numeric`).
 #' @param markdown default is true and output is pander, while false output is a dataframe (`boolean`)
 #' @param caption Table caption only in use when markdown is true (`string`)
+#' @param fig If figure should be presented (`boolean`)
 #'
 #' @return Returns summarised information in dataframe.
 #'
@@ -44,11 +45,14 @@
 #' }
 #'
 #' @importFrom stats as.formula anova setNames
+#' @importFrom patchwork wrap_plots
+#' @importFrom ggplot2 geom_point expand_scale geom_errorbar
+#' @importFrom utils stack
 #' @export
 #
 # ==== FUNCTION ====
 #
-# strata = NULL;
+# group = NULL;
 # render.numeric = c("median [IQR]","mean (%CI)");
 # render.factor = "simple"; tests = NA; test.vars = NA; paired = F;
 # digs_n = 2; digs_f = 1; digs_p = 3; digs_s = 2;
@@ -56,13 +60,20 @@
 # time.to = NA; present.missing = "dynamic"; conf.level = 0.95;
 # zeroonetoyn =T
 # markdown=T; caption=""
+# fig=T
+#
+# group="group"
+# subgroups=c("Trial","Sex"," Age","GAF/SAS-SR")
+# outcome="Primary outcome (short)"
+# test="glm"
 
 subgroups <- function(df,group,subgroups,outcome,
                       test = NA, time.to = NA,
                       strata.fixed = NA, strata.random = NA,
                       digs_p = 3, digs_s = 2,
                       conf.level = 0.95, paired=F,
-                      markdown=T, caption=""){
+                      markdown=T, caption="",
+                      fig = F){
 
 ####### HELPER FUNCTIONS #######
    format_p_value <- function(p_value, digs_p) {
@@ -147,6 +158,9 @@ subgroups <- function(df,group,subgroups,outcome,
 
             out$estci <- format_ci(tst$estimate[[1]],
                                    tst$conf.int[[1]], tst$conf.int[[2]], digs_s)
+            out$est <- tst$estimate[[1]]
+            out$lcl <- tst$conf.int[[1]]
+            out$ucl <- tst$conf.int[[2]]
             out$pval <- format_p_value(tst$p.value, digs_p)
 
          }else if(test=="auc"){
@@ -158,13 +172,16 @@ subgroups <- function(df,group,subgroups,outcome,
 
             out$txt <- "auroc"
             out$estci <- format_ci(tst[2], tst[1], tst[3], digs_s)
+            out$est <- tst[2]
+            out$lcl <- tst[1]
+            out$ucl <- tst[3]
             out$pval <- NA
 
          }else if(test %in% c("lm")){
             if(!is.na(strata.random)){
                m1 <- lme4::lmer(formel,data=d)
                est <- fixef(m1)[grepl(group,names(fixef(m1)))]
-               ci <- tryCatch(confint(m1,level=conf.level),
+               ci <- tryCatch(confint.default(m1,level=conf.level),
                               error=function(e) e, warning=function(w) w)
                if(any(class(ci) %in% c("error","try-error","warning"))){
                   ci <- confint(m1, method="Wald",level=conf.level)
@@ -173,11 +190,14 @@ subgroups <- function(df,group,subgroups,outcome,
             }else{
                m1 <- lm(formel,data=d)
                est <- m1$coefficients[grepl(group,names(m1$coefficients))]
-               ci <- confint(m1,level=conf.level)
+               ci <- confint.default(m1,level=conf.level)
                out$txt <- "lm"
             }
             out$estci <- format_ci(est, ci[grepl(group,rownames(ci)),1],
                                    ci[grepl(group,rownames(ci)),2], digs_s)
+            out$est <- est
+            out$lcl <- ci[grepl(group,rownames(ci)),1]
+            out$ucl <- ci[grepl(group,rownames(ci)),2]
             pval <- parameters::p_value(m1)
             pval <- pval[grepl(group,pval$Parameter),"p"]
             out$pval <- format_p_value(pval, digs_p)
@@ -198,8 +218,14 @@ subgroups <- function(df,group,subgroups,outcome,
             if(!is.null(tst$estimate)){
                out$estci <- format_ci(tst$estimate[[1]], tst$conf.int[[1]],
                                       tst$conf.int[[2]], digs_s)
+               out$est <- tst$estimate[[1]]
+               out$lcl <- tst$conf.int[[1]]
+               out$ucl <- tst$conf.int[[2]]
             }else{
                out$estci <- "- (-;-)"
+               out$est <- NA
+               out$lcl <- NA
+               out$ucl <- NA
             }
             out$txt <- "fisher.test"
             format_p_value(tst$p.value, digs_p)
@@ -250,9 +276,9 @@ subgroups <- function(df,group,subgroups,outcome,
                est <- exp(coef(m1))[grepl(group,names(coef(m1))) &
                                        !grepl(":",names(coef(m1)))]
 
-               ci <- try(exp(confint(m1,level=conf.level)),silent=T)
+               ci <- try(exp(confint.default(m1,level=conf.level)),silent=T)
                if("try-error" %in% class(ci)) ci <-
-                  exp(confint.default(m1,conf.level=conf.level))
+                  exp(confint(m1,conf.level=conf.level))
                lcl <- ci[grepl(group,rownames(ci)) &
                             !grepl(":",names(coef(m1))),1]
                ucl <- ci[grepl(group,rownames(ci)) &
@@ -263,7 +289,7 @@ subgroups <- function(df,group,subgroups,outcome,
                                !grepl(":",pval$Parameter),"p"]
 
             }else if(out$txt == "glmer"){
-               res <- exp(cbind(fixef(m1), confint(m1, method = 'Wald',
+               res <- exp(cbind(fixef(m1), confint.default(m1,
                                                    level=conf.level)[-1,]))
                est <- res[grepl(group,rownames(res)) &
                              !grepl(":",rownames(res)),1]
@@ -276,6 +302,9 @@ subgroups <- function(df,group,subgroups,outcome,
                      !grepl(":",rownames(summary(m1)$coefficients)),4]
             }
             out$estci <- format_ci(est, lcl, ucl, digs_s)
+            out$est <- est
+            out$lcl <- lcl
+            out$ucl <- ucl
             out$pval <- format_p_value(pval, digs_p)
 
          }else if(test %in% c("midp") & paired == T & length(group_list) == 2){
@@ -284,6 +313,9 @@ subgroups <- function(df,group,subgroups,outcome,
 
             out$txt <- "midp"
             out$estci <- ""
+            out$est <- NA
+            out$lcl <- NA
+            out$ucl <- NA
             out$pval <- format_p_value(res_midp, digs_p)
 
          }else if(test %in% c("cox")){
@@ -297,10 +329,13 @@ subgroups <- function(df,group,subgroups,outcome,
             formel <- formula(paste0("`SurvVar`~",formel))
             m1 <- survival::coxph(formel, data = d)
             m1est <- exp(m1$coefficients)
-            m1ci <- exp(confint(m1,level=conf.level))
+            m1ci <- exp(confint.default(m1,level=conf.level))
 
             out$txt <- "cox"
             out$estci <- format_ci( m1est[[1]], m1ci[1,1], m1ci[1,2], digs_s)
+            out$est <- m1est[[1]]
+            out$lcl <- m1ci[1,1]
+            out$ucl <- m1ci[1,2]
             out$pval <- format_p_value(parameters::p_value(m1)[1,2], digs_p)
          }
       }
@@ -337,7 +372,7 @@ subgroups <- function(df,group,subgroups,outcome,
                 "cox" = "HR"),
          " (", nmzci, "%CI)")
 
-      out$model <- m1
+      out <- c(out, list(model = m1))
 
       return(out)
    }
@@ -396,27 +431,110 @@ subgroups <- function(df,group,subgroups,outcome,
                       sum(tmpd[[group]] == levels(tmpd[[group]])[2]))
 
       tmp$model <- NULL
+
       res <- rbind(res,data.frame(tmp))
    }
    tbl <- cbind(tbl,res)
 
-   tbl2 <- tbl[,c("subgroup","group","C","E","estci","pval","p_interaction")]
+   tbl2 <- tbl[,c("subgroup","group","C","E","estci","est","lcl","ucl","pval","p_interaction")]
+
+   tbl2$yaxis <- as.factor(c(1:nrow(tbl2)))
    tbl2$subgroup[duplicated(tbl2$subgroup)] <- ""
-   tbl2$p_interaction[duplicated(tbl2$p_interaction)] <- ""
+   tbl2$p_interaction[tbl2$subgroup == ""] <- ""
 
-   colnames(tbl2) <- c("",
-                       "**Subgroup**",
-                       paste0("**",levels(d[[group]])[1],"**\\\n*n/N*"),
-                       paste0("**",levels(d[[group]])[2],"**\\\n*n/N*"),
-                       paste0("**",unique(tbl$name),"**\\\n*",
-                              unique(tbl$estci_txt),"*"),
-                       "**p-value**",
-                       "**p-value for interaction**")
+   if(!fig){
+      tbl2[,c("yaxis","est","lcl","ucl")] <- NULL
+      colnames(tbl2) <- c("",
+                          "**Subgroup**",
+                          paste0("**",levels(d[[group]])[1],"**\\\n*n/N*"),
+                          paste0("**",levels(d[[group]])[2],"**\\\n*n/N*"),
+                          paste0("**",unique(tbl$name),"**\\\n*",
+                                 unique(tbl$estci_txt),"*"),
+                          "**p-value**",
+                          "**p-value for interaction**")
 
-   if(markdown){
-      pander::pander(tbl2, keep.line.breaks = TRUE,split.tables=Inf, row.names = F,
-                     caption=caption)
+      if(markdown){
+         pander::pander(tbl2, keep.line.breaks = TRUE,split.tables=Inf, row.names = F,
+                        caption=caption)
+      }else{
+         return(tbl2)
+      }
    }else{
-      return(tbl2)
+      ######## FIGUR
+      # Left
+      tmp <- cbind(tbl2$yaxis,stack(tbl2[,colnames(tbl2) %in% c("group","C","E","estci")]))
+      colnames(tmp)[1] <- "yaxis"
+      tmp$hjust <- (tmp$ind != "group")*0.5
+
+      left <- ggplot(tmp, aes(y=yaxis, x=ind, label=values)) +
+         geom_text(size = 3, hjust=tmp$hjust) +
+         scale_x_discrete(position = "top",expand=expand_scale(mult = c(0, 0.25)),
+                          labels=c("Subgroups",paste0(levels(d[[group]])[1],"\nn/N"),
+                                   paste0(levels(d[[group]])[2],"\nn/N"),
+                                   unique(tbl$estci_txt))
+         ) +
+         scale_y_discrete(limits=rev, labels=rev(tbl2$subgroup)) +
+         labs(y = NULL, x = NULL) +
+         theme_classic() +
+         theme(
+            panel.grid.major = element_blank(),
+            panel.border = element_blank(),
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text = element_text(face = "bold"),
+            plot.margin = margin()
+         )
+
+      # Middle
+      middle <- ggplot(tbl2,aes(x = yaxis, y = est, ymin = lcl,
+                                ymax = ucl)) +
+         geom_hline(yintercept = 1, colour = "red") +
+         scale_x_discrete(limits=rev) +
+         ylab(unique(tbl$estci_txt)) +
+         geom_errorbar(width = 0.1) +
+         geom_point() +
+         theme_classic() +
+         theme(
+            strip.text.y = element_text(face = "bold", size = 12),
+            legend.position = "none",
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.line.y = element_blank(),
+            plot.margin = margin()
+         ) +
+         coord_flip()
+
+      # Right
+      tmp <- cbind(tbl2$yaxis,stack(tbl2[,colnames(tbl2) %in% c("pval","p_interaction")]))
+      colnames(tmp)[1] <- "yaxis"
+
+      right <- ggplot(tmp, aes(y=yaxis, x=ind, label=values)) +
+         geom_text(size = 3) +
+         scale_x_discrete(position = "top",expand=expand_scale(mult = c(0.2, 0.5)),
+                          labels=c("p-value",
+                                   "p-value\nfor interaction")) +
+         scale_y_discrete(limits=rev) +
+         labs(y = NULL, x = NULL) +
+         theme_classic() +
+         theme(
+            panel.grid.major = element_blank(),
+            panel.border = element_blank(),
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text.y = element_blank(),
+            axis.text.x = element_text(face="bold"),
+            plot.margin = margin()
+         )
+
+      print(wrap_plots(left,middle,right,widths = c(3,2,2)))
+
    }
+
+
 }
+
+
+
+
+
