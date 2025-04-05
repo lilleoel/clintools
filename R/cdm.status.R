@@ -6,12 +6,13 @@
 #'
 #' @name cdm.status
 #'
-#' @usage cdm.status(d, sample.size, planned.years, rolling.average)
+#' @usage cdm.status(d, sample.size, planned.years, rolling.average, caption)
 #'
 #' @param d list of dates for each participant included.
 #' @param sample.size the planned sample size
 #' @param planned.years the planned duration of the trial
 #' @param rolling.average the number of participant to be included to calculate the predicted inclusion rate
+#' @param caption boolean to add or remove a small description of the figure.
 #'
 #' @return returns a list where `$fig` is the figure; `$txt` is as summary
 #' of the findings; and `$df`is the dataframe generated in the function.
@@ -32,7 +33,7 @@
 # planned.years <- 1.5
 # rolling.average <- 10
 
-cdm.status <- function(d, sample.size, planned.years=2, rolling.average=10){
+cdm.status <- function(d, sample.size, planned.years=2, rolling.average=10, caption=T){
    out <- NULL
 
    # Create data.frame
@@ -86,18 +87,23 @@ cdm.status <- function(d, sample.size, planned.years=2, rolling.average=10){
       theme_classic() +
       theme(legend.position = "bottom", legend.title = element_blank(),
             plot.margin = margin(t=10),
-            plot.caption.position = "plot",
-            plot.caption = element_text(hjust = 0))
+            plot.caption = element_text(face="italic", hjust=0),
+            plot.caption.position = "plot")
+
+   if(caption){
+      out$fig <- out$fig +
+         labs(caption="Overview of the enrollment rate.")
+   }
 
    out$df <- tmp
 
    out$txt <- paste0("The trial has been running for ",
                      round(max(tmp$diffdates[!is.na(tmp$cum.n)])/365.25,1), " years (",
                      min(tmp$Date[tmp$cum.n != 0],na.rm=T), "). Until now ",max(tmp$cum.n,na.rm=T),
-                     " participants has been included."  )
+                     " participants have been included."  )
 
    if(!is.na(rolling.average) & max(tmp$cum.n,na.rm=T) > rolling.average){
-      out$txt <- paste(out$txt,paste0("Based on the last ", rolling.average, " participants there is an average of ", avg.days, " days between each inclusion. Thus, inclusion must be continued for another ", round(days.to.end/365.25,1), " years (", rlx[2],") to reach the required sample size (n=", sample.size,").\n\n"))
+      out$txt <- paste(out$txt,paste0("Based on the last ", rolling.average, " participants there is an average of ", avg.days, " days between each inclusion. Thus, inclusion must be continued for another approx. ", round(days.to.end/365.25,1), " years (", rlx[2],") to reach the required sample size (n=", sample.size,").\n\n"))
    }
 
    return(out)

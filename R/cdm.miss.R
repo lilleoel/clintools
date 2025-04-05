@@ -6,7 +6,7 @@
 #'
 #' @name cdm.miss
 #'
-#' @usage cdm.miss(df, id, cols, fudate, lostFU, filter, blind)
+#' @usage cdm.miss(df, id, cols, fudate, lostFU, filter, blind, caption)
 #'
 #' @param df      dateframe to be assessed for missing data
 #' @param id      column-name for unique id's
@@ -17,6 +17,7 @@
 #' for those with missing or waiting for data, and 'missing' for only those
 #' with missing data
 #' @param blind boolean if TRUE, participant IDs will be blinded.
+#' @param caption boolean to add or remove a small description of the figure.
 #'
 #' @return Returns a full markdown output.
 #'
@@ -34,9 +35,15 @@
 #
 # ==== FUNCTION ====
 
-# fudate = NULL; lostFU = NULL; filter = "all"; blind = F
+# df <- tmp_f
+# id="pt_id"
+# cols=form_longnames
+# fudate = names(form_longnames)
+# lostFU = "lostfu"
+# filter="missing"
+#  filter = "all"; blind = F
 
-cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all", blind = F){
+cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all", blind = F, caption=T){
    df <- data.frame(df,check.names = F)
    if(length(cols) > 25) stop("No more than 25 columns can be monitored")
 
@@ -68,14 +75,21 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
    # 0 complete; 1 missing; 2 waiting; 3 lostFU
    for(i in 1:length(cols)){
       tmp[,cols[i]] <- is.na(tmp[,cols[i]])*1
-      tmp[tmp[[fudate[i]]] >= Sys.Date() & tmp[,cols[i]] == 1,cols[i]] <- 2
+      tmp[[fudate[i]]] <- as.numeric(round(
+         difftime(Sys.Date(),as.Date(tmp[[fudate[i]]]),units="days")))
+      tmp[tmp[[fudate[i]]] < 0 & tmp[,cols[i]] == 1,cols[i]] <- 2
       tmp[tmp[[lostFU]] & tmp[[cols[i]]] > 0,cols[i]] <- 3
+
+      tmp[tmp[[cols[i]]] != 1,fudate[i]] <- NA
    }
 
    #Summarise missing
    if(length(cols) == 0){  stop("No columns defined to assess missing data")
-   }else if(length(cols) == 1){ tmp$Missing <- tmp[,cols]
-   }else{ tmp$Missing <- rowSums(tmp[,cols] == 1) }
+   }else if(length(cols) == 1){
+      tmp$`Missing for...` <- paste(tmp[[fudate]],"days")
+   }else{
+      tmp$`Missing for...` <- apply(tmp[,fudate],1,FUN=function(x)ifelse(all(is.na(x)),0,paste(max(x,na.rm=T),"days")))
+   }
 
    tmp$label[rowSums(tmp[,cols]) == 0] <- "Complete"
    tmp$label[rowSums(tmp[,cols] == 2) > 0] <- "Waiting"
@@ -115,9 +129,9 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
    for(i in 1:add.n) tmp <-rbind(tmp,c(paste(rep(" ",i),collapse=""),rep(NA,ncol(tmp)-1)))
 
    if(!is.null(names(cols))){
-      cols <- c(`Missing`="Missing",cols)
+      cols <- c(`Missing for...`="Missing for...",cols)
    }else{
-      cols <- c("Missing",cols)
+      cols <- c("Missing for...",cols)
    }
 
    #Control if no missing data
@@ -134,15 +148,15 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
       tmp$fillz[tmp$variable == "Lost"] <- "blue"
       tmp$fillz[is.na(tmp$variable)] <- "white"
 
-      tmp$fillz[tmp$time == "Missing" & tmp$label == "Missing"] <- "red"
-      tmp$fillz[tmp$time == "Missing" & tmp$label == "Complete"] <- "green"
-      tmp$fillz[tmp$time == "Missing" & tmp$label == "Waiting"] <- "yellow"
-      tmp$fillz[tmp$time == "Missing" & tmp$label == "Lost"] <- "blue"
+      tmp$fillz[tmp$time == "Missing for..." & tmp$label == "Missing"] <- "red"
+      tmp$fillz[tmp$time == "Missing for..." & tmp$label == "Complete"] <- "green"
+      tmp$fillz[tmp$time == "Missing for..." & tmp$label == "Waiting"] <- "yellow"
+      tmp$fillz[tmp$time == "Missing for..." & tmp$label == "Lost"] <- "blue"
 
       tmp$colz[!is.na(tmp$variable)] <- "black"
       tmp$colz[is.na(tmp$variable)] <- "white"
 
-      tmp$labelz[tmp$time == "Missing"] <- tmp$variable[tmp$time == "Missing"]
+      tmp$labelz[tmp$time == "Missing for..."] <- tmp$variable[tmp$time == "Missing for..."]
       tmp$labelz[tmp$labelz == 0 & !is.na(tmp$labelz)] <- NA
       tmp$labelz[tmp$fillz == "yellow" | tmp$fillz == "blue"] <- NA
 
@@ -159,28 +173,32 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
 
       for(i in 1:(length(pts)/50)){
          tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*50+1):(i*50))]),]
-         suppressWarnings(
-            print(
-               ggplot(tmp2,
-                  aes(x=tmp2[["time"]],y=get(id),fill=tmp2[["fillz"]],
-                  label=tmp2[["labelz"]], color=tmp2[["colz"]])) +
-               geom_tile() +
-               geom_text(size=2.5,color="black") +
-               scale_fill_manual(
-                  values=c(`red`="#FF5733",`green`="#50C878",`yellow`="#FFEA00",
-                  `blue`="#6495ED",`white`="#FFFFFF")) +
-               scale_color_manual(
-                  values=c(`black`="black",`white`="#FFFFFF",`none`="")) +
-               scale_x_discrete(position = "top") +
-               scale_y_discrete(labels=function(x) gsub(" ", "", x, fixed=TRUE),
-                  limits=rev) +
-               theme_classic() +
-               theme(legend.position = "none", axis.title = element_blank(),
+         out <- ggplot(tmp2,
+                aes(x=tmp2[["time"]],y=get(id),fill=tmp2[["fillz"]],
+                    label=tmp2[["labelz"]], color=tmp2[["colz"]])) +
+            geom_tile() +
+            geom_text(size=2.5,color="black") +
+            scale_fill_manual(
+               values=c(`red`="#FF5733",`green`="#50C878",`yellow`="#FFEA00",
+                        `blue`="#6495ED",`white`="#FFFFFF")) +
+            scale_color_manual(
+               values=c(`black`="black",`white`="#FFFFFF",`none`="")) +
+            scale_x_discrete(position = "top") +
+            scale_y_discrete(labels=function(x) gsub(" ", "", x, fixed=TRUE),
+                             limits=rev) +
+            theme_classic() +
+            theme(legend.position = "none", axis.title = element_blank(),
                   axis.line = element_blank(), axis.ticks.y = element_blank(),
                   axis.text.x = element_text(angle=60,hjust=0),
-                  plot.margin = margin(r=25))
-               )
-         )
+                  plot.margin = margin(r=25),
+                  plot.subtitle = element_text(face="italic", hjust=0,size = 9),
+                  plot.title.position = "plot")
+
+         if(caption & i == 1){
+            out <- out + labs(subtitle="Overview of each participant and their completeness. Participants with all forms completed are not shown.")
+         }
+
+         suppressWarnings(print(out))
          cat("\n\n")
       }
    }

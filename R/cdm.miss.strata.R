@@ -20,6 +20,7 @@
 #' @param blind boolean if TRUE, participant IDs will be blinded.
 #' @param n_sites number of sites presented per figure
 #' @param setting setting if it is a full report "full" or if it a public report "short" or if it is site specific where the site name is set, e.g. "SKM".
+#' @param caption boolean to add or remove a small description of the figure.
 #'
 #' @return Returns a full markdown output.
 #'
@@ -38,7 +39,7 @@
 
 # fudate = NULL; lostFU = NULL; filter = "all"; blind = F
 
-cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, filter = "all", blind = F, n_sites=15,setting="full"){
+cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, filter = "all", blind = F, n_sites=15,setting="full", caption=T){
 
    # # TEST
    # df = dff[!is.na(dff$rand_date),]
@@ -162,26 +163,31 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
 
       for(i in 1:(length(pts)/n_sites)){
          tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*n_sites+1):(i*n_sites))]),]
-         suppressWarnings(
-            print(
-               ggplot(tmp2,
-                      aes(x=tmp2[["time"]],y=get(id), color=tmp2[["colz"]],
-                          label=tmp2[["label"]], fill=tmp2[["variable"]])) +
-                  geom_tile() +
-                  geom_text(size=2.5,color="black") +
-                  scale_color_manual(
-                     values=c(`black`="black",`white`="#FFFFFF",`none`="")) +
-                  scale_fill_gradient(low = "white", high = "red") +
-                  scale_x_discrete(position = "top") +
-                  scale_y_discrete(labels=function(x) gsub(" ", "", x, fixed=TRUE),
-                                   limits=rev) +
-                  theme_classic() +
-                  theme(legend.position = "none", axis.title = element_blank(),
-                        axis.line = element_blank(), axis.ticks.y = element_blank(),
-                        axis.text.x = element_text(angle=60,hjust=0),
-                        plot.margin = margin(r=25))
-            )
-         )
+         out <- ggplot(tmp2,
+                aes(x=tmp2[["time"]],y=get(id), color=tmp2[["colz"]],
+                    label=tmp2[["label"]], fill=tmp2[["variable"]])) +
+            geom_tile() +
+            geom_text(size=2.5,color="black") +
+            scale_color_manual(
+               values=c(`black`="black",`white`="#FFFFFF",`none`="")) +
+            scale_fill_gradient(low = "white", high = "red") +
+            scale_x_discrete(position = "top") +
+            scale_y_discrete(labels=function(x) gsub(" ", "", x, fixed=TRUE),
+                             limits=rev) +
+            theme_classic() +
+            theme(legend.position = "none", axis.title = element_blank(),
+                  axis.line = element_blank(), axis.ticks.y = element_blank(),
+                  axis.text.x = element_text(angle=60,hjust=0),
+                  plot.margin = margin(r=25,t=1),
+                  plot.subtitle = element_text(face="italic", hjust=0,size = 9),
+                  plot.title.position = "plot")
+
+         if(caption & i == 1){
+            out <- out + labs(subtitle="Percentage of participants who have incomplete data after a specified deadline overall and at each site.")
+         }
+
+
+         suppressWarnings(print(out))
          cat("\n\n")
       }
    }
