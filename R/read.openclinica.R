@@ -28,7 +28,7 @@ read.openclinica <- function(trial, link, prefix = 4, ids){
    linklist <- paste0("list?trialName=",trial)
    linkextract <- paste0("get?trialName=",trial,"&referenceName=")
 
-   json_data <- data.frame(suppressWarnings(jsonlite::fromJSON(paste(readLines(
+   json_data <- data.frame(suppressWarnings(fromJSON(paste(readLines(
       paste0(link,"list?trialName=",trial)), collapse=""))))
    json_data <- c(json_data[grepl("reference",colnames(json_data))][1,])
 
@@ -48,7 +48,7 @@ read.openclinica <- function(trial, link, prefix = 4, ids){
    }
 
    #Search for duplicate columns
-   dup_cols <- gsub("\\.x$|\\.y$|\\.1","",colnames(d))
+   dup_cols <- gsub("\\.x|\\.y|\\.1","",colnames(d))
    dup_cols <- unique(dup_cols[duplicated(dup_cols)])
    for(i in dup_cols){
       tmp <- d[,grepl(paste0(i),colnames(d))]
