@@ -55,6 +55,7 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
    }else if(length(fudate) == 1){
       df[,paste0("fudate",1:length(cols))] <- as.character(df[[fudate]])
       df[,paste0("fudate",1:length(cols))] <- lapply(df[,paste0("fudate",1:length(cols))], as.Date)
+      fudate <- paste0("fudate",1:length(cols))
    }else{
       df[,paste0("fudate",1:length(cols))] <- df[,fudate]
       fudate <- paste0("fudate",1:length(cols))
