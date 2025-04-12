@@ -6,7 +6,8 @@
 #'
 #' @name cdm.miss.strata
 #'
-#' @usage cdm.miss.strata(df, id, cols, strata, fudate, lostFU, filter, blind, n_sites, setting)
+#' @usage cdm.miss.strata(df, id, cols, strata, fudate, lostFU, filter, blind,
+#' n_sites, setting, caption)
 #'
 #' @param df      dateframe to be assessed for missing data
 #' @param id      column-name for unique id's

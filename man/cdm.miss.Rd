@@ -4,7 +4,7 @@
 \alias{cdm.miss}
 \title{Quiet any output (cdm.miss)}
 \usage{
-cdm.miss(df, id, cols, fudate, lostFU, filter, blind)
+cdm.miss(df, id, cols, fudate, lostFU, filter, blind, caption)
 }
 \arguments{
 \item{df}{dateframe to be assessed for missing data}
@@ -22,6 +22,8 @@ for those with missing or waiting for data, and 'missing' for only those
 with missing data}
 
 \item{blind}{boolean if TRUE, participant IDs will be blinded.}
+
+\item{caption}{boolean to add or remove a small description of the figure.}
 }
 \value{
 Returns a full markdown output.

@@ -338,15 +338,56 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                                `20`=65,`21`=68,`22`=71,`23`=74,`24`=78,`25`=81,`26`=85,`27`=89,`28`=93,`29`=97,
                                                `30`=102,`31`=108,`32`=114,`33`=122,`34`=127)
       }
-   }else if(scale == "PARCA-R"){
-      # **************************
-      # ADOS-2 - TODO ####
-      # **************************
+   }else if(scale == "ADOS-2"){
+   # **************************
+   # ADOS-2 - UNVALIDATED ####
+   # **************************
+      # if(length(questions) != 46) stop("There must be 46 questions to calculate ADOS-2")
+      # if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      # if(is.null(d[[module]])) stop("There must be a column for module in the data frame.")
+      #
+      # d <- df[,c(id,questions,age.months,module)]
+      # d[,questions] <- lapply(d[,questions],as.numeric)
+      #
+      # # Change 5 to 8 to 0
+      # d[,questions] <- lapply(d[,questions], function(x) {
+      #    if (is.numeric(x)) { x[x >= 5 & x <= 8] <- 0 }; return(x) })
+      #
+      # # Calculate domains
+      # domains <- list(
+      #    ados_sa_raw.0.0.1220 = c(2,8,10,13,14,15,21:24),
+      #    ados_sa_raw.0.3.2130 = c(2,8,10,13,14,15,21:24),
+      #    ados_sa_raw.0.0.2130 = c(7,10,13,16:18,22:22),
+      #    ados_ir_raw = c(0,0)
+      # )
+      #
+      # for(i in 1:length(domains)){
+      #    n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
+      #
+      #
+      #
+      #    d[[names(domains)[i]]] <-
+      #       (
+      #          (rowSums(d[,questions[domains[[i]]]],na.rm=T)-
+      #              (length(domains[[i]])-n_miss)
+      #          )/
+      #             ((length(domains[[i]])-n_miss)*5)
+      #       )*100# Calculate means
+      #
+      #    # Ensure more than 90% of the questions has been answered
+      #    if(i %in% c(2,3)){
+      #       d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > 1] <- NA
+      #    }else{
+      #       d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > 0] <- NA
+      #    }
+      # }
+
+
 
    }else if(scale == "WHOQOL-BREF"){
-   # ******************************
-   # WHOQOL-BREF - UNVALIDATED ####
-   # ******************************
+      # ******************************
+      # WHOQOL-BREF - UNVALIDATED ####
+      # ******************************
       if(length(questions) != 26) stop("There must be 26 questions to calculate WHOQOL-BREF")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
@@ -487,7 +528,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       if(length(questions) != 1) stop("There must be 1 raw score calculate Mulle t-score")
       if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
       d <- df[,c(id,questions,age.months)]
-      d[,questions] <- lapply(d[,questions],as.numeric)
+      d[[questions]] <- as.numeric(d[[questions]])
 
       # Calculate T-scores from individual age
       tage <- list(NA,
@@ -900,9 +941,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
 
    }else if(scale == "CBI"){
-   # **************************
-   # CBI ######################
-   # **************************
+      # **************************
+      # CBI ######################
+      # **************************
       if(length(questions) != 19) stop("There must be 19 questions to calculate CBI.")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],function(x)
@@ -951,9 +992,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       o <- d[,!(colnames(d) %in% questions)]
 
    }else if(scale == "Kidscreen-52"){
-   # **************************
-   # Kidscreen-52 ##########
-   # **************************
+      # **************************
+      # Kidscreen-52 ##########
+      # **************************
       #Reverse scoring
       if(length(questions) != 52) stop("There must be 52 questions to calculate KIDSCREEN-52.")
       d <- df[,c(id,questions)]
@@ -1083,9 +1124,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          stop("For Kidscreen-52 'setting' must be either 'proxy' or 'self'")
       }
    }else if(scale == "SF-36"){
-   # **************************
-   # SF-36 ####################
-   # **************************
+      # **************************
+      # SF-36 ####################
+      # **************************
       if(length(questions) != 36) stop("There must be 36 questions to calculate SF-36")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
