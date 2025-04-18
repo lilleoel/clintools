@@ -339,49 +339,119 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                                `30`=102,`31`=108,`32`=114,`33`=122,`34`=127)
       }
    }else if(scale == "ADOS-2"){
-   # **************************
+   #**************************
    # ADOS-2 - UNVALIDATED ####
-   # **************************
-      # if(length(questions) != 46) stop("There must be 46 questions to calculate ADOS-2")
-      # if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
-      # if(is.null(d[[module]])) stop("There must be a column for module in the data frame.")
-      #
-      # d <- df[,c(id,questions,age.months,module)]
-      # d[,questions] <- lapply(d[,questions],as.numeric)
-      #
-      # # Change 5 to 8 to 0
-      # d[,questions] <- lapply(d[,questions], function(x) {
-      #    if (is.numeric(x)) { x[x >= 5 & x <= 8] <- 0 }; return(x) })
-      #
-      # # Calculate domains
-      # domains <- list(
-      #    ados_sa_raw.0.0.1220 = c(2,8,10,13,14,15,21:24),
-      #    ados_sa_raw.0.3.2130 = c(2,8,10,13,14,15,21:24),
-      #    ados_sa_raw.0.0.2130 = c(7,10,13,16:18,22:22),
-      #    ados_ir_raw = c(0,0)
-      # )
-      #
-      # for(i in 1:length(domains)){
-      #    n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
-      #
-      #
-      #
-      #    d[[names(domains)[i]]] <-
-      #       (
-      #          (rowSums(d[,questions[domains[[i]]]],na.rm=T)-
-      #              (length(domains[[i]])-n_miss)
-      #          )/
-      #             ((length(domains[[i]])-n_miss)*5)
-      #       )*100# Calculate means
-      #
-      #    # Ensure more than 90% of the questions has been answered
-      #    if(i %in% c(2,3)){
-      #       d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > 1] <- NA
-      #    }else{
-      #       d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > 0] <- NA
-      #    }
-      # }
+   #**************************
+   if(length(questions) != 46) stop("There must be 46 questions to calculate ADOS-2")
+   if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+   if(is.null(d[[module]])) stop("There must be a column for module in the data frame.")
 
+   d <- df[,c(id,questions,age.months,module)]
+   d[,questions] <- lapply(d[,questions],as.numeric)
+
+   # ADOS QUALITY
+   d$ados_quality <- rowSums(d[,questions] == 9,na.rm=T)
+   d$ados_quality[rowSums(is.na(d[,questions])) == length(questions)] <- NA
+
+   # Change 5 to 8 to 0
+   d[,questions] <- lapply(d[,questions], function(x) {
+      if (is.numeric(x)) { x[x >= 5 & x <= 9] <- 0 }; return(x) })
+   d[,questions] <- lapply(d[,questions], function(x) {
+      if (is.numeric(x)) { x[x == 3] <- 2 }; return(x) })
+
+   # Identify correct algorithm
+   # - Toddler-module
+   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+      d[[module]] == 0 & (
+         (d[[age.months]] >= 12 & d[[age.months]] <= 20) |
+         (d[[questions[1]]] %in% c(3,4) &
+             d[[age.months]] >= 21 & d[[age.months]] <= 30)
+      ),"algorithm"] <- "Toddler1"
+   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+      d[[module]] == 0 & d[[questions[1]]] %in% c(0:2) &
+      d[[age.months]] >= 21 & d[[age.months]] <= 30,"algorithm"] <- "Toddler2"
+   # - Module 1
+   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+        d[[module]] == 1 & d[[questions[1]]] %in% c(3,4)
+     ,"algorithm"] <- "Module11"
+   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+        d[[module]] == 1 & d[[questions[1]]] %in% c(0:2)
+     ,"algorithm"] <- "Module12"
+   # - Module 2
+   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+        d[[module]] == 2,"algorithm"] <- "Module2"
+   # - Module 3
+   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+        d[[module]] == 3,"algorithm"] <- "Module3"
+
+   # Calculate domains
+   domains <- list(
+      Toddler1.ados_sa_raw = c(3,9,11,14,15,16,24,25,28,29),
+      Toddler1.ados_ir_raw = c(4,38,39,42),
+      Toddler2.ados_sa_raw = c(8,11,14,15,17,18,19,25,29,32,34),
+      Toddler2.ados_ir_raw = c(38,39,42),
+      Module11.ados_sa_raw = c(3,9,11,13,14,15,19,22,23,24),
+      Module11.ados_ir_raw = c(4,38,39,41),
+      Module12.ados_sa_raw = c(3,8,9,11,13,14,15,19,22,24),
+      Module12.ados_ir_raw = c(6,38,39,41),
+      Module2.ados_sa_raw = c(7,8,11,12,13,15,16,18,23,24),
+      Module2.ados_ir_raw = c(5,38,39,41),
+      Module3.ados_sa_raw = c(8,9,10,11,12,14,17,19,22,23),
+      Module3.ados_ir_raw = c(5,38,39,41)
+   )
+
+   # Calculate raw scores
+   for(i in unique(na.omit(d$algorithm))){
+      # i <- "Module11"
+      cur_dom <- domains[grepl(i,names(domains))]
+      names(cur_dom) <- gsub(paste0(i,"\\."),"",names(cur_dom))
+
+      for(j in 1:length(cur_dom)){
+         tst <- !is.na(d$algorithm) & d$algorithm == i
+         n_miss <- rowSums(is.na(d[tst,questions[cur_dom[[j]]]]))
+         d[tst,names(cur_dom)[j]] <-
+            rowSums(d[tst,questions[cur_dom[[j]]]],na.rm=T)
+         # Ensure more than 90% of the questions has been answered
+         d[tst,n_miss/length(cur_dom[[j]]) > 0.1] <- NA
+      }
+   }
+   d$ados_tot_raw <- d$ados_sa_raw+d$ados_ir_raw
+
+   # Convert to scale score
+   rawtoscales <- questionaire_helper()$ados2
+   for(i in unique(na.omit(d$algorithm))){
+      # i <- "Toddler1"
+      cur_r2s <- rawtoscales[grepl(i,names(rawtoscales))]
+      names(cur_r2s) <- gsub(paste0(i,"\\."),"",names(cur_r2s))
+
+      for(j in 1:length(cur_r2s)){
+         # j <- 1
+         rtst <- !is.na(d$algorithm) & d$algorithm == i
+         ctst <- grepl(substr(names(cur_r2s[j]),1,8),colnames(d)) &
+            !grepl("css",colnames(d))
+
+         if(class(cur_r2s[[j]]) == "list"){
+            if(sum(rtst) > 0){
+               d[rtst,names(cur_r2s)[j]] <- dplyr::recode(d[rtst & rtst2,ctst],
+                                          !!!cur_r2s[[j]])
+            }
+         }else if(class(cur_r2s[[j]]) == "data.frame"){
+            for(k in 1:ncol(cur_r2s[[j]])){
+               rtst2 <- !is.na(d[[age.months]]) &
+                  floor(d[[age.months]]/12) == colnames(cur_r2s[[j]])[k]
+
+               nmd_lst <- cur_r2s[[j]][,k]
+               names(nmd_lst) <- rownames(cur_r2s[[j]])
+               if(sum(rtst & rtst2) > 0){
+                  d[rtst & rtst2,names(cur_r2s)[j]] <- dplyr::recode(
+                     d[rtst & rtst2,ctst],!!!nmd_lst)
+               }
+            }
+         }
+      }
+   }
+
+   o <- d[,!(colnames(d) %in% c("algorithm",age.months,module,questions))]
 
 
    }else if(scale == "WHOQOL-BREF"){
