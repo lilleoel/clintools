@@ -22,7 +22,7 @@
 #' }
 #' @export
 #'
-
+#' @importFrom rjson fromJSON
 #
 # ==== FUNCTION ====
 
