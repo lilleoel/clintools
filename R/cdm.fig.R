@@ -73,6 +73,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       }
       zite <- "blind_site"
    }else{
+      tmp$site <- df[[site]]
       zite <- "site"
    }
    tmp <- data.frame(tmp)
