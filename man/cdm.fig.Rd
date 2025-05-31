@@ -4,7 +4,7 @@
 \alias{cdm.fig}
 \title{Central data monitoring to assess deviations (cdm.fig)}
 \usage{
-cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting)
+cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting, blind)
 }
 \arguments{
 \item{df}{dateframe to be assessed for missing data}
@@ -23,6 +23,8 @@ the blinded site table}
 \item{nmin}{minimum number of variables in site to be presented}
 
 \item{setting}{if "full" as default it will show all data, if anything else than "full" no site strata will be presented.}
+
+\item{blind}{should sites be blinded (default is T)}
 }
 \value{
 Returns a full markdown output.

@@ -21,6 +21,8 @@
 #' ids = c("ssid","site_id"))
 #' }
 #' @export
+#'
+#' @importFrom jsonlite fromJSON
 #
 # ==== FUNCTION ====
 
@@ -35,11 +37,16 @@ read.openclinica <- function(trial, link, prefix = 4, ids){
    d <- NULL
    for(i in 1:length(json_data)){
       tmp <- json_data[i]
-      tmp_data <- tryCatch(read.csv2(
+      if(nchar(tmp[[1]]) == 0) next
+      tmp_data <- suppressWarnings(tryCatch(read.csv2(
          paste0(link,"get?trialName=",trial,"&referenceName=",json_data)[i],
          sep="\t",na.strings = ".",fileEncoding="latin1")
-         ,error=function(e) e, warning=function(w) w)
-      if(any(class(tmp_data) %in% c("error","try-error","warning"))) next
+         ,error=function(e) e))
+      if(any(class(tmp_data) %in% c("error"))){
+         warning(paste("Error in",json_data[i],"-",i,"-",
+                       tmp_data$message,"\n"))
+         next
+      }
 
       colnames(tmp_data)[!colnames(tmp_data) %in% ids] <- paste0(substr(tmp,1,prefix),".",colnames(tmp_data)[!colnames(tmp_data) %in% ids])
 

@@ -420,7 +420,7 @@ tbl <- function(df,strata = NULL,vars,
             tmp_d <- d
             tmp_d[[j]] <- as.numeric(as.factor(tmp_d[[j]]))-1
 
-            m1 <- glm(formel, data = tmp_d, family=quasipoisson)
+            m1 <- glm(formel, data = tmp_d, family=binomial(log))
             out$txt <- "glm"
          }
 

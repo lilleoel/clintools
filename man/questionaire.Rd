@@ -26,7 +26,7 @@ Returns summarised information in dataframe.
 \code{questionaire()} is a function which calculates scores from a questionaire.
 }
 \details{
-\subsection{PARCA-R (Parent Report of Children’s Abilities-Revised)}{
+\subsection{PARCA-R (Parent Report of Children's Abilities-Revised)}{
 
 This only calculates the scores for the 34 Non-verbal cognitive score. The questionaire needs to have 34 questions, \code{scale = "PARCA-R"}, and the following additional parameters need to be set:
 \itemize{

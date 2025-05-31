@@ -6,7 +6,7 @@
 #'
 #' @name cdm.fig
 #'
-#' @usage cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting)
+#' @usage cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting, blind)
 #'
 #' @param df      dateframe to be assessed for missing data
 #' @param col     column to be assessed
@@ -17,6 +17,7 @@
 #' the blinded site table
 #' @param nmin    minimum number of variables in site to be presented
 #' @param setting if "full" as default it will show all data, if anything else than "full" no site strata will be presented.
+#' @param blind should sites be blinded (default is T)
 #'
 #' @return Returns a full markdown output.
 #'
@@ -50,7 +51,7 @@
 # setting="SKM"
 
 cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
-                    output = "fig", nmin = 5, setting="full"){
+                    output = "fig", nmin = 5, setting="full", blind=T){
    if(is.na(seedno)) seedno <- as.numeric(Sys.Date())
 
    tmp <- NULL
@@ -59,7 +60,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
    if(is.na(site)){
       tmp$site <- "All"
       zite <- "site"
-   }else{
+   }else if(blind){
       tmp$site <- as.character(df[[site]])
       set.seed(seedno)
       blind <- NULL
@@ -71,6 +72,8 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
          tmp$blind_site[tmp$blind_site == blind$site[j]] <- blind$blind[j]
       }
       zite <- "blind_site"
+   }else{
+      zite <- "site"
    }
    tmp <- data.frame(tmp)
    tmp$col[nchar(as.character(tmp$col)) == 0 | is.na(tmp$col)] <- NA

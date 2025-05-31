@@ -19,7 +19,7 @@
 #'
 #' @details
 #'
-#' ## PARCA-R (Parent Report of Children’s Abilities-Revised)
+#' ## PARCA-R (Parent Report of Children's Abilities-Revised)
 #'
 #' This only calculates the scores for the 34 Non-verbal cognitive score. The questionaire needs to have 34 questions, `scale = "PARCA-R"`, and the following additional parameters need to be set:
 #' * `birthday` | The name of the column for the birthday; if children are born before 37 weeks of gestatoin it is suggested to have corrected age; and then the column should be date of term.
@@ -74,6 +74,7 @@
 #' }
 #'
 #' @importFrom dplyr recode
+#' @importFrom utils read.table
 #' @export
 #
 # ==== FUNCTION ====
@@ -83,14 +84,15 @@
 # # FOR TESTS
 
 questionaire <- function(df,id,questions,scale,prefix="",...){
+   list2env(list(...), envir = environment())
 
    if(!exists("setting")) setting <- NA
    o <- NULL
 
    if(scale == "AFEQ"){
-   # ***********************
-   # AFEQ - UNVALIDATED ####
-   # ***********************
+      # ***********************
+      # AFEQ - UNVALIDATED ####
+      # ***********************
       if(length(questions) != 48) stop("There must be 48 questions to calculate AFEQ")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
@@ -112,7 +114,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          afeq_cdus = c(23:36),
          afeq_cs = c(37:48),
          afeq_tot = c(1:48)
-         )
+      )
 
       for(i in 1:length(domains)){
 
@@ -187,9 +189,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       o <- d[,!(colnames(d) %in% questions)]
 
    }else if(scale == "MPCA"){
-   # ***********************
-   # MPCA - UNVALIDATED ####
-   # ***********************
+      # ***********************
+      # MPCA - UNVALIDATED ####
+      # ***********************
       if(length(questions) != 23) stop("There must be 23 questions to calculate MPCA")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
@@ -213,16 +215,16 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
 
    }else if(scale == "PedsQL4"){
-   # *************************
-   # PedQL4 - UNVALIDATED ####
-   # *************************
+      # *************************
+      # PedQL4 - UNVALIDATED ####
+      # *************************
       if(!(length(questions) %in% c(21,23))) stop("There must be either 21 or 23 questions to calculate PedsQL for 4.0 Generic Core ages 2-7")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
 
       # Change reverse questions
       recoding_rules <- list(
-         list(indices=c(1:length(questions)), mapping=setNames(c(0:4/4*100),c(0:4)))
+         list(indices=c(1:length(questions)), mapping=setNames(c(4:0/4*100),c(0:4)))
       )
       for (rule in recoding_rules) {
          d[,questions[rule$indices]] <- lapply(d[,questions[rule$indices]],
@@ -246,9 +248,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       o <- d[,!(colnames(d) %in% questions)]
 
    }else if(scale == "PRFQ"){
-   # *************************
-   # PRFQ - UNVALIDATED ######
-   # *************************
+      # *************************
+      # PRFQ - UNVALIDATED ######
+      # *************************
       if(length(questions) != 18) stop("There must be 18 questions to calculate PRFQ")
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
@@ -339,119 +341,242 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                                `30`=102,`31`=108,`32`=114,`33`=122,`34`=127)
       }
    }else if(scale == "ADOS-2"){
-   #**************************
-   # ADOS-2 - UNVALIDATED ####
-   #**************************
-   if(length(questions) != 46) stop("There must be 46 questions to calculate ADOS-2")
-   if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
-   if(is.null(d[[module]])) stop("There must be a column for module in the data frame.")
+      #**************************
+      # ADOS-2 - UNVALIDATED ####
+      #**************************
 
-   d <- df[,c(id,questions,age.months,module)]
-   d[,questions] <- lapply(d[,questions],as.numeric)
 
-   # ADOS QUALITY
-   d$ados_quality <- rowSums(d[,questions] == 9,na.rm=T)
-   d$ados_quality[rowSums(is.na(d[,questions])) == length(questions)] <- NA
+      if(length(questions) != 46) stop("There must be 46 questions to calculate ADOS-2")
+      if(is.null(df[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      if(is.null(df[[module]])) stop("There must be a column for module in the data frame.")
 
-   # Change 5 to 8 to 0
-   d[,questions] <- lapply(d[,questions], function(x) {
-      if (is.numeric(x)) { x[x >= 5 & x <= 9] <- 0 }; return(x) })
-   d[,questions] <- lapply(d[,questions], function(x) {
-      if (is.numeric(x)) { x[x == 3] <- 2 }; return(x) })
+      d <- df[,c(id,questions,age.months,module)]
+      d[,questions] <- lapply(d[,questions],as.numeric)
 
-   # Identify correct algorithm
-   # - Toddler-module
-   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
-      d[[module]] == 0 & (
-         (d[[age.months]] >= 12 & d[[age.months]] <= 20) |
-         (d[[questions[1]]] %in% c(3,4) &
-             d[[age.months]] >= 21 & d[[age.months]] <= 30)
-      ),"algorithm"] <- "Toddler1"
-   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
-      d[[module]] == 0 & d[[questions[1]]] %in% c(0:2) &
-      d[[age.months]] >= 21 & d[[age.months]] <= 30,"algorithm"] <- "Toddler2"
-   # - Module 1
-   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
-        d[[module]] == 1 & d[[questions[1]]] %in% c(3,4)
-     ,"algorithm"] <- "Module11"
-   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
-        d[[module]] == 1 & d[[questions[1]]] %in% c(0:2)
-     ,"algorithm"] <- "Module12"
-   # - Module 2
-   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
-        d[[module]] == 2,"algorithm"] <- "Module2"
-   # - Module 3
-   d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
-        d[[module]] == 3,"algorithm"] <- "Module3"
+      # ADOS QUALITY
+      d$ados_quality8 <- rowSums(d[,questions] == 8,na.rm=T)
+      d$ados_quality9 <- rowSums(d[,questions] == 9,na.rm=T)
 
-   # Calculate domains
-   domains <- list(
-      Toddler1.ados_sa_raw = c(3,9,11,14,15,16,24,25,28,29),
-      Toddler1.ados_ir_raw = c(4,38,39,42),
-      Toddler2.ados_sa_raw = c(8,11,14,15,17,18,19,25,29,32,34),
-      Toddler2.ados_ir_raw = c(38,39,42),
-      Module11.ados_sa_raw = c(3,9,11,13,14,15,19,22,23,24),
-      Module11.ados_ir_raw = c(4,38,39,41),
-      Module12.ados_sa_raw = c(3,8,9,11,13,14,15,19,22,24),
-      Module12.ados_ir_raw = c(6,38,39,41),
-      Module2.ados_sa_raw = c(7,8,11,12,13,15,16,18,23,24),
-      Module2.ados_ir_raw = c(5,38,39,41),
-      Module3.ados_sa_raw = c(8,9,10,11,12,14,17,19,22,23),
-      Module3.ados_ir_raw = c(5,38,39,41)
-   )
+      # Change 5-7 to 0
+      d[,questions] <- lapply(d[,questions], function(x) {
+         if (is.numeric(x)) { x[x >= 5 & x <= 7] <- 0 }; return(x) })
+      # Change 3 to 2
+      d[,questions[2:length(questions)]] <- lapply(d[,questions[2:length(questions)]], function(x) {
+         if (is.numeric(x)) { x[x == 3] <- 2 }; return(x) })
 
-   # Calculate raw scores
-   for(i in unique(na.omit(d$algorithm))){
-      # i <- "Module11"
-      cur_dom <- domains[grepl(i,names(domains))]
-      names(cur_dom) <- gsub(paste0(i,"\\."),"",names(cur_dom))
+      # Identify correct algorithm
+      # - Toddler-module
+      d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+           d[[module]] == 0 & (
+              (d[[age.months]] >= 12 & d[[age.months]] < 21) |
+                 (d[[questions[1]]] %in% c(3,4) &
+                     d[[age.months]] >= 21 & d[[age.months]] <= 30)
+           ),"algorithm"] <- "Toddler1"
+      d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+           d[[module]] == 0 & d[[questions[1]]] %in% c(0:2) &
+           d[[age.months]] >= 21 & d[[age.months]] <= 30,"algorithm"] <- "Toddler2"
+      # - Module 1
+      d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+           d[[module]] == 1 & d[[questions[1]]] %in% c(3,4)
+        ,"algorithm"] <- "Module11"
+      d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+           d[[module]] == 1 & d[[questions[1]]] %in% c(0:2)
+        ,"algorithm"] <- "Module12"
+      # - Module 2
+      d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+           d[[module]] == 2,"algorithm"] <- "Module2"
+      # - Module 3
+      d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
+           d[[module]] == 3,"algorithm"] <- "Module3"
 
-      for(j in 1:length(cur_dom)){
-         tst <- !is.na(d$algorithm) & d$algorithm == i
-         n_miss <- rowSums(is.na(d[tst,questions[cur_dom[[j]]]]))
-         d[tst,names(cur_dom)[j]] <-
-            rowSums(d[tst,questions[cur_dom[[j]]]],na.rm=T)
-         # Ensure more than 90% of the questions has been answered
-         d[tst,n_miss/length(cur_dom[[j]]) > 0.1] <- NA
-      }
-   }
-   d$ados_tot_raw <- d$ados_sa_raw+d$ados_ir_raw
+      # Calculate domains
+      domains <- list(
+         Toddler1.ados_sa_raw = c(3,9,11,14,15,16,24,25,28,29),
+         Toddler1.ados_ir_raw = c(4,38,39,42),
+         Toddler2.ados_sa_raw = c(8,11,14,15,17,18,19,25,29,32,34),
+         Toddler2.ados_ir_raw = c(38,39,42),
+         Module11.ados_sa_raw = c(3,9,11,13,14,15,19,22,23,24),
+         Module11.ados_ir_raw = c(4,38,39,41),
+         Module12.ados_sa_raw = c(3,8,9,11,13,14,15,19,22,24),
+         Module12.ados_ir_raw = c(6,38,39,41),
+         Module2.ados_sa_raw = c(7,8,11,12,13,15,16,18,23,24),
+         Module2.ados_ir_raw = c(5,38,39,41),
+         Module3.ados_sa_raw = c(8,9,10,11,12,14,17,19,22,23),
+         Module3.ados_ir_raw = c(5,38,39,41)
+      )
 
-   # Convert to scale score
-   rawtoscales <- questionaire_helper()$ados2
-   for(i in unique(na.omit(d$algorithm))){
-      # i <- "Toddler1"
-      cur_r2s <- rawtoscales[grepl(i,names(rawtoscales))]
-      names(cur_r2s) <- gsub(paste0(i,"\\."),"",names(cur_r2s))
+      # Calculate raw scores
+      for(i in unique(na.omit(d$algorithm))){
+         # i <- "Module11"
+         cur_dom <- domains[grepl(i,names(domains))]
+         names(cur_dom) <- gsub(paste0(i,"\\."),"",names(cur_dom))
 
-      for(j in 1:length(cur_r2s)){
-         # j <- 1
-         rtst <- !is.na(d$algorithm) & d$algorithm == i
-         ctst <- grepl(substr(names(cur_r2s[j]),1,8),colnames(d)) &
-            !grepl("css",colnames(d))
-
-         if(class(cur_r2s[[j]]) == "list"){
-            if(sum(rtst) > 0){
-               d[rtst,names(cur_r2s)[j]] <- dplyr::recode(d[rtst & rtst2,ctst],
-                                          !!!cur_r2s[[j]])
+         for(j in 1:length(cur_dom)){
+            tst <- !is.na(d$algorithm) & d$algorithm == i
+            n_miss <- rowSums(is.na(d[tst,questions[cur_dom[[j]]]]))
+            # Convert 8 and 9 to average
+            d[tst,questions[cur_dom[[j]]]] <-
+               lapply(d[tst,questions[cur_dom[[j]]]], function(x) {
+               if (is.numeric(x)) { x[x >= 8 & x <= 9] <- NA }; return(x) })
+            tmp <- round(rowMeans(d[tst,questions[cur_dom[[j]]]],na.rm=T))
+            for(k in 1:sum(tst)){
+               d[tst,questions[cur_dom[[j]]]][k,][is.na(d[tst,questions[cur_dom[[j]]]][k,])] <- tmp[[k]]
             }
-         }else if(class(cur_r2s[[j]]) == "data.frame"){
-            for(k in 1:ncol(cur_r2s[[j]])){
-               rtst2 <- !is.na(d[[age.months]]) &
-                  floor(d[[age.months]]/12) == colnames(cur_r2s[[j]])[k]
 
-               nmd_lst <- cur_r2s[[j]][,k]
-               names(nmd_lst) <- rownames(cur_r2s[[j]])
-               if(sum(rtst & rtst2) > 0){
-                  d[rtst & rtst2,names(cur_r2s)[j]] <- dplyr::recode(
-                     d[rtst & rtst2,ctst],!!!nmd_lst)
+            # Now calculate sum
+            d[tst,names(cur_dom)[j]] <-
+               rowSums(d[tst,questions[cur_dom[[j]]]],na.rm=T)
+            # Ensure more than 90% of the questions has been answered
+            d[tst,n_miss/length(cur_dom[[j]]) > 0.1] <- NA
+         }
+      }
+      d$ados_tot_raw <- d$ados_sa_raw+d$ados_ir_raw
+
+      # Convert to scale score
+      rawtoscales <- questionaire_helper()$ados2
+      for(i in unique(na.omit(d$algorithm))){
+         # i <- "Toddler1"
+         cur_r2s <- rawtoscales[grepl(i,names(rawtoscales))]
+         names(cur_r2s) <- gsub(paste0(i,"\\."),"",names(cur_r2s))
+
+         for(j in 1:length(cur_r2s)){
+            # j <- 1
+            rtst <- !is.na(d$algorithm) & d$algorithm == i
+            ctst <- grepl(substr(names(cur_r2s[j]),1,8),colnames(d)) &
+               !grepl("css",colnames(d))
+
+            if(is.numeric(cur_r2s[[j]])){
+               if(sum(rtst) > 0){
+                  d[rtst,names(cur_r2s)[j]] <- suppressWarnings(dplyr::recode(d[rtst,ctst],!!!cur_r2s[[j]]))
+               }
+            }else if(is.data.frame(cur_r2s[[j]])){
+               for(k in 1:ncol(cur_r2s[[j]])){
+
+                  rtst2 <- !is.na(d[[age.months]]) &
+                     floor(d[[age.months]]/12) == colnames(cur_r2s[[j]])[k]
+
+                  nmd_lst <- cur_r2s[[j]][,k]
+                  names(nmd_lst) <- rownames(cur_r2s[[j]])
+                  if(sum(rtst & rtst2) > 0){
+                     d[rtst & rtst2,names(cur_r2s)[j]] <- suppressWarnings(dplyr::recode(
+                        d[rtst & rtst2,ctst],!!!nmd_lst))
+                  }
                }
             }
          }
       }
-   }
 
-   o <- d[,!(colnames(d) %in% c("algorithm",age.months,module,questions))]
+      # o <- d[,!(colnames(d) %in% c("algorithm",age.months,module,questions))]
+      o <- d[,!(colnames(d) %in% c(module,questions))]
+
+   }else if(scale == "Vineland-3"){
+      #*******************************
+      # Vineland-3 - UNVALIDATED #####
+      #*******************************
+      if(length(questions) != 476) stop("There must be 476 questions to calculate Vineland-3")
+      if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      if (!"module" %in% names(list(...))) {
+         stop("Der skal defineres et modul - fx 'est' eller noget andet")
+      }
+
+      d <- df[,c(id,age.months,questions)]
+      d[,questions] <- lapply(d[,questions],as.numeric)
+
+      # Calculate raw score domains
+      domains <- list(
+         v_lyt = c(1:39),
+         v_tal = c(40:88),
+         v_laes = c(89:126),
+         v_per = c(127:181),
+         v_hje = c(182:211),
+         v_naer = c(212:251),
+         v_rel = c(252:286),
+         v_leg = c(287:322),
+         v_til = c(323:355),
+         v_gmo = c(356:398),
+         v_fmo = c(399:432),
+         v_ma = c(433:445),
+         v_mb = c(446:456),
+         v_mc = c(457:476)
+
+      )
+
+      if(module == "est"){
+         suffix <- "est"
+      }else{
+         suffix <- "raw"
+      }
+      # Calculate raw scores
+      for(i in 1:length(domains)){
+         n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
+
+         d[[paste0(names(domains)[i],"_",suffix)]] <- rowSums(d[,questions[domains[[i]]]],na.rm=T)
+
+         #Missing
+         if(module != "est"){
+            collapsed_rows <- apply(d[, questions[domains[[i]]]], 1, function(x) paste0(x, collapse = ""))
+
+            d[n_miss == length(domains[[i]]) |
+                 (grepl("NA",collapsed_rows) &
+                     !grepl("00000NA",collapsed_rows)),
+              paste0(names(domains)[i],"_",suffix)] <- NA
+         }else{
+            d[[paste0(names(domains)[i],"_",suffix)]] <-
+               round(d[[paste0(names(domains)[i],"_",suffix)]] / length(domains[[i]]),3)
+         }
+      }
+
+      if(module != "est"){
+
+         # Convert to scale score
+         rawtoscales <- questionaire_helper()$vineland3
+         for(i in names(rawtoscales)){
+            # i <- names(rawtoscales)[1]
+            rtst <- !is.na(d[[age.months]]) &
+               d[[age.months]] >= as.numeric(substr(i,2,3)) &
+               d[[age.months]] < as.numeric(substr(i,5,6))
+            cur_r2s <- data.frame(rawtoscales[grepl(i,names(rawtoscales))])
+            names(cur_r2s) <- gsub(paste0(i,"\\."),"",names(cur_r2s))
+
+            for(j in 1:ncol(cur_r2s)){
+               # j <- 1
+               ctst <- grepl(paste0("^v_",substr(names(cur_r2s[j]),1,3)),colnames(d)) &
+                  !grepl("ss",colnames(d))
+
+               nmd_lst <- cur_r2s[[j]]
+               names(nmd_lst) <- rownames(cur_r2s)
+               if(sum(rtst,na.rm=T) > 0){
+                  d[rtst,paste0("v_",names(cur_r2s)[j])] <- dplyr::recode(
+                     d[rtst,ctst],!!!nmd_lst)
+               }
+            }
+         }
+
+         #Calculate domain score
+         domains <- questionaire_helper()$vineland3$domains
+
+         d$v_kom_domscore <- dplyr::recode(
+            rowSums(d[,c("v_lyt_ss","v_tal_ss","v_laes_ss")]),
+            !!!setNames(domains$kom_domainscore, rownames(domains)))
+         d$v_fdd_domscore <- dplyr::recode(
+            rowSums(d[,c("v_per_ss","v_hje_ss","v_naer_ss")]),
+            !!!setNames(domains$fdd_domainscore, rownames(domains)))
+         d$v_soc_domscore <- dplyr::recode(
+            rowSums(d[,c("v_rel_ss","v_leg_ss","v_til_ss")]),
+            !!!setNames(domains$soc_domainscore, rownames(domains)))
+         d$v_mot_domscore <- dplyr::recode(
+            rowSums(d[,c("v_gmo_ss","v_fmo_ss")]),
+            !!!setNames(domains$mot_domainscore, rownames(domains)))
+
+         #Calculate gaf
+         gaf <- questionaire_helper()$vineland3$gaf
+         d$v_gaf <- dplyr::recode(
+            rowSums(d[,c("v_kom_domscore","v_fdd_domscore","v_soc_domscore")]),
+            !!!setNames(gaf$GAF, rownames(gaf)))
+      }
+
+
+      o <- d[,!(colnames(d) %in% c(age.months,questions))]
 
 
    }else if(scale == "WHOQOL-BREF"){
@@ -483,14 +608,12 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       for(i in 1:length(domains)){
          n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
 
-
-
          d[[names(domains)[i]]] <-
             (
                (rowSums(d[,questions[domains[[i]]]],na.rm=T)-
-                (length(domains[[i]])-n_miss)
+                   (length(domains[[i]])-n_miss)
                )/
-               ((length(domains[[i]])-n_miss)*5)
+                  ((length(domains[[i]])-n_miss)*4)
             )*100# Calculate means
 
          # Ensure more than 90% of the questions has been answered
@@ -577,13 +700,13 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                      129,130,131,131,132,132,133,134,134,135,135,136,137,137,138,
                      138,139,140,140,141,141,142,143,143,144,144,145,146,146,147,
                      147,148,149)
-         )
+      )
 
       for(i in 2:length(tscore)){
          tscore_df <- data.frame(tscore$raw[1:length(tscore[[i]])],
                                  tscore[[i]])
          raw_col <- colnames(d)[grepl(names(tscore)[i],colnames(d)) &
-                              !grepl("tscore",colnames(d))]
+                                   !grepl("tscore",colnames(d))]
 
          d[[paste0(names(tscore)[i],"_tscore")]] <- tscore_df[match(d[[raw_col]], tscore_df[[1]]),2]
       }
@@ -596,7 +719,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       # Mullen - UNVALIDATED ####
       # ******************************
       if(length(questions) != 1) stop("There must be 1 raw score calculate Mulle t-score")
-      if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      if(is.null(df[[age.months]])) stop("There must be a column for age in months in the data frame.")
       d <- df[,c(id,questions,age.months)]
       d[[questions]] <- as.numeric(d[[questions]])
 
@@ -676,7 +799,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       # NewReynell - UNVALIDATED ####
       # ******************************
       if(length(questions) != 8) stop("There must be 8 questions to calculate NewReynell")
-      if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      if(is.null(df[[age.months]])) stop("There must be a column for age in months in the data frame.")
       d <- df[,c(id,questions,age.months)]
       d[,questions] <- lapply(d[,questions],as.numeric)
 
@@ -753,7 +876,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                   102,104,106,108,110,112,114,116,118,120,123),
          `63` = c(69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,
                   69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,
-                  69,69,69,69,69,69,71,73,75,77,79,81,83,85,87,89,92,94,96,98,100,
+                  69,69,69,69,69,69,71,73,75,77,79,81,83,86,87,89,92,94,96,98,100,
                   102,104,106,108,110,112,114,116,118,120),
          `66` = c(69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,
                   69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,69,
@@ -789,226 +912,43 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       d <- df[,c(id,questions,age.months)]
       d[,questions] <- lapply(d[,questions],as.numeric)
 
-      tage <- list(NA,c(24:30),c(31:34),c(35:38),c(36:38),c(39:41),c(42:44),c(45:47),
-                   c(48:50),c(51:53),c(54:56),c(57:59),c(60:62),c(63:65),c(66:68),
-                   c(69:71),c(72:75),c(76:79),c(80:83),c(84:87),c(88:91),c(92:96))
+      tage <- questionaire_helper()$wppsi$age
+      tscore <- questionaire_helper()$wppsi$scores
 
-      # Calculate T-scores from individual age
-      tscore_bl <- list(raw = 0:60,
-         `24` = c(1,3,4,5,6,7,8,8,9,10,10,11,12,13,13,14,15,16,17,18,19,19,19,
-                  19,19,19,19,19,19,19,19,19,19,19,19),
-         `31` = c(1,3,4,5,6,7,8,8,9,10,10,11,12,13,13,14,15,16,17,18,19,19,19,
-                  19,19,19,19,19,19,19,19,19,19,19,19),
-         `35` = c(1,3,4,4,4,6,7,7,8,9,10,10,11,12,12,13,14,15,16,17,18,19,19,19,
-                  19,19,19,19,19,19,19,19,19,19,19),
-         `36` = c(1,2,3,4,4,5,6,6,7,8,9,9,10,11,11,12,13,14,16,17,18,19,19,19,
-                  19,19,19,19,19,19,19,19,19,19,19),
-         `39` = c(1,1,2,3,3,4,5,5,6,7,7,8,8,9,10,10,11,12,13,14,16,17,18,19,19,
-                  19,19,19,19,19,19,19,19,19,19),
-         `42` = c(1,1,1,2,2,3,4,4,5,6,6,7,7,8,9,10,10,11,12,13,14,15,17,18,19,
-                  19,19,19,19,19,19,19,19,19,19),
-         `45` = c(1,1,1,1,1,2,3,3,4,5,6,6,7,7,8,9,10,10,11,12,13,14,15,16,18,19,
-                  19,19,19,19,19,19,19,19,19),
-         `48` = c(1,1,1,1,1,1,2,2,3,4,5,6,6,7,7,8,9,10,10,11,12,13,14,15,16,18,
-                  19,19,19,19,19,19,19,19,19),
-         `51` = c(1,1,1,1,1,1,1,2,2,3,4,5,6,6,7,8,9,9,10,11,12,13,14,15,16,18,
-                  19,19,19,19,19,19,19,19,19),
-         `54` = c(1,1,1,1,1,1,1,1,2,2,3,4,5,6,6,7,8,9,10,11,12,13,14,15,16,17,
-                  18,19,19,19,19,19,19,19,19),
-         `57` = c(1,1,1,1,1,1,1,1,2,2,3,4,5,5,6,7,8,8,9,10,11,12,13,14,15,16,17,
-                  18,19,19,19,19,19,19,19),
-         `60` = c(1,1,1,1,1,1,1,1,1,2,3,4,4,5,5,6,7,8,9,9,10,11,12,13,14,15,16,
-                  17,18,19,19,19,19,19,19),
-         `63` = c(1,1,1,1,1,1,1,1,1,2,3,3,4,5,5,5,6,6,7,8,8,9,10,11,12,13,14,15,
-                  16,17,18,19,19,19,19),
-         `66` = c(1,1,1,1,1,1,1,1,1,1,2,3,4,4,5,5,5,6,7,7,8,9,10,10,11,12,13,14,
-                  15,16,17,18,19,19,19),
-         `69` = c(1,1,1,1,1,1,1,1,1,1,2,3,3,4,4,5,5,5,6,7,7,8,9,10,11,11,12,13,
-                  14,15,16,17,18,19,19),
-         `72` = c(1,1,1,1,1,1,1,1,1,1,1,2,3,3,4,5,5,5,6,6,7,8,9,10,11,11,12,13,
-                  14,15,16,17,18,19,19),
-         `76` = c(1,1,1,1,1,1,1,1,1,1,1,1,2,3,3,4,5,5,6,6,7,8,9,9,10,11,11,12,
-                  13,14,15,16,17,18,19),
-         `80` = c(1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,4,5,6,6,7,8,8,9,10,10,11,11,
-                  12,13,14,15,16,17,18),
-         `84` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,5,5,6,7,7,8,9,10,10,11,11,
-                  12,13,14,15,16,17,18),
-         `88` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,3,4,5,5,6,7,7,8,9,9,10,10,11,
-                  12,13,14,15,17,18),
-         `92` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,3,4,5,5,6,7,7,8,9,9,10,10,11,
-                  12,13,14,15,17,18)
-      )
+      for(i in 1:length(tage)){
+         tst <- floor(d[[age.months]]) %in% tage[[i]]
 
-      tscore_or <- list(raw = 0:60,
-         `24` = c(1,2,2,3,3,4,5,5,6,6,7,8,8,9,9,10,11,12,13,13,14,15,16,16,17,
-                  17,18,19,19,19,19,19),
-         `31` = c(1,2,2,3,3,4,5,5,6,6,7,8,8,9,9,10,11,12,13,13,14,15,16,16,17,
-                  17,18,19,19,19,19,19),
-         `35` = c(1,1,2,2,3,3,4,5,5,6,6,7,7,8,9,9,10,10,11,11,12,13,14,14,15,16,
-                  17,18,19,19,19,19),
-         `36` = c(1,1,2,2,3,3,4,5,5,6,6,7,7,8,9,9,10,10,11,11,12,13,14,14,15,16,
-                  17,18,19,19,19,19),
-         `39` = c(1,1,2,2,3,3,4,5,5,6,6,7,7,8,9,9,10,10,11,11,12,13,14,14,15,16,
-                  17,18,19,19,19,19),
-         `42` = c(1,1,1,1,1,2,3,3,3,3,4,4,5,5,6,7,7,8,8,9,9,10,10,12,13,14,15,
-                  16,17,18,18,19),
-         `45` = c(1,1,1,1,1,2,2,3,3,3,4,4,4,5,6,6,7,7,8,8,9,9,10,10,11,12,14,16,
-                  17,18,18,19),
-         `48` = c(1,1,1,1,1,1,2,2,3,3,3,4,4,5,5,6,6,7,8,8,9,9,10,10,10,12,14,16,
-                  17,18,18,19),
-         `51` = c(1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5,5,6,7,7,8,8,9,10,10,11,13,14,
-                  16,17,18,19),
-         `54` = c(1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,5,5,6,7,7,8,8,9,10,10,11,13,14,
-                  16,17,18,19),
-         `57` = c(1,1,1,1,1,1,1,1,2,2,3,3,3,3,4,4,5,5,6,7,7,8,9,9,10,10,12,14,
-                  16,17,18,19),
-         `60` = c(1,1,1,1,1,1,1,1,1,2,2,3,3,3,4,4,4,5,6,7,7,8,8,9,10,10,11,12,
-                  14,16,17,19),
-         `63` = c(1,1,1,1,1,1,1,1,1,2,2,3,3,3,4,4,4,5,6,6,7,8,8,9,9,9,10,12,14,
-                  16,17,19),
-         `66` = c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,6,6,7,8,8,9,9,10,12,14,
-                  16,17,19),
-         `69` = c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,6,6,7,8,8,9,9,10,11,13,
-                  15,17,19),
-         `72` = c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,6,6,7,7,8,8,9,10,11,12,
-                  14,17,19),
-         `76` = c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,10,12,
-                  14,16,19),
-         `80` = c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,10,12,
-                  14,16,19),
-         `84` = c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,6,6,7,7,8,8,10,11,
-                  14,16,18),
-         `88` = c(1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,10,13,
-                  15,18),
-         `92` = c(1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,10,13,
-                  15,18)
-      )
+         tmp <- data.frame(cbind(rownames(tscore),
+                                 tscore[,which(colnames(tscore) == "OR")[i]]))
+         d[tst,"wppsi_ord_ss"] <-
+            tmp[match(d[tst,questions[[1]]], tmp[[1]]),2]
 
+         tmp <- data.frame(cbind(rownames(tscore),
+                                 tscore[,which(colnames(tscore) == "IN")[i]]))
+         tmp[] <- lapply(tmp[],as.numeric)
+         d[tst,"wppsi_info_ss"] <-
+            tmp[match(d[tst,questions[[2]]], tmp[[1]]),2]
 
-      tscore_in <- list(raw = 0:60,
-         `24` = c(1,2,3,4,5,7,8,10,11,12,13,13,14,14,15,15,16,17,17,18,19,19,19,
-                  19,19,19,19,19,19,19),
-         `31` = c(1,2,3,4,5,7,8,10,11,12,13,13,14,14,15,15,16,17,17,18,19,19,19,
-                  19,19,19,19,19,19,19),
-         `35` = c(1,2,3,3,4,5,6,7,8,9,9,10,11,12,13,14,15,16,16,17,18,19,19,19,
-                  19,19,19,19,19,19),
-         `36` = c(1,2,3,3,4,5,5,6,7,8,9,10,11,11,12,13,14,15,16,16,17,18,19,19,
-                  19,19,19,19,19,19),
-         `39` = c(1,2,2,3,3,3,4,4,5,6,7,8,9,10,11,12,13,13,14,15,16,17,18,19,19,
-                  19,19,19,19,19),
-         `42` = c(1,1,2,2,2,3,3,4,4,5,6,7,7,8,9,10,11,12,13,14,15,16,17,18,19,
-                  19,19,19,19,19),
-         `45` = c(1,1,1,2,2,3,3,4,4,5,5,6,7,8,9,10,11,12,13,14,14,15,16,17,18,
-                  19,19,19,19,19),
-         `48` = c(1,1,1,1,1,2,3,3,4,5,5,6,7,8,9,10,10,11,12,13,14,14,15,16,17,
-                  18,18,19,19,19),
-         `51` = c(1,1,1,1,1,1,2,3,3,4,5,6,6,7,8,9,10,11,11,12,13,14,15,15,16,17,
-                  18,19,19,19),
-         `54` = c(1,1,1,1,1,1,1,2,3,3,4,5,5,6,7,8,9,9,10,12,13,14,15,15,16,17,
-                  18,19,19,19),
-         `57` = c(1,1,1,1,1,1,1,1,2,2,3,3,4,4,5,5,6,7,8,9,10,11,12,13,14,15,16,
-                  17,18,19),
-         `60` = c(1,1,1,1,1,1,1,1,2,2,3,3,4,4,5,5,6,7,8,9,10,11,12,13,14,15,16,
-                  17,18,19),
-         `63` = c(1,1,1,1,1,1,1,1,1,1,1,2,3,4,4,5,6,7,8,9,9,10,11,12,12,13,15,
-                  17,18,19),
-         `66` = c(1,1,1,1,1,1,1,1,1,1,1,2,3,4,4,5,6,7,8,9,9,10,11,12,12,13,15,
-                  17,18,19),
-         `69` = c(1,1,1,1,1,1,1,1,1,1,1,1,2,3,3,4,4,5,6,7,8,9,9,10,11,13,14,16,
-                  17,19),
-         `72` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,3,4,5,5,6,7,7,8,9,11,12,14,16,
-                  17,19),
-         `76` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,4,4,5,5,6,7,8,9,10,11,12,14,
-                  16,18),
-         `80` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,5,5,6,7,8,9,11,13,15,
-                  17),
-         `84` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,5,5,6,7,9,11,13,15,
-                  17),
-         `88` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,4,5,5,6,7,8,11,12,15,
-                  17),
-         `92` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,3,4,5,5,6,7,8,11,12,15,
-                  17)
-      )
+         tmp <- data.frame(cbind(rownames(tscore),
+                                 tscore[,which(colnames(tscore) == "BL")[i]]))
+         tmp[] <- lapply(tmp[],as.numeric)
+         d[tst,"wppsi_blok_ss"] <-
+            tmp[match(d[tst,questions[[3]]], tmp[[1]]),2]
 
-      tscore_ps <- list(raw = 0:60,
-         `24` = c(2,5,7,8,9,10,11,12,12,13,13,14,14,15,15,15,16,16,16,17,17,17,
-                  18,18,18,19,19,19,19,19,19,19,19,19,19,19,19,19,19),
-         `31` = c(2,5,7,8,9,10,11,12,12,13,13,14,14,15,15,15,16,16,16,17,17,17,
-                  18,18,18,19,19,19,19,19,19,19,19,19,19,19,19,19,19),
-         `35` = c(2,4,6,7,8,9,9,10,10,11,11,12,12,13,13,13,14,14,14,15,15,16,16,
-                  16,17,17,18,18,18,18,19,19,19,19,19,19,19,19,19),
-         `36` = c(1,3,5,6,7,8,8,9,9,10,10,11,11,11,12,12,12,13,13,13,14,14,14,
-                  15,15,16,16,16,17,17,17,18,18,18,19,19,19,19,19),
-         `39` = c(1,3,4,5,6,7,7,8,8,9,9,10,10,10,11,11,11,12,12,12,13,13,13,14,
-                  14,15,15,15,16,16,16,17,17,17,18,18,19,19,19),
-         `42` = c(1,2,3,4,5,6,6,7,7,7,8,8,8,9,9,9,10,10,11,11,11,12,12,12,13,13,
-                  13,14,14,14,15,15,16,16,16,17,17,18,19),
-         `45` = c(1,2,3,4,4,5,5,6,6,7,7,7,8,8,8,9,9,9,10,10,11,11,11,12,12,12,
-                  13,13,13,14,14,14,15,15,16,16,17,18,19),
-         `48` = c(1,2,3,4,4,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,11,11,12,12,12,13,
-                  13,13,14,14,14,15,15,16,16,17,18,19),
-         `51` = c(1,2,3,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,11,11,12,12,12,
-                  13,13,14,14,14,15,15,16,16,17,18,19),
-         `54` = c(1,1,2,3,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,9,10,10,10,11,11,12,
-                  12,12,13,13,14,14,15,16,17,18,19),
-         `57` = c(1,1,2,3,3,4,4,5,5,5,6,6,7,7,7,7,7,8,8,8,9,9,9,10,10,10,10,11,
-                  11,12,12,13,13,14,15,16,17,18,19),
-         `60` = c(1,1,1,2,2,3,3,4,4,4,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,10,
-                  11,12,12,13,13,14,15,16,17,18,19),
-         `63` = c(1,1,1,2,2,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,10,10,10,10,
-                  11,11,12,12,13,14,15,16,17,18,19),
-         `66` = c(1,1,1,1,2,2,2,3,3,3,4,4,5,5,5,6,6,6,7,7,8,8,8,9,9,9,10,10,10,
-                  11,11,11,12,13,14,15,16,17,19),
-         `69` = c(1,1,1,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,7,7,7,8,8,8,9,9,10,10,
-                  11,11,11,12,13,14,15,16,18),
-         `72` = c(1,1,1,1,1,1,1,1,1,2,2,2,3,3,3,4,4,4,5,5,6,6,7,7,8,8,9,9,9,10,
-                  10,11,11,12,13,14,15,16,18),
-         `76` = c(1,1,1,1,1,1,1,1,1,1,2,2,3,3,3,4,4,4,5,5,6,6,6,7,7,8,8,9,9,10,
-                  10,11,11,12,13,14,15,16,18),
-         `80` = c(1,1,1,1,1,1,1,1,1,1,1,2,2,2,3,3,4,4,4,5,5,5,6,6,7,7,8,8,9,9,
-                  10,11,11,12,13,14,15,16,18),
-         `84` = c(1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,3,3,4,4,4,5,5,6,6,7,7,8,8,9,9,9,
-                  10,11,12,13,14,15,16,18),
-         `88` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,3,4,4,4,5,5,6,6,7,7,8,8,9,9,
-                  10,11,12,13,14,15,16,18),
-         `92` = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,3,4,4,4,5,5,6,6,7,7,8,8,9,9,
-                  10,11,12,13,14,15,16,18)
-      )
+         tmp <- data.frame(cbind(rownames(tscore),
+                                 tscore[,which(colnames(tscore) == "PS")[i]]))
+         tmp[] <- lapply(tmp[],as.numeric)
+         d[tst,"wppsi_pusle_ss"] <-
+            tmp[match(d[tst,questions[[4]]], tmp[[1]]),2]
 
-
-      for(i in 2:length(tage)){
-
-         tscore_df <- data.frame(tscore_or$raw[1:length(tscore_or[[i]])],
-                                 tscore_or[[i]])
-         d[floor(d[[age.months]]) %in% tage[[i]],"wppsiiv_ord_ss"] <-
-            tscore_df[match(d[floor(d[[age.months]]) %in% tage[[i]],
-                              questions[[1]]], tscore_df[[1]]),2]
-
-         tscore_df <- data.frame(tscore_in$raw[1:length(tscore_in[[i]])],
-                                 tscore_in[[i]])
-         d[floor(d[[age.months]]) %in% tage[[i]],"wppsiiv_info_ss"] <-
-            tscore_df[match(d[floor(d[[age.months]]) %in% tage[[i]],
-                              questions[[2]]], tscore_df[[1]]),2]
-
-         tscore_df <- data.frame(tscore_bl$raw[1:length(tscore_bl[[i]])],
-                                 tscore_bl[[i]])
-         d[floor(d[[age.months]]) %in% tage[[i]],"wppsiiv_blok_ss"] <-
-            tscore_df[match(d[floor(d[[age.months]]) %in% tage[[i]],
-                              questions[[3]]], tscore_df[[1]]),2]
-
-         tscore_df <- data.frame(tscore_ps$raw[1:length(tscore_ps[[i]])],
-                                 tscore_ps[[i]])
-         d[floor(d[[age.months]]) %in% tage[[i]],"wppsiiv_pusle_ss"] <-
-            tscore_df[match(d[floor(d[[age.months]]) %in% tage[[i]],
-                              questions[[4]]], tscore_df[[1]]),2]
       }
-      d[["wppsiiv_lang_tot_ss"]] <- rowSums(d[,c("wppsiiv_ord_ss","wppsiiv_info_ss")])/2
-      d[["wppsiiv_visual_tot_ss"]] <- rowSums(d[,c("wppsiiv_blok_ss","wppsiiv_pusle_ss")])/2
+      colz <- c("wppsi_ord_ss","wppsi_info_ss","wppsi_blok_ss","wppsi_pusle_ss")
+      d[,colz] <- lapply(d[,colz],as.numeric)
+      d[["wppsi_lang_tot_ss"]] <- rowSums(d[,c("wppsi_ord_ss","wppsi_info_ss")])/2
+      d[["wppsi_visual_tot_ss"]] <- rowSums(d[,c("wppsi_blok_ss","wppsi_pusle_ss")])/2
 
       # Create output
       o <- d[,!(colnames(d) %in% c(questions,age.months))]
-
-
 
    }else if(scale == "CBI"){
       # **************************
@@ -1070,124 +1010,124 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       d <- df[,c(id,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
       d[,questions[c(1,12:18,21:23,50:52)]] <- lapply(d[,questions[c(1,12:18,21:23,50:52)]],
-         FUN=function(x){dplyr::recode(x, `1`=5,`2`=4,`3`=2,`4`=3,`5`=1,
-                                       .default = NA_real_)})
+                                                      FUN=function(x){dplyr::recode(x, `1`=5,`2`=4,`3`=2,`4`=3,`5`=1,
+                                                                                    .default = NA_real_)})
       d[,questions] <- lapply(d[,questions],as.numeric)
 
       if(setting == "proxy"){
          o$k52phy <- dplyr::recode(rowSums(d[,questions[1:5]]),
-            `5`=9.35,`6`=18.38,`7`=23.14,`8`=26.30,`9`=28.78,
-            `10`=30.92,`11`=32.88,`12`=34.77,`13`=36.70,`14`=38.78,
-            `15`=41.08,`16`=43.66,`17`=46.50,`18`=49.54,`19`=52.68,
-            `20`=55.89,`21`=59.38,`22`=63.68,`23`=71.23)
+                                   `5`=9.35,`6`=18.38,`7`=23.14,`8`=26.30,`9`=28.78,
+                                   `10`=30.92,`11`=32.88,`12`=34.77,`13`=36.70,`14`=38.78,
+                                   `15`=41.08,`16`=43.66,`17`=46.50,`18`=49.54,`19`=52.68,
+                                   `20`=55.89,`21`=59.38,`22`=63.68,`23`=71.23)
          o$k52pwb <- dplyr::recode(rowSums(d[,questions[6:11]]),
-            `6`=9.42,`7`=14.75,`8`=17.75,`9`=20.01,`10`=21.85,
-            `11`=23.44,`12`=24.88,`13`=26.28,`14`=27.69,`15`=29.21,
-            `16`=30.87,`17`=32.72,`18`=34.75,`19`=36.88,`20`=39.05,
-            `21`=41.22,`22`=43.47,`23`=45.95,`24`=48.87,`25`=52.12,
-            `26`=55.25,`27`=58.18,`28`=61.09,`29`=64.41,`30`=69.88)
+                                   `6`=9.42,`7`=14.75,`8`=17.75,`9`=20.01,`10`=21.85,
+                                   `11`=23.44,`12`=24.88,`13`=26.28,`14`=27.69,`15`=29.21,
+                                   `16`=30.87,`17`=32.72,`18`=34.75,`19`=36.88,`20`=39.05,
+                                   `21`=41.22,`22`=43.47,`23`=45.95,`24`=48.87,`25`=52.12,
+                                   `26`=55.25,`27`=58.18,`28`=61.09,`29`=64.41,`30`=69.88)
          o$k52emo <- dplyr::recode(rowSums(d[,questions[12:18]]),
-            `7`=-2.01,`8`=5.60,`9`=9.63,`10`=12.57,`11`=14.98,
-            `12`=17.07,`13`=18.97,`14`=20.72,`15`=22.36,`16`=23.93,
-            `17`=25.45,`18`=26.95,`19`=28.43,`20`=29.91,`21`=31.42,
-            `22`=32.96,`23`=34.56,`24`=36.22,`25`=37.97,`26`=39.81,
-            `27`=41.77,`28`=43.87,`29`=46.12,`30`=48.57,`31`=51.28,
-            `32`=54.36,`33`=58.00,`34`=62.68,`35`=70.82)
+                                   `7`=-2.01,`8`=5.60,`9`=9.63,`10`=12.57,`11`=14.98,
+                                   `12`=17.07,`13`=18.97,`14`=20.72,`15`=22.36,`16`=23.93,
+                                   `17`=25.45,`18`=26.95,`19`=28.43,`20`=29.91,`21`=31.42,
+                                   `22`=32.96,`23`=34.56,`24`=36.22,`25`=37.97,`26`=39.81,
+                                   `27`=41.77,`28`=43.87,`29`=46.12,`30`=48.57,`31`=51.28,
+                                   `32`=54.36,`33`=58.00,`34`=62.68,`35`=70.82)
          o$k52sel <- dplyr::recode(rowSums(d[,questions[19:23]]),
-            `5`=6.93,`6`=16.33,`7`=21.18,`8`=24.52,`9`=27.09,
-            `10`=29.21,`11`=31.06,`12`=32.73,`13`=34.29,`14`=35.81,
-            `15`=37.33,`16`=38.88,`17`=40.51,`18`=42.28,`19`=44.25,
-            `20`=46.48,`21`=49.11,`22`=52.27,`23`=56.18,`24`=61.43,
-            `25`=70.98)
+                                   `5`=6.93,`6`=16.33,`7`=21.18,`8`=24.52,`9`=27.09,
+                                   `10`=29.21,`11`=31.06,`12`=32.73,`13`=34.29,`14`=35.81,
+                                   `15`=37.33,`16`=38.88,`17`=40.51,`18`=42.28,`19`=44.25,
+                                   `20`=46.48,`21`=49.11,`22`=52.27,`23`=56.18,`24`=61.43,
+                                   `25`=70.98)
          o$k52aut <- dplyr::recode(rowSums(d[,questions[24:28]]),
-            `5`=4.74,`6`=11.69,`7`=15.68,`8`=18.99,`9`=22.19,
-            `10`=25.45,`11`=28.55,`12`=31.25,`13`=33.58,`14`=35.66,
-            `15`=37.60,`16`=39.51,`17`=41.43,`18`=43.48,`19`=45.72,
-            `20`=48.22,`21`=50.95,`22`=53.87,`23`=57.07,`24`=61.01,
-            `25`=67.95)
+                                   `5`=4.74,`6`=11.69,`7`=15.68,`8`=18.99,`9`=22.19,
+                                   `10`=25.45,`11`=28.55,`12`=31.25,`13`=33.58,`14`=35.66,
+                                   `15`=37.60,`16`=39.51,`17`=41.43,`18`=43.48,`19`=45.72,
+                                   `20`=48.22,`21`=50.95,`22`=53.87,`23`=57.07,`24`=61.01,
+                                   `25`=67.95)
          o$k52par <- dplyr::recode(rowSums(d[,questions[29:34]]),
-            `6`=5.70,`7`=12.11,`8`=15.55,`9`=18.10,`10`=20.20,
-            `11`=22.08,`12`=23.83,`13`=25.53,`14`=27.20,`15`=28.89,
-            `16`=30.61,`17`=32.39,`18`=34.25,`19`=36.17,`20`=38.16,
-            `21`=40.20,`22`=42.33,`23`=44.54,`24`=46.87,`25`=49.38,
-            `26`=52.12,`27`=55.13,`28`=58.45,`29`=62.45,`30`=69.22)
+                                   `6`=5.70,`7`=12.11,`8`=15.55,`9`=18.10,`10`=20.20,
+                                   `11`=22.08,`12`=23.83,`13`=25.53,`14`=27.20,`15`=28.89,
+                                   `16`=30.61,`17`=32.39,`18`=34.25,`19`=36.17,`20`=38.16,
+                                   `21`=40.20,`22`=42.33,`23`=44.54,`24`=46.87,`25`=49.38,
+                                   `26`=52.12,`27`=55.13,`28`=58.45,`29`=62.45,`30`=69.22)
          o$k52fin <- dplyr::recode(rowSums(d[,questions[35:37]]),
-             `3`=23.96,`4`=29.10,`5`=32.35,`6`=35.23,`7`=37.95,
-             `8`=40.59,`9`=43.31,`10`=46.06,`11`=48.85,`12`=51.90,
-             `13`=55.39,`14`=59.33,`15`=65.02)
+                                   `3`=23.96,`4`=29.10,`5`=32.35,`6`=35.23,`7`=37.95,
+                                   `8`=40.59,`9`=43.31,`10`=46.06,`11`=48.85,`12`=51.90,
+                                   `13`=55.39,`14`=59.33,`15`=65.02)
          o$k52soc <- dplyr::recode(rowSums(d[,questions[38:43]]),
-             `6`=8.28,`7`=14.69,`8`=18.24,`9`=21.03,`10`=23.53,
-             `11`=25.93,`12`=28.27,`13`=30.54,`14`=32.68,`15`=34.71,
-             `16`=36.67,`17`=38.60,`18`=40.52,`19`=42.46,`20`=44.42,
-             `21`=46.43,`22`=48.52,`23`=50.73,`24`=53.05,`25`=55.44,
-             `26`=57.87,`27`=60.37,`28`=63.16,`29`=66.69,`30`=73.08)
+                                   `6`=8.28,`7`=14.69,`8`=18.24,`9`=21.03,`10`=23.53,
+                                   `11`=25.93,`12`=28.27,`13`=30.54,`14`=32.68,`15`=34.71,
+                                   `16`=36.67,`17`=38.60,`18`=40.52,`19`=42.46,`20`=44.42,
+                                   `21`=46.43,`22`=48.52,`23`=50.73,`24`=53.05,`25`=55.44,
+                                   `26`=57.87,`27`=60.37,`28`=63.16,`29`=66.69,`30`=73.08)
          o$k52sch <- dplyr::recode(rowSums(d[,questions[44:49]]),
-             `6`=9.55,`7`=16.89,`8`=21.01,`9`=23.85,`10`=26.01,
-             `11`=27.81,`12`=29.43,`13`=30.95,`14`=32.45,`15`=34.00,
-             `16`=35.64,`17`=37.40,`18`=39.29,`19`=41.28,`20`=43.31,
-             `21`=45.39,`22`=47.52,`23`=49.75,`24`=52.09,`25`=54.52,
-             `26`=57.01,`27`=59.60,`28`=62.47,`29`=66.08,`30`=72.50)
+                                   `6`=9.55,`7`=16.89,`8`=21.01,`9`=23.85,`10`=26.01,
+                                   `11`=27.81,`12`=29.43,`13`=30.95,`14`=32.45,`15`=34.00,
+                                   `16`=35.64,`17`=37.40,`18`=39.29,`19`=41.28,`20`=43.31,
+                                   `21`=45.39,`22`=47.52,`23`=49.75,`24`=52.09,`25`=54.52,
+                                   `26`=57.01,`27`=59.60,`28`=62.47,`29`=66.08,`30`=72.50)
          o$k52bul <- dplyr::recode(rowSums(d[,questions[50:52]]),
-              `3`=3.22,`4`=10.47,`5`=14.74,`6`=18.25,`7`=21.46,
-              `8`=24.53,`9`=27.63,`10`=30.90,`11`=34.63,`12`=39.34,
-              `13`=44.83,`14`=50.55,`15`=58.83)
+                                   `3`=3.22,`4`=10.47,`5`=14.74,`6`=18.25,`7`=21.46,
+                                   `8`=24.53,`9`=27.63,`10`=30.90,`11`=34.63,`12`=39.34,
+                                   `13`=44.83,`14`=50.55,`15`=58.83)
       }else if(setting == "self"){
          o$k52phy <- dplyr::recode(rowSums(d[,questions[1:5]]),
-            `5`=12.13,`6`=20.70,`7`=25.07,`8`=28.13,`9`=30.57,
-            `10`=32.69,`11`=34.65,`12`=36.55,`13`=38.47,`14`=40.45,
-            `15`=42.53,`16`=44.73,`17`=47.08,`18`=49.63,`19`=52.43,
-            `20`=55.60,`21`=59.36,`22`=64.30,`23`=73.20)
+                                   `5`=12.13,`6`=20.70,`7`=25.07,`8`=28.13,`9`=30.57,
+                                   `10`=32.69,`11`=34.65,`12`=36.55,`13`=38.47,`14`=40.45,
+                                   `15`=42.53,`16`=44.73,`17`=47.08,`18`=49.63,`19`=52.43,
+                                   `20`=55.60,`21`=59.36,`22`=64.30,`23`=73.20)
          o$k52pwb <- dplyr::recode(rowSums(d[,questions[6:11]]),
-            `6`=9.86,`7`=16.65,`8`=20.36,`9`=23.07,`10`=25.23,
-            `11`=27.04,`12`=28.63,`13`=30.08,`14`=31.45,`15`=32.80,
-            `16`=34.13,`17`=35.50,`18`=36.91,`19`=38.37,`20`=39.91,
-            `21`=41.53,`22`=43.25,`23`=45.10,`24`=47.12,`25`=49.34,
-            `26`=51.78,`27`=54.49,`28`=57.60,`29`=61.55,`30`=68.49)
+                                   `6`=9.86,`7`=16.65,`8`=20.36,`9`=23.07,`10`=25.23,
+                                   `11`=27.04,`12`=28.63,`13`=30.08,`14`=31.45,`15`=32.80,
+                                   `16`=34.13,`17`=35.50,`18`=36.91,`19`=38.37,`20`=39.91,
+                                   `21`=41.53,`22`=43.25,`23`=45.10,`24`=47.12,`25`=49.34,
+                                   `26`=51.78,`27`=54.49,`28`=57.60,`29`=61.55,`30`=68.49)
          o$k52emo <- dplyr::recode(rowSums(d[,questions[12:18]]),
-            `7`=7.92,`8`=15.94,`9`=19.81,`10`=22.46,`11`=24.52,
-            `12`=26.23,`13`=27.71,`14`=29.04,`15`=30.27,`16`=31.42,
-            `17`=32.51,`18`=33.58,`19`=34.61,`20`=35.65,`21`=36.70,
-            `22`=37.76,`23`=38.86,`24`=40.00,`25`=41.21,`26`=42.50,
-            `27`=43.91,`28`=45.44,`29`=47.15,`30`=49.09,`31`=51.34,
-            `32`=54.02,`33`=57.40,`34`=62.06,`35`=70.91)
+                                   `7`=7.92,`8`=15.94,`9`=19.81,`10`=22.46,`11`=24.52,
+                                   `12`=26.23,`13`=27.71,`14`=29.04,`15`=30.27,`16`=31.42,
+                                   `17`=32.51,`18`=33.58,`19`=34.61,`20`=35.65,`21`=36.70,
+                                   `22`=37.76,`23`=38.86,`24`=40.00,`25`=41.21,`26`=42.50,
+                                   `27`=43.91,`28`=45.44,`29`=47.15,`30`=49.09,`31`=51.34,
+                                   `32`=54.02,`33`=57.40,`34`=62.06,`35`=70.91)
          o$k52sel <- dplyr::recode(rowSums(d[,questions[19:23]]),
-            `5`=12.10,`6`=21.36,`7`=25.83,`8`=28.88,`9`=31.24,
-            `10`=33.20,`11`=34.89,`12`=36.43,`13`=37.85,`14`=39.21,
-            `15`=40.52,`16`=41.83,`17`=43.17,`18`=44.58,`19`=46.09,
-            `20`=47.78,`21`=49.76,`22`=52.19,`23`=55.38,`24`=60.11,
-            `25`=69.78)
+                                   `5`=12.10,`6`=21.36,`7`=25.83,`8`=28.88,`9`=31.24,
+                                   `10`=33.20,`11`=34.89,`12`=36.43,`13`=37.85,`14`=39.21,
+                                   `15`=40.52,`16`=41.83,`17`=43.17,`18`=44.58,`19`=46.09,
+                                   `20`=47.78,`21`=49.76,`22`=52.19,`23`=55.38,`24`=60.11,
+                                   `25`=69.78)
          o$k52aut <- dplyr::recode(rowSums(d[,questions[24:28]]),
-            `5`=10.19,`6`=18.58,`7`=23.05,`8`=26.39,`9`=29.16,
-            `10`=31.57,`11`=33.70,`12`=35.61,`13`=37.35,`14`=38.98,
-            `15`=40.54,`16`=42.06,`17`=43.59,`18`=45.17,`19`=46.85,
-            `20`=48.70,`21`=50.77,`22`=53.22,`23`=56.27,`24`=60.52,
-            `25`=68.75)
+                                   `5`=10.19,`6`=18.58,`7`=23.05,`8`=26.39,`9`=29.16,
+                                   `10`=31.57,`11`=33.70,`12`=35.61,`13`=37.35,`14`=38.98,
+                                   `15`=40.54,`16`=42.06,`17`=43.59,`18`=45.17,`19`=46.85,
+                                   `20`=48.70,`21`=50.77,`22`=53.22,`23`=56.27,`24`=60.52,
+                                   `25`=68.75)
          o$k52par <- dplyr::recode(rowSums(d[,questions[29:34]]),
-            `6`=9.93,`7`=17.00,`8`=20.61,`9`=23.19,`10`=25.27,
-            `11`=27.06,`12`=28.68,`13`=30.18,`14`=31.61,`15`=32.97,
-            `16`=34.32,`17`=35.66,`18`=36.98,`19`=38.33,`20`=39.69,
-            `21`=41.10,`22`=42.55,`23`=44.09,`24`=45.72,`25`=47.50,
-            `26`=49.50,`27`=51.81,`28`=54.65,`29`=58.53,`30`=65.87)
+                                   `6`=9.93,`7`=17.00,`8`=20.61,`9`=23.19,`10`=25.27,
+                                   `11`=27.06,`12`=28.68,`13`=30.18,`14`=31.61,`15`=32.97,
+                                   `16`=34.32,`17`=35.66,`18`=36.98,`19`=38.33,`20`=39.69,
+                                   `21`=41.10,`22`=42.55,`23`=44.09,`24`=45.72,`25`=47.50,
+                                   `26`=49.50,`27`=51.81,`28`=54.65,`29`=58.53,`30`=65.87)
          o$k52fin <- dplyr::recode(rowSums(d[,questions[35:37]]),
-            `3`=23.24,`4`=29.15,`5`=32.48,`6`=35.12,`7`=37.47,
-            `8`=39.71,`9`=41.92,`10`=44.18,`11`=46.59,`12`=49.28,
-            `13`=52.41,`14`=56.35,`15`=62.86)
+                                   `3`=23.24,`4`=29.15,`5`=32.48,`6`=35.12,`7`=37.47,
+                                   `8`=39.71,`9`=41.92,`10`=44.18,`11`=46.59,`12`=49.28,
+                                   `13`=52.41,`14`=56.35,`15`=62.86)
          o$k52soc <- dplyr::recode(rowSums(d[,questions[38:43]]),
-            `6`=9.40,`7`=17.78,`8`=21.95,`9`=24.88,`10`=27.22,
-            `11`=29.19,`12`=30.94,`13`=32.54,`14`=34.03,`15`=35.44,
-            `16`=36.81,`17`=38.15,`18`=39.49,`19`=40.83,`20`=42.2,
-            `21`=43.6,`22`=45.08,`23`=46.66,`24`=48.35,`25`=50.24,
-            `26`=52.39,`27`=54.93,`28`=58.14,`29`=62.66,`30`=71.46)
+                                   `6`=9.40,`7`=17.78,`8`=21.95,`9`=24.88,`10`=27.22,
+                                   `11`=29.19,`12`=30.94,`13`=32.54,`14`=34.03,`15`=35.44,
+                                   `16`=36.81,`17`=38.15,`18`=39.49,`19`=40.83,`20`=42.2,
+                                   `21`=43.6,`22`=45.08,`23`=46.66,`24`=48.35,`25`=50.24,
+                                   `26`=52.39,`27`=54.93,`28`=58.14,`29`=62.66,`30`=71.46)
          o$k52sch <- dplyr::recode(rowSums(d[,questions[44:49]]),
-            `6`=14.02,`7`=21.82,`8`=25.68,`9`=28.35,`10`=30.46,
-            `11`=32.25,`12`=33.86,`13`=35.35,`14`=36.77,`15`=38.15,
-            `16`=39.53,`17`=40.92,`18`=42.35,`19`=43.82,`20`=45.34,
-            `21`=46.94,`22`=48.61,`23`=50.37,`24`=52.23,`25`=54.22,
-            `26`=56.40,`27`=58.88,`28`=61.87,`29`=65.94,`30`=73.80)
+                                   `6`=14.02,`7`=21.82,`8`=25.68,`9`=28.35,`10`=30.46,
+                                   `11`=32.25,`12`=33.86,`13`=35.35,`14`=36.77,`15`=38.15,
+                                   `16`=39.53,`17`=40.92,`18`=42.35,`19`=43.82,`20`=45.34,
+                                   `21`=46.94,`22`=48.61,`23`=50.37,`24`=52.23,`25`=54.22,
+                                   `26`=56.40,`27`=58.88,`28`=61.87,`29`=65.94,`30`=73.80)
          o$k52bul <- dplyr::recode(rowSums(d[,questions[50:52]]),
-            `3`=10.99,`4`=18.72,`5`=22.38,`6`=24.99,`7`=27.15,
-            `8`=29.13,`9`=31.08,`10`=33.13,`11`=35.44,`12`=38.29,
-            `13`=42.20,`14`=48.07,`15`=58.85)
+                                   `3`=10.99,`4`=18.72,`5`=22.38,`6`=24.99,`7`=27.15,
+                                   `8`=29.13,`9`=31.08,`10`=33.13,`11`=35.44,`12`=38.29,
+                                   `13`=42.20,`14`=48.07,`15`=58.85)
          o <- cbind(d[[id]],data.frame(o))
          colnames(o)[1] <- id
       }else{
@@ -1203,16 +1143,16 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
       # Calculate normative values
       recoding_rules <- list(
-        list(indices=c(1,2,20,22,34,36), mapping=setNames(c(4:0/4*100),c(1:5))),
-        list(indices=c(3,4,5,6,7,8,9,10,11,12), mapping=setNames(c(0:2/2*100),c(1:3))),
-        list(indices=c(13,14,15,16,17,18,19), mapping=setNames(c(0:1/1*100),c(1:2))),
-        list(indices=c(21,23,26,27,30), mapping=setNames(c(5:0/5*100),c(1:6))),
-        list(indices = c(24,25,28,29,31), mapping=setNames(c(0:5/5*100),c(1:6))),
-        list(indices = c(32,33,35), mapping=setNames(c(0:4/4*100),c(1:5)))
+         list(indices=c(1,2,20,22,34,36), mapping=setNames(c(4:0/4*100),c(1:5))),
+         list(indices=c(3,4,5,6,7,8,9,10,11,12), mapping=setNames(c(0:2/2*100),c(1:3))),
+         list(indices=c(13,14,15,16,17,18,19), mapping=setNames(c(0:1/1*100),c(1:2))),
+         list(indices=c(21,23,26,27,30), mapping=setNames(c(5:0/5*100),c(1:6))),
+         list(indices = c(24,25,28,29,31), mapping=setNames(c(0:5/5*100),c(1:6))),
+         list(indices = c(32,33,35), mapping=setNames(c(0:4/4*100),c(1:5)))
       )
       for (rule in recoding_rules) {
          d[,questions[rule$indices]] <- lapply(d[,questions[rule$indices]],
-                                                function(x) dplyr::recode(x, !!!rule$mapping))
+                                               function(x) dplyr::recode(x, !!!rule$mapping))
       }
 
       # Calculate domains
@@ -1268,156 +1208,156 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
    # LONG NAMES ##########
    # **************************
    # if(long.names){
-      nmz <- c(`afeq_exp`="AFEQ Experience of being a parent",
-               `afeq_fl`="AFEQ Family Life",
-               `afeq_cdus`="AFEQ Child Development, Understanding and Social Relationships",
-               `afeq_cs`="AFEQ Child Symptoms",
-               `afeq_tot`="AFEQ totalscore",
+   nmz <- c(`afeq_exp`="AFEQ Experience of being a parent",
+            `afeq_fl`="AFEQ Family Life",
+            `afeq_cdus`="AFEQ Child Development, Understanding and Social Relationships",
+            `afeq_cs`="AFEQ Child Symptoms",
+            `afeq_tot`="AFEQ totalscore",
 
-               `cbcl_tot`="CBCL totalscore",
-               `cbcl_int`="CBCL internaliserende score",
-               `cbcl_ext`="CBCL eksternaliserende score",
-               `cbcl_aff`="CBCL affective problems",
-               `cbcl_anx`="CBCL anxiety problem scale",
-               `cbcl_asd`="CBCL pervasive developmental problem scale",
-               `cbcl_adhd`="CBCL att.def/hyperact. problem scale",
-               `cbcl_odd`="CBCL oppositional defiant problem scale",
-               `cbcl_sleep`="CBCL sleep problem scale",
+            `cbcl_tot`="CBCL totalscore",
+            `cbcl_int`="CBCL internaliserende score",
+            `cbcl_ext`="CBCL eksternaliserende score",
+            `cbcl_aff`="CBCL affective problems",
+            `cbcl_anx`="CBCL anxiety problem scale",
+            `cbcl_asd`="CBCL pervasive developmental problem scale",
+            `cbcl_adhd`="CBCL att.def/hyperact. problem scale",
+            `cbcl_odd`="CBCL oppositional defiant problem scale",
+            `cbcl_sleep`="CBCL sleep problem scale",
 
-               `mpca_tot`="MPCA totalscore",
-               `mpca_mean`="MPCA meanscore",
+            `mpca_tot`="MPCA totalscore",
+            `mpca_mean`="MPCA meanscore",
 
-               `pedsql4_tot`="PedsQL4 totalscore",
-               `peqsql4_psysoc`="PedsQL4 psychosocial score",
-               `peqsql4_phys`="PedsQL4 physical score",
+            `pedsql4_tot`="PedsQL4 totalscore",
+            `peqsql4_psysoc`="PedsQL4 psychosocial score",
+            `peqsql4_phys`="PedsQL4 physical score",
 
-               `prfq_pm`="PRFQ Pre-Mentalizing Modes",
-               `prfq_cm`="PRFQ Certainty about Mental States",
-               `prfq_ic`="PRFQ Interest and Curiosity in Mental States",
+            `prfq_pm`="PRFQ Pre-Mentalizing Modes",
+            `prfq_cm`="PRFQ Certainty about Mental States",
+            `prfq_ic`="PRFQ Interest and Curiosity in Mental States",
 
-               `whoqolbref_oa`="WHOQOL-BREF Overall QoL and general health",
-               `whoqolbref_phys`="WHOQOL-BREF Physical health",
-               `whoqolbref_psych`="WHOQOL-BREF Psychological",
-               `whoqolbref_soc`="WHOQOL-BREF Social relationships",
-               `whoqolbref_env`="WHOQOL-BREF Environment",
+            `whoqolbref_oa`="WHOQOL-BREF Overall QoL and general health",
+            `whoqolbref_phys`="WHOQOL-BREF Physical health",
+            `whoqolbref_psych`="WHOQOL-BREF Psychological",
+            `whoqolbref_soc`="WHOQOL-BREF Social relationships",
+            `whoqolbref_env`="WHOQOL-BREF Environment",
 
-               `sf36_pf`="Physical functioning",
-               `sf36_rp`="Role limitations due to physical health",
-               `sf36_bp`="Pain",
-               `sf36_gh`="General health",
-               `sf36_vt`="Energy/fatigue",
-               `sf36_sf`="Social functioning",
-               `sf36_re`="Role limitations due to emotional problems",
-               `sf36_mh`="Emotional well-being",
-               `sf36_pcs`="Physical Component Score",
-               `sf36_mcs`="Mental Component Score"
+            `sf36_pf`="Physical functioning",
+            `sf36_rp`="Role limitations due to physical health",
+            `sf36_bp`="Pain",
+            `sf36_gh`="General health",
+            `sf36_vt`="Energy/fatigue",
+            `sf36_sf`="Social functioning",
+            `sf36_re`="Role limitations due to emotional problems",
+            `sf36_mh`="Emotional well-being",
+            `sf36_pcs`="Physical Component Score",
+            `sf36_mcs`="Mental Component Score"
 
 
-      )
+   )
 
    # }
 
    return(o)
 }
 
-   # OTHER----
-   # if(scale == "PedsQL4"){ # https://www.pedsql.org/PedsQL-Scoring.pdf
-   #    df[,questions] <- lapply(df[,questions],FUN=function(x){
-   #       dplyr::recode(x, `0`="100",`1`="75",`2`="50",`3`="25",`4`="0")
-   #    })
-   #    df[,questions] <- lapply(df[,questions], FUN=function(x){
-   #       as.numeric(as.character(x))
-   #    })
-   #
-   #    pedsql4_total <- rowMeans(df[,c(questions)],na.rm=T)
-   #    pedsql4_physical <- rowMeans(df[,c(questions)[1:8]],na.rm=T)
-   #    pedsql4_emotional <- rowMeans(df[,c(questions)[9:13]],na.rm=T)
-   #    pedsql4_social <- rowMeans(df[,c(questions)[14:18]],na.rm=T)
-   #    pedsql4_school <- rowMeans(df[,c(questions)[19:23]],na.rm=T)
-   #    pedsql4_psychosocial <- rowMeans(df[,c(questions)[9:23]],na.rm=T)
-   #
-   #    pedsql4_total[rowMeans(is.na(df[,c(questions)])) > 0.5] <- NA
-   #    pedsql4_physical[rowMeans(is.na(df[,c(questions)[1:8]])) > 0.5] <- NA
-   #    pedsql4_emotional[rowMeans(is.na(df[,c(questions)[9:13]])) > 0.5] <- NA
-   #    pedsql4_social[rowMeans(is.na(df[,c(questions)[14:18]])) > 0.5] <- NA
-   #    pedsql4_school[rowMeans(is.na(df[,c(questions)[19:13]])) > 0.5] <- NA
-   #    pedsql4_psychosocial[rowMeans(is.na(df[,c(questions)[9:13]])) > 0.5] <- NA
-   #
-   #    if(only){
-   #       df <- cbind(df,pedsql4_total)
-   #       colnames(df)[ncol(df)] <-
-   #          paste0(prefix,colnames(df)[ncol(df)])
-   #    }else{
-   #       df <- cbind(df,pedsql4_total,pedsql4_physical,pedsql4_emotional,
-   #                   pedsql4_social,pedsql4_school,pedsql4_psychosocial)
-   #       colnames(df)[c((ncol(df)-5):ncol(df))] <-
-   #          paste0(prefix,colnames(df)[c((ncol(df)-5):ncol(df))])
-   #    }
-   #
-   #
-   #
-   # }else if(scale == "RCADS"){ # https://www.childfirst.ucla.edu/resources/
-   #    df[,questions] <- lapply(df[,questions], FUN=function(x){
-   #       as.numeric(as.character(x))
-   #    })
-   #
-   #    c_sad <- c(5,9,17,18,33,45,46)
-   #    c_gad <- c(1,13,22,27,35,37)
-   #    c_pd <- c(3,14,24,26,28,34,36,39,41)
-   #    c_soc <- c(4,7,8,12,20,30,32,38,43)
-   #    c_ocd <- c(10,16,23,31,42,44)
-   #    c_depression <- c(2,6,11,15,19,21,25,29,40,47)
-   #    c_anxiety <- c(1,3,4,5,7,8,9,10,12,13,14,16,17,18,20,22,23,24,26,27,28,30,
-   #                   31,32,33,34,35,36,37,38,39,41,42,43,44,45,46)
-   #    c_total <- c(1:47)
-   #
-   #    rcadschild_sad <- rowSums(df[,questions[c_sad]],na.rm=T)/
-   #       (7-rowSums(is.na(df[,questions[c_sad]])))*7
-   #    rcadschild_gad <- rowSums(df[,questions[c_gad]],na.rm=T)/
-   #       (6-rowSums(is.na(df[,questions[c_gad]])))*6
-   #    rcadschild_pd <- rowSums(df[,questions[c_pd]],na.rm=T)/
-   #       (9-rowSums(is.na(df[,questions[c_pd]])))*9
-   #    rcadschild_soc <- rowSums(df[,questions[c_soc]],na.rm=T)/
-   #       (9-rowSums(is.na(df[,questions[c_soc]])))*9
-   #    rcadschild_ocd <- rowSums(df[,questions[c_ocd]],na.rm=T)/
-   #       (6-rowSums(is.na(df[,questions[c_ocd]])))*6
-   #    rcadschild_depression <- rowSums(df[,questions[c_depression]],na.rm=T)/
-   #       (10-rowSums(is.na(df[,questions[c_depression]])))*10
-   #    rcadschild_anxiety <- rowSums(df[,questions[c_anxiety]],na.rm=T)/
-   #       (37-rowSums(is.na(df[,questions[c_anxiety]])))*37
-   #    rcadschild_total <- rowSums(df[,questions[c_total]],na.rm=T)/
-   #       (47-rowSums(is.na(df[,questions[c_total]])))*47
-   #
-   #    rcadschild_sad[rowSums(is.na(df[,questions[c_sad]])) > 2] <- NA
-   #    rcadschild_gad[rowSums(is.na(df[,questions[c_gad]])) > 2] <- NA
-   #    rcadschild_pd[rowSums(is.na(df[,questions[c_pd]])) > 2] <- NA
-   #    rcadschild_soc[rowSums(is.na(df[,questions[c_soc]])) > 2] <- NA
-   #    rcadschild_ocd[rowSums(is.na(df[,questions[c_ocd]])) > 2] <- NA
-   #    rcadschild_depression[rowSums(is.na(df[,questions[c_depression]])) > 2] <- NA
-   #
-   #    rcadschild_anxiety[rowSums(is.na(df[,questions[c_anxiety]])) > 10] <- NA
-   #    rcadschild_anxiety[which(rowSums(is.na(cbind(rcadschild_sad,rcadschild_gad,
-   #                                                 rcadschild_pd,rcadschild_soc,rcadschild_ocd))) > 0)] <- NA
-   #
-   #
-   #    rcadschild_total[rowSums(is.na(df[,questions[c_total]])) > 12] <- NA
-   #    rcadschild_total[which(rowSums(is.na(cbind(rcadschild_sad,rcadschild_gad,
-   #                                               rcadschild_pd,rcadschild_soc,rcadschild_ocd,rcadschild_depression))) > 0)] <- NA
-   #
-   #    if(only){
-   #       df <- cbind(df,rcadschild_total)
-   #       colnames(df)[ncol(df)] <-
-   #          paste0(prefix,colnames(df)[ncol(df)])
-   #    }else{
-   #       df <- cbind(df,rcadschild_sad,rcadschild_gad,rcadschild_pd,
-   #                   rcadschild_soc,rcadschild_ocd,rcadschild_depression)
-   #       df <- cbind(df,rcadschild_anxiety,rcadschild_total)
-   #
-   #       colnames(df)[c((ncol(df)-7):ncol(df))] <-
-   #          paste0(prefix,colnames(df)[c((ncol(df)-7):ncol(df))])
-   #    }
-   #
-   # }
-   # df <- df[,!colnames(df) %in% c(questions)]
-   # return(df)
+# OTHER----
+# if(scale == "PedsQL4"){ # https://www.pedsql.org/PedsQL-Scoring.pdf
+#    df[,questions] <- lapply(df[,questions],FUN=function(x){
+#       dplyr::recode(x, `0`="100",`1`="75",`2`="50",`3`="25",`4`="0")
+#    })
+#    df[,questions] <- lapply(df[,questions], FUN=function(x){
+#       as.numeric(as.character(x))
+#    })
+#
+#    pedsql4_total <- rowMeans(df[,c(questions)],na.rm=T)
+#    pedsql4_physical <- rowMeans(df[,c(questions)[1:8]],na.rm=T)
+#    pedsql4_emotional <- rowMeans(df[,c(questions)[9:13]],na.rm=T)
+#    pedsql4_social <- rowMeans(df[,c(questions)[14:18]],na.rm=T)
+#    pedsql4_school <- rowMeans(df[,c(questions)[19:23]],na.rm=T)
+#    pedsql4_psychosocial <- rowMeans(df[,c(questions)[9:23]],na.rm=T)
+#
+#    pedsql4_total[rowMeans(is.na(df[,c(questions)])) > 0.5] <- NA
+#    pedsql4_physical[rowMeans(is.na(df[,c(questions)[1:8]])) > 0.5] <- NA
+#    pedsql4_emotional[rowMeans(is.na(df[,c(questions)[9:13]])) > 0.5] <- NA
+#    pedsql4_social[rowMeans(is.na(df[,c(questions)[14:18]])) > 0.5] <- NA
+#    pedsql4_school[rowMeans(is.na(df[,c(questions)[19:13]])) > 0.5] <- NA
+#    pedsql4_psychosocial[rowMeans(is.na(df[,c(questions)[9:13]])) > 0.5] <- NA
+#
+#    if(only){
+#       df <- cbind(df,pedsql4_total)
+#       colnames(df)[ncol(df)] <-
+#          paste0(prefix,colnames(df)[ncol(df)])
+#    }else{
+#       df <- cbind(df,pedsql4_total,pedsql4_physical,pedsql4_emotional,
+#                   pedsql4_social,pedsql4_school,pedsql4_psychosocial)
+#       colnames(df)[c((ncol(df)-5):ncol(df))] <-
+#          paste0(prefix,colnames(df)[c((ncol(df)-5):ncol(df))])
+#    }
+#
+#
+#
+# }else if(scale == "RCADS"){ # https://www.childfirst.ucla.edu/resources/
+#    df[,questions] <- lapply(df[,questions], FUN=function(x){
+#       as.numeric(as.character(x))
+#    })
+#
+#    c_sad <- c(5,9,17,18,33,45,46)
+#    c_gad <- c(1,13,22,27,35,37)
+#    c_pd <- c(3,14,24,26,28,34,36,39,41)
+#    c_soc <- c(4,7,8,12,20,30,32,38,43)
+#    c_ocd <- c(10,16,23,31,42,44)
+#    c_depression <- c(2,6,11,15,19,21,25,29,40,47)
+#    c_anxiety <- c(1,3,4,5,7,8,9,10,12,13,14,16,17,18,20,22,23,24,26,27,28,30,
+#                   31,32,33,34,35,36,37,38,39,41,42,43,44,45,46)
+#    c_total <- c(1:47)
+#
+#    rcadschild_sad <- rowSums(df[,questions[c_sad]],na.rm=T)/
+#       (7-rowSums(is.na(df[,questions[c_sad]])))*7
+#    rcadschild_gad <- rowSums(df[,questions[c_gad]],na.rm=T)/
+#       (6-rowSums(is.na(df[,questions[c_gad]])))*6
+#    rcadschild_pd <- rowSums(df[,questions[c_pd]],na.rm=T)/
+#       (9-rowSums(is.na(df[,questions[c_pd]])))*9
+#    rcadschild_soc <- rowSums(df[,questions[c_soc]],na.rm=T)/
+#       (9-rowSums(is.na(df[,questions[c_soc]])))*9
+#    rcadschild_ocd <- rowSums(df[,questions[c_ocd]],na.rm=T)/
+#       (6-rowSums(is.na(df[,questions[c_ocd]])))*6
+#    rcadschild_depression <- rowSums(df[,questions[c_depression]],na.rm=T)/
+#       (10-rowSums(is.na(df[,questions[c_depression]])))*10
+#    rcadschild_anxiety <- rowSums(df[,questions[c_anxiety]],na.rm=T)/
+#       (37-rowSums(is.na(df[,questions[c_anxiety]])))*37
+#    rcadschild_total <- rowSums(df[,questions[c_total]],na.rm=T)/
+#       (47-rowSums(is.na(df[,questions[c_total]])))*47
+#
+#    rcadschild_sad[rowSums(is.na(df[,questions[c_sad]])) > 2] <- NA
+#    rcadschild_gad[rowSums(is.na(df[,questions[c_gad]])) > 2] <- NA
+#    rcadschild_pd[rowSums(is.na(df[,questions[c_pd]])) > 2] <- NA
+#    rcadschild_soc[rowSums(is.na(df[,questions[c_soc]])) > 2] <- NA
+#    rcadschild_ocd[rowSums(is.na(df[,questions[c_ocd]])) > 2] <- NA
+#    rcadschild_depression[rowSums(is.na(df[,questions[c_depression]])) > 2] <- NA
+#
+#    rcadschild_anxiety[rowSums(is.na(df[,questions[c_anxiety]])) > 10] <- NA
+#    rcadschild_anxiety[which(rowSums(is.na(cbind(rcadschild_sad,rcadschild_gad,
+#                                                 rcadschild_pd,rcadschild_soc,rcadschild_ocd))) > 0)] <- NA
+#
+#
+#    rcadschild_total[rowSums(is.na(df[,questions[c_total]])) > 12] <- NA
+#    rcadschild_total[which(rowSums(is.na(cbind(rcadschild_sad,rcadschild_gad,
+#                                               rcadschild_pd,rcadschild_soc,rcadschild_ocd,rcadschild_depression))) > 0)] <- NA
+#
+#    if(only){
+#       df <- cbind(df,rcadschild_total)
+#       colnames(df)[ncol(df)] <-
+#          paste0(prefix,colnames(df)[ncol(df)])
+#    }else{
+#       df <- cbind(df,rcadschild_sad,rcadschild_gad,rcadschild_pd,
+#                   rcadschild_soc,rcadschild_ocd,rcadschild_depression)
+#       df <- cbind(df,rcadschild_anxiety,rcadschild_total)
+#
+#       colnames(df)[c((ncol(df)-7):ncol(df))] <-
+#          paste0(prefix,colnames(df)[c((ncol(df)-7):ncol(df))])
+#    }
+#
+# }
+# df <- df[,!colnames(df) %in% c(questions)]
+# return(df)
 
