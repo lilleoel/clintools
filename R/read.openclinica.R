@@ -22,7 +22,7 @@
 #' }
 #' @export
 #'
-#' @importFrom jsonlite fromJSON
+
 #
 # ==== FUNCTION ====
 
