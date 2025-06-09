@@ -51,34 +51,40 @@ read.openclinica <- function(trial, link, prefix = 4, ids){
       colnames(tmp_data)[!colnames(tmp_data) %in% ids] <- paste0(substr(tmp,1,prefix),".",colnames(tmp_data)[!colnames(tmp_data) %in% ids])
 
       if(is.null(d)) d <- tmp_data
-      if(!is.null(d)) d <- merge(d,tmp_data,by=ids,all=T)
+      if(!is.null(d)){
+         colnames(tmp_data)[colnames(tmp_data) %in% setdiff(colnames(df),ids)] <-
+            paste0(colnames(tmp_data)[colnames(tmp_data) %in% setdiff(colnames(df),ids)],".",
+                   letters[i])
+
+         d <- merge(d,tmp_data,by=ids,all=T)
+      }
    }
 
    #Search for duplicate columns
-   dup_cols <- gsub("\\.x|\\.y|\\.1","",colnames(d))
+   dup_cols <- gsub("\\.[a-z]$","",colnames(d))
    dup_cols <- unique(dup_cols[duplicated(dup_cols)])
    for(i in dup_cols){
-      tmp <- d[,grepl(paste0(i),colnames(d))]
-      if(ncol(tmp) == 2){
-         tmp[is.na(tmp)]<-""
-         tmp[,duplicated(as.list(tmp))] <- ""
-         x1 <- tmp[[1]]
-         x2 <- tmp[[2]]
-         d[,c(colnames(tmp)[1])] <- paste0(x1,x2)
-         d <- d[,!colnames(d) %in% colnames(tmp)[2:ncol(tmp)]]
-      }else if(ncol(tmp) == 3){
-         tmp[is.na(tmp)]<-""
-         tmp[,duplicated(as.list(tmp))] <- ""
-         for(j in 1:nrow(tmp)) tmp[j,c(t(duplicated(t(tmp[j,]))))] <- ""
-         x1 <- tmp[[1]]
-         x2 <- tmp[[2]]
-         x3 <- tmp[[3]]
-         d[,c(colnames(tmp)[1])] <- paste0(x1,x2,x3)
-         # data[,c(colnames(tmp)[1])] <- unite(tmp, newcol, c(1:ncol(tmp)), sep="")
-         d <- d[,!colnames(d) %in% colnames(tmp)[2:ncol(tmp)]]
+      # Find alle kolonner relateret til det dublerede navn
+      tmp <- d[, grepl(paste0("^", i, "(\\.|$)"), colnames(d)), drop = FALSE]
+
+      # Erstat NA med tom string
+      tmp[is.na(tmp)] <- ""
+
+      # Fjern dubletter per række (f.eks. "a", "a", "b" => "a", "", "b")
+      for (j in 1:nrow(tmp)) {
+         row_vals <- tmp[j, ]
+         dup_in_row <- duplicated(as.character(row_vals))
+         tmp[j, which(dup_in_row)] <- ""
       }
+
+      # Sammenkæd alle kolonneværdier i tmp til én kolonne
+      d[, i] <- do.call(paste0, tmp)
+
+      # Fjern de overskydende kolonner
+      colnames_to_remove <- setdiff(colnames(tmp), i)
+      d <- d[, !colnames(d) %in% colnames_to_remove]
    }
-   colnames(d) <- gsub("\\.x$|\\.y$|\\.1","",colnames(d))
+   colnames(d) <- gsub("\\.[a-z]$","",colnames(d))
 
 
    return(d)

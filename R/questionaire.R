@@ -349,13 +349,14 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       if(length(questions) != 46) stop("There must be 46 questions to calculate ADOS-2")
       if(is.null(df[[age.months]])) stop("There must be a column for age in months in the data frame.")
       if(is.null(df[[module]])) stop("There must be a column for module in the data frame.")
+      if(!exists("impute")) stop("There must T/F for 'impute', e.g. impute = T")
 
       d <- df[,c(id,questions,age.months,module)]
       d[,questions] <- lapply(d[,questions],as.numeric)
 
       # ADOS QUALITY
-      d$ados_quality8 <- rowSums(d[,questions] == 8,na.rm=T)
-      d$ados_quality9 <- rowSums(d[,questions] == 9,na.rm=T)
+      d$ados_N8s_tot <- rowSums(d[,questions] == 8,na.rm=T)
+      d$ados_N9s_tot <- rowSums(d[,questions] == 9,na.rm=T)
 
       # Change 5-7 to 0
       d[,questions] <- lapply(d[,questions], function(x) {
@@ -415,12 +416,19 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             tst <- !is.na(d$algorithm) & d$algorithm == i
             n_miss <- rowSums(is.na(d[tst,questions[cur_dom[[j]]]]))
             # Convert 8 and 9 to average
+            d[tst,paste0("ados_N8s_",substr(names(cur_dom[j]),6,7))] <-
+               rowSums(d[tst,questions[cur_dom[[j]]]] == 8,na.rm=T)
+            d[tst,paste0("ados_N9s_",substr(names(cur_dom[j]),6,7))] <-
+               rowSums(d[tst,questions[cur_dom[[j]]]] == 9,na.rm=T)
+
             d[tst,questions[cur_dom[[j]]]] <-
-               lapply(d[tst,questions[cur_dom[[j]]]], function(x) {
-               if (is.numeric(x)) { x[x >= 8 & x <= 9] <- NA }; return(x) })
-            tmp <- round(rowMeans(d[tst,questions[cur_dom[[j]]]],na.rm=T))
-            for(k in 1:sum(tst)){
-               d[tst,questions[cur_dom[[j]]]][k,][is.na(d[tst,questions[cur_dom[[j]]]][k,])] <- tmp[[k]]
+                  lapply(d[tst,questions[cur_dom[[j]]]], function(x) {
+                  if (is.numeric(x)) { x[x >= 8 & x <= 9] <- NA }; return(x) })
+            if(impute == T){
+               tmp <- round(rowMeans(d[tst,questions[cur_dom[[j]]]],na.rm=T))
+               for(k in 1:sum(tst)){
+                  d[tst,questions[cur_dom[[j]]]][k,][is.na(d[tst,questions[cur_dom[[j]]]][k,])] <- tmp[[k]]
+               }
             }
 
             # Now calculate sum
@@ -908,7 +916,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       # WPPSI-IV - UNVALIDATED ####
       # ******************************
       if(length(questions) != 4) stop("There must be 4 rawscores to calculate WPPSI-IV")
-      if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      if(is.null(df[[age.months]])) stop("There must be a column for age in months in the data frame.")
       d <- df[,c(id,questions,age.months)]
       d[,questions] <- lapply(d[,questions],as.numeric)
 
