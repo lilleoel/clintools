@@ -4,7 +4,7 @@
 \alias{read.openclinica}
 \title{Create dataframe from Open Clinica (read,openclinica)}
 \usage{
-read.openclinica(trial, link, prefix, ids)
+read.openclinica(trial, link, prefix, ids, metadata)
 }
 \arguments{
 \item{trial}{The trialname used in openclinica for extraction}
@@ -14,6 +14,8 @@ read.openclinica(trial, link, prefix, ids)
 \item{prefix}{for each instrument how many characters should be used in the initial part of the colnames}
 
 \item{ids}{list with ID's which reccur from each instrument}
+
+\item{metadata}{is it metadata that should be extracted? T/F}
 }
 \value{
 Returns a dataframe with data from Open Clinica

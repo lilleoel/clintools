@@ -6,7 +6,7 @@
 #'
 #' @name cdm.fig
 #'
-#' @usage cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting, blind)
+#' @usage cdm.fig(df, col, site, meta_title, seedno, output, nmin, setting, blind, outliers)
 #'
 #' @param df      dateframe to be assessed for missing data
 #' @param col     column to be assessed
@@ -18,6 +18,7 @@
 #' @param nmin    minimum number of variables in site to be presented
 #' @param setting if "full" as default it will show all data, if anything else than "full" no site strata will be presented.
 #' @param blind should sites be blinded (default is T)
+#' @param outliers which column should be used for outlier detection in continuous figures
 #'
 #' @return Returns a full markdown output.
 #'
@@ -37,6 +38,8 @@
 #' @importFrom ggplot2 scale_y_continuous sec_axis position_stack coord_flip
 #' @importFrom scales percent_format
 #' @importFrom ggpubr ggarrange
+#' @importFrom ggrepel geom_text_repel
+
 #'
 #' @export
 #
@@ -51,7 +54,7 @@
 # setting="SKM"
 
 cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
-                    output = "fig", nmin = 5, setting="full", blind=T){
+                    output = "fig", nmin = 5, setting="full", blind=T, outliers=NULL){
    if(is.na(seedno)) seedno <- as.numeric(Sys.Date())
 
    tmp <- NULL
@@ -77,8 +80,14 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       zite <- "site"
    }
    tmp <- data.frame(tmp)
+
+   if(!is.null(outliers)){
+      tmp <- cbind(tmp,df[[outliers]])
+      colnames(tmp)[3] <- "outliers"
+   }
    tmp$col[nchar(as.character(tmp$col)) == 0 | is.na(tmp$col)] <- NA
    tmp <- tmp[!is.na(tmp$col),]
+
 
    zite_size <- NULL
    for(j in unique(tmp[[zite]])){
@@ -105,10 +114,18 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
    #Continuous
    if(class(tmp$col) %in% c("numeric","integer")){
       if(setting=="full"){
-         meanval <- mean(tmp$col,na.rm=T)
-         tmp_all <- cbind(paste0("All (n=",nrow(tmp),")"),as.character(tmp$col))
-         colnames(tmp_all) <- c(zite,"col")
-         tmp <- data.frame(rbind(tmp[,c(zite,"col")],tmp_all))
+         if(is.null(outliers)){
+            meanval <- mean(tmp$col,na.rm=T)
+            tmp_all <- cbind(paste0("All (n=",nrow(tmp),")"),as.character(tmp$col))
+            colnames(tmp_all) <- c(zite,"col")
+            tmp <- data.frame(rbind(tmp[,c(zite,"col")],tmp_all))
+         }else{
+            meanval <- mean(tmp$col,na.rm=T)
+            tmp_all <- cbind(paste0("All (n=",nrow(tmp),")"),as.character(tmp$col),tmp$outliers)
+            colnames(tmp_all) <- c(zite,"col","outliers")
+            tmp <- data.frame(rbind(tmp[,c(zite,"col","outliers")],tmp_all))
+         }
+
       }else{
          tmp[[zite]] <- paste0("All (n=",nrow(tmp),")")
       }
@@ -130,6 +147,24 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
             geom_vline(aes(xintercept=1.5), linetype="dashed",alpha=0.1) +
             geom_hline(aes(yintercept=meanval),color="red",linetype="dotted", alpha=0.5) +
             theme(axis.title.x = element_blank())
+
+         if(!is.null(outliers)){
+            values <- tmp$col[grepl("^All",tmp$site)]
+            Q1 <- quantile(values, 0.25)
+            Q3 <- quantile(values, 0.75)
+            IQR <- Q3 - Q1
+            lower <- Q1 - 1.5 * IQR
+            upper <- Q3 + 1.5 * IQR
+
+            tmp$outliers[!grepl("^All",tmp$site) |
+                            (grepl("^All",tmp$site) &
+                            tmp$col < upper & tmp$col > lower)] <- NA
+
+            g1 <- g1 + ggrepel::geom_text_repel(aes(x=tmp$site, y=tmp$col, label = tmp$outlier),
+                                 vjust=0.5, size=2.5, color="darkred")
+
+         }
+
       }else{
          g1 <- g1 + coord_flip() +
             theme(axis.title.y = element_blank())
