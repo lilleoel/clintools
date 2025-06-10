@@ -150,8 +150,8 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
 
          if(!is.null(outliers)){
             values <- tmp$col[grepl("^All",tmp$site)]
-            Q1 <- quantile(values, 0.25)
-            Q3 <- quantile(values, 0.75)
+            Q1 <- quantile(values, 0.25, na.rm=T)
+            Q3 <- quantile(values, 0.75, na.rm=T)
             IQR <- Q3 - Q1
             lower <- Q1 - 1.5 * IQR
             upper <- Q3 + 1.5 * IQR
