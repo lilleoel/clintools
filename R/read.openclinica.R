@@ -44,7 +44,7 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
          if(nchar(tmp[[1]]) == 0) next
          tmp_data <- suppressWarnings(tryCatch(readr::read_tsv(
             paste0(link,"get?trialName=",trial,"&referenceName=",json_data)[i],
-            na = ".", show_col_types = F, col_types = "c", locale = readr::locale(encoding = "ISO-8859-1"))
+            na = ".", show_col_types = F, col_types = readr::cols(.default = readr::col_character()), locale = readr::locale(encoding = "ISO-8859-1"))
             ,error=function(e) e))
          if(nrow(tmp_data) == 0){
             warning(paste("Error in",json_data[i],"-",i,"-",
