@@ -42,11 +42,11 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
       for(i in 1:length(json_data)){
          tmp <- json_data[i]
          if(nchar(tmp[[1]]) == 0) next
-         tmp_data <- suppressWarnings(tryCatch(read.csv2(
+         tmp_data <- suppressWarnings(tryCatch(readr::read_tsv(
             paste0(link,"get?trialName=",trial,"&referenceName=",json_data)[i],
-            sep="\t",na.strings = ".",fileEncoding="latin1")
+            na = ".", show_col_types = F, col_types = "c", locale = readr::locale(encoding = "ISO-8859-1"))
             ,error=function(e) e))
-         if(any(class(tmp_data) %in% c("error"))){
+         if(nrow(tmp_data) == 0){
             warning(paste("Error in",json_data[i],"-",i,"-",
                           tmp_data$message,"\n"))
             next
@@ -65,7 +65,7 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
       }
 
       #Search for duplicate columns
-      dup_cols <- gsub("\\.[a-z]$","",colnames(d))
+      dup_cols <- gsub("\\.[a-z]$|\\.NA$","",colnames(d))
       dup_cols <- unique(dup_cols[duplicated(dup_cols)])
       for(i in dup_cols){
          # Find alle kolonner relateret til det dublerede navn
@@ -88,7 +88,7 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
          colnames_to_remove <- setdiff(colnames(tmp), i)
          d <- d[, !colnames(d) %in% colnames_to_remove]
       }
-      colnames(d) <- gsub("\\.[a-z]$","",colnames(d))
+      colnames(d) <- gsub("\\.[a-z]$|\\.NA$","",colnames(d))
 
 
       return(d)

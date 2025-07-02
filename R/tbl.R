@@ -420,7 +420,12 @@ tbl <- function(df,strata = NULL,vars,
             tmp_d <- d
             tmp_d[[j]] <- as.numeric(as.factor(tmp_d[[j]]))-1
 
-            m1 <- glm(formel, data = tmp_d, family=binomial(log))
+            m1 <- tryCatch(glm(formel, data = tmp_d, family=binomial(log)),error=function(e) e, warning=function(w) w)
+            if(any(class(m1) %in% c("error","try-error","warning"))){
+               m1 <- glm(formel, data = tmp_d, family = poisson(link = "log"))
+            }
+
+
             out$txt <- "glm"
          }
 

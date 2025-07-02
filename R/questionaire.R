@@ -482,7 +482,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       # Vineland-3 - UNVALIDATED #####
       #*******************************
       if(length(questions) != 476) stop("There must be 476 questions to calculate Vineland-3")
-      if(is.null(d[[age.months]])) stop("There must be a column for age in months in the data frame.")
+      if(is.null(df[[age.months]])) stop("There must be a column for age in months in the data frame.")
       if (!"module" %in% names(list(...))) {
          stop("Der skal defineres et modul - fx 'est' eller noget andet")
       }
@@ -514,11 +514,40 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }else{
          suffix <- "raw"
       }
+      # Helper function for raw scores
+      beregn_vineland_raascore <- function(scores) {
+         if (all(is.na(scores))) return(NA)
+
+         r <- rle(scores)
+
+         # Find gulv (første sekvens med 4 eller flere 2’ere)
+         pos <- cumsum(r$lengths)
+         gulv_idx <- which(r$values == 2 & r$lengths > 4)
+         if(length(gulv_idx) == 0) return(sum(scores, na.rm = TRUE)) # fallback
+
+         gulv_slut <- pos[gulv_idx[1]]
+
+         # Find loft (første sekvens med 4 eller flere 0’ere efter gulv)
+         loft_idx <- which(r$values == 0 & r$lengths > 4 & pos > gulv_slut)
+         if(length(loft_idx) > 0){
+            loft_start <- pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
+         } else {
+            loft_start <- length(scores) + 1
+         }
+
+         gulv_score <- gulv_slut * 2
+         mellem_score <- sum(scores[(gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
+
+         return(gulv_score + mellem_score)
+      }
+
       # Calculate raw scores
       for(i in 1:length(domains)){
          n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
 
-         d[[paste0(names(domains)[i],"_",suffix)]] <- rowSums(d[,questions[domains[[i]]]],na.rm=T)
+         dom_data <- d[, questions[domains[[i]]]]
+         d[[paste0(names(domains)[i], "_", suffix)]] <- apply(dom_data, 1, beregn_vineland_raascore)
+         # d[[paste0(names(domains)[i],"_2",suffix)]] <- rowSums(d[,questions[domains[[i]]]],na.rm=T)
 
          #Missing
          if(module != "est"){
@@ -530,7 +559,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
               paste0(names(domains)[i],"_",suffix)] <- NA
          }else{
             d[[paste0(names(domains)[i],"_",suffix)]] <-
-               round(d[[paste0(names(domains)[i],"_",suffix)]] / length(domains[[i]]),3)
+               round(rowSums(dom_data,na.rm=T) / length(domains[[i]]),3)
          }
       }
 
@@ -754,7 +783,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          `31` = c(80,80,80,80,80,80,80,80,79,77,75,73,70,69,67,65,62,59,57,54,51,
                   49,46,43,40,38,35,33,30,28,25,22,20,20,20,20,20,20,20,20,20,20,
                   20,20,20,20,20,20,20,20,20),
-         `34` = c(80,80,80,80,80,79,77,75,73,71,70,68,66,64,61,58,86,83,81,49,46,
+         `34` = c(80,80,80,80,80,79,77,75,73,71,70,68,66,64,61,58,56,53,51,49,46,
                   44,41,38,35,33,30,27,24,20,20,20,20,20,20,20,20,20,20,20,20,20,
                   20,20,20,20,20,20,20,20,20),
          `37` = c(80,80,80,80,78,76,74,72,70,68,66,63,61,58,56,54,51,49,47,45,42,
@@ -778,7 +807,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          `55` = c(80,80,67,62,57,54,51,48,46,43,41,39,37,34,33,31,29,26,24,22,20,
                   20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,
                   20,20,20,20,20,20,20,20,20),
-         `58` = c(80,80,63,58,83,50,47,44,42,39,37,35,33,31,30,27,25,23,21,20,20,
+         `58` = c(80,80,63,58,53,50,47,44,42,39,37,35,33,31,30,27,25,23,21,20,20,
                   20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,
                   20,20,20,20,20,20,20,20,20),
          `61` = c(80,80,60,53,49,46,43,40,37,35,33,31,29,27,24,22,20,20,20,20,20,

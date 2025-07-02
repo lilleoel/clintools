@@ -46,4 +46,5 @@ Imports: signal (>= 0.7-6),
          utils (>= 4.4.2),
          rjson (>= 0.2.23),
          ggrepel (>= 0.9.6),
-         plyr (>= 1.8.9)
+         plyr (>= 1.8.9),
+         readr (>= 2.1.5)
