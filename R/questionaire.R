@@ -371,11 +371,11 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
            d[[module]] == 0 & (
               (d[[age.months]] >= 12 & d[[age.months]] < 21) |
                  (d[[questions[1]]] %in% c(3,4) &
-                     d[[age.months]] >= 21 & d[[age.months]] <= 30)
+                     d[[age.months]] >= 21)
            ),"algorithm"] <- "Toddler1"
       d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
            d[[module]] == 0 & d[[questions[1]]] %in% c(0:2) &
-           d[[age.months]] >= 21 & d[[age.months]] <= 30,"algorithm"] <- "Toddler2"
+           d[[age.months]] >= 21,"algorithm"] <- "Toddler2"
       # - Module 1
       d[rowSums(!is.na(d[,c(module,age.months,questions[1])])) == 3 &
            d[[module]] == 1 & d[[questions[1]]] %in% c(3,4)
