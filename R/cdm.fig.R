@@ -140,7 +140,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
          theme_classic() +
          labs(y=meta_title) +
          theme(axis.ticks.y = element_blank(),
-               axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0))
+               axis.text.x = element_text(angle=90, vjust = 0.25))
 
       if(setting=="full"){
          g1 <- g1 +
