@@ -486,12 +486,13 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       if (!"module" %in% names(list(...))) {
          stop("Der skal defineres et modul - fx 'est' eller noget andet")
       }
+      if(!exists("impute")) stop("There must T/F for 'impute', e.g. impute = T")
 
       d <- df[,c(id,age.months,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
 
       # Calculate raw score domains
-      domains <- list(
+      domainz <- list(
          v_lyt = c(1:39),
          v_tal = c(40:88),
          v_laes = c(89:126),
@@ -515,51 +516,63 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          suffix <- "raw"
       }
       # Helper function for raw scores
-      beregn_vineland_raascore <- function(scores) {
+      beregn_vineland_raascore <- function(scores, impute = T) {
+         # Hvis alle svar mangler → NA
          if (all(is.na(scores))) return(NA)
 
-         r <- rle(scores)
+         # Genskab collapsed_row som karakterstreng
+         collapsed <- paste0(scores, collapse = "")
 
-         # Find gulv (første sekvens med 4 eller flere 2’ere)
+         # Hvis der findes NA, men ikke en "00000NA"-sekvens → NA
+         if(!impute) if (grepl("NA", collapsed) && !grepl("00000NA", collapsed)) return(NA)
+
+         # Fortsæt som normalt herfra
+         r <- rle(scores)
          pos <- cumsum(r$lengths)
-         gulv_idx <- which(r$values == 2 & r$lengths > 4)
-         if(length(gulv_idx) == 0) return(sum(scores, na.rm = TRUE)) # fallback
+
+         # Find gulv (første sekvens med 5 eller flere 2’ere)
+         gulv_idx <- which(r$values == 2 & r$lengths >= 5)
+         if (length(gulv_idx) == 0) return(sum(scores, na.rm = TRUE)) # fallback
 
          gulv_slut <- pos[gulv_idx[1]]
 
-         # Find loft (første sekvens med 4 eller flere 0’ere efter gulv)
-         loft_idx <- which(r$values == 0 & r$lengths > 4 & pos > gulv_slut)
-         if(length(loft_idx) > 0){
+         # Find loft (første sekvens med 5 eller flere 0’ere efter gulv)
+         loft_idx <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
+         if (length(loft_idx) > 0) {
             loft_start <- pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
          } else {
             loft_start <- length(scores) + 1
          }
 
          gulv_score <- gulv_slut * 2
-         mellem_score <- sum(scores[(gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
+
+         if (gulv_slut + 1 <= loft_start - 1) {
+            mellem_score <- sum(scores[(gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
+         } else {
+            mellem_score <- 0
+         }
 
          return(gulv_score + mellem_score)
       }
-
       # Calculate raw scores
-      for(i in 1:length(domains)){
-         n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
+      for(i in 1:length(domainz)){
+         n_miss <- rowSums(is.na(d[,questions[domainz[[i]]]]))
 
-         dom_data <- d[, questions[domains[[i]]]]
-         d[[paste0(names(domains)[i], "_", suffix)]] <- apply(dom_data, 1, beregn_vineland_raascore)
-         # d[[paste0(names(domains)[i],"_2",suffix)]] <- rowSums(d[,questions[domains[[i]]]],na.rm=T)
+         dom_data <- d[, questions[domainz[[i]]]]
+         d[[paste0(names(domainz)[i], "_", suffix)]] <- apply(dom_data, 1, beregn_vineland_raascore,impute=impute)
+         # d[[paste0(names(domainz)[i],"_2",suffix)]] <- rowSums(d[,questions[domainz[[i]]]],na.rm=T)
 
          #Missing
          if(module != "est"){
-            collapsed_rows <- apply(d[, questions[domains[[i]]]], 1, function(x) paste0(x, collapse = ""))
-
-            d[n_miss == length(domains[[i]]) |
-                 (grepl("NA",collapsed_rows) &
-                     !grepl("00000NA",collapsed_rows)),
-              paste0(names(domains)[i],"_",suffix)] <- NA
+            # collapsed_rows <- apply(d[, questions[domainz[[i]]]], 1, function(x) paste0(x, collapse = ""))
+            #
+            # d[n_miss == length(domainz[[i]]) |
+            #      (grepl("NA",collapsed_rows) &
+            #          !grepl("00000NA",collapsed_rows)),
+            #   paste0(names(domainz)[i],"_",suffix)] <- NA
          }else{
-            d[[paste0(names(domains)[i],"_",suffix)]] <-
-               round(rowSums(dom_data,na.rm=T) / length(domains[[i]]),3)
+            d[[paste0(names(domainz)[i],"_",suffix)]] <-
+               round(rowSums(dom_data,na.rm=T) / length(domainz[[i]]),3)
          }
       }
 
@@ -568,6 +581,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          # Convert to scale score
          rawtoscales <- questionaire_helper()$vineland3
          for(i in names(rawtoscales)){
+            if(i %in% c("domains","gaf")) next
             # i <- names(rawtoscales)[1]
             rtst <- !is.na(d[[age.months]]) &
                d[[age.months]] >= as.numeric(substr(i,2,3)) &

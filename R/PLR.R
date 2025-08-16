@@ -6,11 +6,11 @@
 #'
 #' @name PLR
 #'
-#' @usage PLR(filename = NULL, df = NULL, version)
+#' @usage PLR(filename = NULL, df = NULL, v = "3000")
 #'
 #' @param filename path to the XLS-file with the measurements
 #' @param df the dataframe can also be used for the function if data is already imported.
-#' @param version needed to define if it is either "3000" or "4000"
+#' @param v needed to define if it is either "3000" or "4000"
 #'
 #' @return Returns a list with two dataframe, one with the measurements (pupils) and one with the markers (markers).
 #'
@@ -27,7 +27,7 @@
 # filename = "C:/Oel/Artikler/NIA/DK_Poul_pupillometry/PLR3000 eksempel.xls"
 # version = "4000"
 # tmp <- PLR(filename,version="4000")
-PLR <- function(filename=NULL, df=NULL, version){
+PLR <- function(filename=NULL, df=NULL, v = "3000"){
    if(is.null(df) & is.null(filename)){
       stop("Please provide either a dataframe or the filename")
    }
@@ -72,30 +72,50 @@ PLR <- function(filename=NULL, df=NULL, version){
       temp_raw <- as.data.frame(t(temp_raw))
 
       #Select information
-      temp_record_id <- as.character(temp_raw[1,])
-      temp_patient_id <- as.character(temp_raw[3,])
-      temp_date <- as.character(temp_raw[4,])
-      temp_pupil <- as.character(temp_raw[6,])
+      if(v == 3000){
+         temp_record_id <- as.character(temp_raw[1,])
+         temp_patient_id <- as.character(temp_raw[3,])
+         temp_date <- as.character(temp_raw[4,])
+         temp_pupil <- as.character(temp_raw[6,])
+      }else{
+         temp_record_id <- as.character(temp_raw[1,])
+         temp_patient_id <- as.character(temp_raw[3,])
+         temp_date <- as.character(temp_raw[2,])
+         temp_pupil <- as.character(temp_raw[5,])
+      }
 
       #Identify number of measurements
       temp_no <- as.numeric(as.character(temp_raw[24,]))
 
-      #Select time stamps
-      temp_x <- temp_raw[c(25:(temp_no+24)),]
+      if(v == 3000){
+         #Select time stamps
+         temp_x <- temp_raw[c(25:(temp_no+24)),]
 
-      #Select pupil size
-      temp_y <- temp_raw[c((temp_no+25):(temp_no+temp_no+24)),]
+         #Select pupil size
+         temp_y <- temp_raw[c((temp_no+25):(temp_no+temp_no+24)),]
+      }else{
+         #Select time stamps
+         temp_y <- temp_raw[c(25:(temp_no+24)),]
+
+         #Select pupil size
+         temp_x <- temp_raw[c((temp_no+25):(temp_no+temp_no+24)),]
+      }
 
       #Identify number of markers
       temp_no_markers <- as.numeric(as.character(temp_raw[(temp_no+temp_no+25),]))
 
       if(!is.na(temp_no_markers)){
-         #Select time stamps for markers
-         temp_x_markers <- temp_raw[c((temp_no+temp_no+26):(temp_no+temp_no+25+temp_no_markers)),]
-
-         #Select button pushed
-         temp_y_markers <- temp_raw[c((temp_no+temp_no+26+temp_no_markers):(temp_no+temp_no+25+temp_no_markers+temp_no_markers)),]
-
+         if(v == 3000){
+            #Select time stamps for markers
+            temp_x_markers <- temp_raw[c((temp_no+temp_no+26):(temp_no+temp_no+25+temp_no_markers)),]
+            #Select button pushed
+            temp_y_markers <- temp_raw[c((temp_no+temp_no+26+temp_no_markers):(temp_no+temp_no+25+temp_no_markers+temp_no_markers)),]
+         }else{
+            temp_markers <- temp_raw[c((temp_no+temp_no+26):(temp_no+temp_no+25+temp_no_markers+temp_no_markers)),]
+            temp_x_markers <- temp_markers[c(1:length(temp_markers)) %% 2 == 1]
+            #Select button pushed
+            temp_y_markers <- temp_markers[c(1:length(temp_markers)) %% 2 == 0]
+         }
       }
       #Convert data to numeric when relevant
       temp_x <- as.numeric(as.character(temp_x))
@@ -127,6 +147,16 @@ PLR <- function(filename=NULL, df=NULL, version){
    results <- NULL
    results$pupils <- pupils_data
    results$markers <- markers_data
+
+   if(any(is.na(as.numeric(markers_data[,1])))){
+      if(v == 3000){
+         message("It might be the wrong version - consider setting v = 4000")
+      }else if(v == 4000){
+         message("It might be the wrong version - consider setting v = 3000")
+      }else{
+         message("It might be the wrong version - consider setting v = 3000 or v = 4000")
+      }
+   }
 
    return(results)
 }

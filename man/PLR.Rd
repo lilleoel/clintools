@@ -4,14 +4,14 @@
 \alias{PLR}
 \title{NeurOpticsTM PLR-3000 or PLR-4000 pupillometer file to dataframe (PLR)}
 \usage{
-PLR(filename = NULL, df = NULL, version)
+PLR(filename = NULL, df = NULL, v = "3000")
 }
 \arguments{
 \item{filename}{path to the XLS-file with the measurements}
 
 \item{df}{the dataframe can also be used for the function if data is already imported.}
 
-\item{version}{needed to define if it is either "3000" or "4000"}
+\item{v}{needed to define if it is either "3000" or "4000"}
 }
 \value{
 Returns a list with two dataframe, one with the measurements (pupils) and one with the markers (markers).

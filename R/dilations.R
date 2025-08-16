@@ -49,6 +49,11 @@
 #' @export
 #
 # ==== FUNCTION ====
+# remove_markers = NULL; add_markers = NULL;
+# not_assess = NULL; artefacts_static = c(0.55,9.95)
+# artefacts_dynamic = c(`1` = 1.5, `0.66` = 1, `0.33` = 0.5)
+# time_assess = c(`1` = 10, `3` = 5); sig.level = 0.05
+# min_change = NULL; resting_delay = c(`3` = 0)
 
 dilations <- function(pupils, markers,
                       remove_markers = NULL, add_markers = NULL,
@@ -84,6 +89,7 @@ dilations <- function(pupils, markers,
       tmp <- pupils[pupils$record_id == i,c("time","size")]
       tmp[] <- lapply(tmp,as.numeric)
       tmp <- tmp[!duplicated(tmp),]
+      tmp <- tmp[complete.cases(tmp),]
       tmp_m <- markers[markers$record_id == i,c("time"),]
       tmp_m <- unique(tmp_m)
       tmp_m <- round(as.numeric(tmp_m),1)
@@ -222,6 +228,7 @@ dilations <- function(pupils, markers,
       results$dilations <- rbind(results$dilations,t)
 
       anner <- round(tmp_m$time,1)
+      if(all(is.na(anner))){ anner <- c(0,0) }
       n_occur <- data.frame(table(anner))
       n_occur$label <- n_occur$anner <- as.character(n_occur$anner)
       n_occur$label[n_occur$Freq > 1] <- paste0(n_occur$anner[n_occur$Freq > 1],"\n(n=",n_occur$Freq[n_occur$Freq > 1],")")
