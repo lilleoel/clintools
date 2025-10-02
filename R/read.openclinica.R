@@ -28,14 +28,12 @@
 #' @importFrom plyr rbind.fill
 #
 # ==== FUNCTION ====
-
 read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
    if(!metadata){
       linklist <- paste0("list?trialName=",trial)
       linkextract <- paste0("get?trialName=",trial,"&referenceName=")
 
-      json_data <- data.frame(suppressWarnings(fromJSON(paste(readLines(
-         paste0(link,"list?trialName=",trial)), collapse=""))))
+      json_data <- data.frame(suppressWarnings(fromJSON(paste(readLines(paste0(link,"list?trialName=",trial)), collapse=""))))
       json_data <- c(json_data[grepl("reference",colnames(json_data))][1,])
 
       d <- NULL
@@ -43,9 +41,15 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
          tmp <- json_data[i]
          if(nchar(tmp[[1]]) == 0) next
          tmp_data <- suppressWarnings(tryCatch(readr::read_tsv(
-            paste0(link,"get?trialName=",trial,"&referenceName=",json_data)[i],
-            na = ".", show_col_types = F, col_types = readr::cols(.default = readr::col_character()), locale = readr::locale(encoding = "ISO-8859-1"))
+            paste0(link,"get?trialName=",trial,"&referenceName=",json_data)[i],na = ".", show_col_types = F, col_types = readr::cols(.default = readr::col_character()), locale = readr::locale(encoding = "ISO-8859-1"))
             ,error=function(e) e))
+         if("error" %in% class(tmp_data)){
+            tmp_data <-
+               suppressWarnings(tryCatch(readr::read_tsv(
+                  paste0(link,"get?trialName=",trial,"&referenceName=",json_data,"&includeStatus=true")[i],na = ".", show_col_types = F, col_types = readr::cols(.default = readr::col_character()), locale = readr::locale(encoding = "ISO-8859-1"))
+                  ,error=function(e) e))
+         }
+
          if(nrow(tmp_data) == 0){
             warning(paste("Error in",json_data[i],"-",i,"-",
                           tmp_data$message,"\n"))

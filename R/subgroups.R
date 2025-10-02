@@ -110,13 +110,13 @@ subgroups <- function(df,group,subgroups,outcome,
                                    interactions) {
          formel <- paste0("`",group,"`")
          if(any(!is.na(strata.fixed))){
-            formel <- paste(formel,"+",paste0("`",strata.fixed,"`",collapse = " + "))
+            formel <- paste0(formel," + ",paste0("`",strata.fixed,"`",collapse = " + "))
          }
          if(!is.na(strata.random)){
-            formel <- paste(formel, "+ (1|`", strata.random, "`)", collapse = " + ")
+            formel <- paste0(formel, " + (1|`", strata.random, "`)", collapse = " + ")
          }
          if(all(!is.na(interactions))){
-            formel <- paste(formel,"+",paste0("`",interactions[1],"`*`",
+            formel <- paste0(formel," + ",paste0("`",interactions[1],"`*`",
                                               interactions[2],"`"))
          }
          formula(paste0("`", outcome, "` ~ ", formel))
@@ -235,40 +235,45 @@ subgroups <- function(df,group,subgroups,outcome,
                                        c(outcome,group,strata.fixed,strata.random)]),]
 
             if(!is.na(strata.random)){
-               m1 <- tryCatch(lme4::glmer(formel, data = m,family=binomial(log)),
-                              error=function(e) e, warning=function(w) w)
+               fit_glmer_safe <- function(formel, data) {
+                  # Liste af forsøg med forskellige kontrolparametre
+                  attempts <- list(
+                     list(args = list(family = binomial(log))),                   # standard
+                     list(args = list(family = binomial(log), nAGQ = 0)),         # fallback 1
+                     list(args = list(family = binomial(log),
+                                      control = glmerControl(optimizer = "bobyqa")))  # fallback 2
+                  )
 
-               if(any(class(m1) %in% c("error","try-error","warning"))){
-                  m1 <- tryCatch(lme4::glmer(formel, data = m, family=binomial(log),
-                                             nAGQ = 0),
-                                 error=function(e) e, warning=function(w) w)
+                  for(attempt in attempts){
+                     result <- try(lme4::glmer(formel, data = data, !!!attempt$args), silent = TRUE)
+                     if(!inherits(result, "try-error")){
+                        return(result)  # returnér straks hvis succes
+                     }
+                  }
+
+                  stop("Alle forsøg på at fit glmer mislykkedes.")
                }
-               if(any(class(m1) %in% c("error","try-error","warning"))){
-                  m1 <- tryCatch(lme4::glmer(formel, data = m, family=binomial(log),
-                                             control=glmerControl(optimizer="bobyqa")),
-                                 error=function(e) e, warning=function(w) w)
-               }
+
+               # Brug funktionen:
+               m1 <- tryCatch(fit_glmer_safe(formel, m),
+                              error=function(e) e, warning=function(w) w)
                if(!(any(class(m1) %in% c("error","try-error","warning")))){
                   out$txt <- "glmer" }
 
                if(any(class(m1) %in% c("error","try-error","warning"))){
-                  # formel <- paste0(deparse(formel),collapse="")
-                  # formel <- gsub("\\(1 \\|","",formel)
-                  # formel <- gsub("\\) ","",formel)
-                  # formel <- generate_formula(outcome, group,
-                  #                            strata.fixed=c(strata.fixed,strata.random),
-                  #                            strata.random=NA,
-                  #                            interactions=interactions)
+                  formel_fixed <- as.formula(
+                     gsub("\\(1 \\| ([^)]+)\\)", "\\1", paste(deparse(formel), collapse = ""))
+                  )
                   tmp_d <- d
                   tmp_d[[outcome]] <- as.numeric(as.factor(tmp_d[[outcome]]))-1
-                  m1 <- glm(as.formula(formelf), data = tmp_d, family=quasipoisson)
+                  m1 <- glm(formel_fixed, data = tmp_d, family=poisson(link = "log"))
                   out$txt <- "glm"
                }
             }else{
                tmp_d <- d
                tmp_d[[outcome]] <- as.numeric(as.factor(tmp_d[[outcome]]))-1
 
-               m1 <- glm(formel, data = tmp_d, family=quasipoisson)
+               m1 <- glm(formel, data = tmp_d, family=poisson(link = "log"))
                out$txt <- "glm"
             }
 
@@ -527,7 +532,7 @@ subgroups <- function(df,group,subgroups,outcome,
             plot.margin = margin()
          )
 
-      print(wrap_plots(left,middle,right,widths = c(3,2,2)))
+      print(patchwork::wrap_plots(left,middle,right,widths = c(4,3,2)))
 
    }
 

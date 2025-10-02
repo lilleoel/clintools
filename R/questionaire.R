@@ -702,15 +702,23 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
       for(i in 1:length(domains)){
          n_miss <- rowSums(is.na(d[,questions[domains[[i]]]]))
+         tmp <- d
 
-         d[[names(domains)[i]]] <- rowSums(d[,questions[domains[[i]]]],na.rm=T)
+         cols <- questions[domains[[i]]]
+         tmp[, cols] <- t(apply(tmp[, cols], 1, function(row) {
+            if (all(is.na(row))) {
+               return(row)  # behold kun NA hvis hele rækken er NA
+            } else {
+               m <- mean(row, na.rm = TRUE)
+               row[is.na(row)] <- m
+               return(row)
+            }
+         }))
 
-         # Ensure more than 90% of the questions has been answered
-         if(i %in% c(2,3)){
-            d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > 1] <- NA
-         }else{
-            d[[names(domains)[i]]][rowSums(is.na(d[,questions[domains[[i]]]])) > 0] <- NA
-         }
+         d[[names(domains)[i]]] <- round(rowSums(tmp[,questions[domains[[i]]]],na.rm=T))
+
+         # One question is enough
+         d[n_miss == length(domains[[i]]),names(domains)[i]] <- NA
       }
 
       # Calculate T-scores
@@ -860,7 +868,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       )
       n_miss <- rowSums(is.na(d[,questions[domains[[1]]]]))
       d[[names(domains)[1]]] <- rowSums(d[,questions[domains[[1]]]],na.rm=T)
-      d[[names(domains)[1]]][rowSums(is.na(d[,questions[domains[[1]]]])) > 0] <- NA
+      d[[names(domains)[1]]][rowSums(is.na(d[,questions[domains[[1]]]])) == length(questions)] <- NA
 
       # Calculate T-scores from individual age
       tage <- list(NA,
