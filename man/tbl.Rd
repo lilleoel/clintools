@@ -10,7 +10,7 @@ render.factor, tests, test.vars, paired,
    only_stats, strata.fixed, strata.random,
    time.to, present.missing, conf.level,
    zeroonetoyn,
-   markdown, caption)
+   markdown, caption, rd)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -54,6 +54,8 @@ render.factor, tests, test.vars, paired,
 \item{markdown}{default is true and output is pander, while false output is a dataframe (\code{boolean})}
 
 \item{caption}{Table caption only in use when markdown is true (\code{string})}
+
+\item{rd}{if risk difference should be added as an output for logistic regressions (\code{boolean})}
 }
 \value{
 Returns summarised information in dataframe.

@@ -50,7 +50,7 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
                   ,error=function(e) e))
          }
 
-         if(nrow(tmp_data) == 0){
+         if(is.null(nrow(tmp_data)) || nrow(tmp_data) == 0){
             warning(paste("Error in",json_data[i],"-",i,"-",
                           tmp_data$message,"\n"))
             next

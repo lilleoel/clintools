@@ -73,6 +73,7 @@
 # vars = c("Primary outcome")
 # tests=c("glm")
 # strata.random = "site"
+# rd = F
 
 
 
@@ -640,7 +641,7 @@ tbl <- function(df,strata = NULL,vars,
    if(any(!is.na(tests))){
       tsts <- NULL
       if(any(is.na(test.vars))){
-         tsts$var <- vars
+         tsts$var <- vars[vars %in% colnames(d)]
       }else{
          tsts$var <- test.vars
       }
