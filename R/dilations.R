@@ -190,10 +190,12 @@ dilations <- function(pupils, markers,
             after_median <- median(after,na.rm=T)
 
 
-            if(even & length(before) > 2 & length(current) > 2){
-               p_before <- wilcox.test(before,current)$p.value}else{p_before <- NA}
-            if(even & length(after) > 2 & length(current) > 2){
-               p_after <- wilcox.test(after,current)$p.value}else{p_after <- NA}
+            if(even & !is.na(before_median) & length(before) > 2 & length(current) > 2){
+               p_before <- suppressWarnings(
+                  wilcox.test(before,current)$p.value)}else{p_before <- NA}
+            if(even & !is.na(after_median) & length(after) > 2 & length(current) > 2){
+               p_after <- suppressWarnings(
+                  wilcox.test(after,current)$p.value)}else{p_after <- NA}
 
             if(is.null(min_change)) min_change <- 0
 
