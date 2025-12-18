@@ -45,13 +45,13 @@
 #
 # ==== FUNCTION ====
 # df=df
-# col=longnames[1]
+# col=i
 # site="site"
 # meta_title = NA
 # seedno = NA
 # output="fig"
 # nmin=5
-# setting="SKM"
+# setting="full"
 
 cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
                     output = "fig", nmin = 5, setting="full", blind=T, outliers=NULL){
@@ -107,7 +107,24 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       return(blind)
    }
 
-   if(all(zite_size < nmin)) return(cat("No sites large enough to present data for",col,"\n"))
+   if (all(zite_size < nmin)) {
+      return(
+         ggplot() +
+            annotate(
+               "text",
+               x = 0, y = 1,
+               hjust = 0, vjust = 1,
+               label = paste(
+                  "No sites large enough to present data for",
+                  col,
+                  sep = "\n"
+               )
+            ) +
+            theme_void() +
+            scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+            scale_y_continuous(limits = c(0, 1), expand = c(0, 0))
+      )
+   }
    #Figures
    if(is.na(meta_title)) meta_title <- col
 
@@ -149,19 +166,27 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
             theme(axis.title.x = element_blank())
 
          if(!is.null(outliers)){
-            values <- tmp$col[grepl("^All",tmp$site)]
-            Q1 <- quantile(values, 0.25, na.rm=T)
-            Q3 <- quantile(values, 0.75, na.rm=T)
-            IQR <- Q3 - Q1
-            lower <- Q1 - 1.5 * IQR
-            upper <- Q3 + 1.5 * IQR
+            box_stats <- function(x) {
+               bp <- boxplot.stats(x)$stats
+               stats <- list(
+                  lower = bp[1],
+                  Q1    = bp[2],
+                  med   = bp[3],
+                  Q3    = bp[4],
+                  upper = bp[5]
+               )
+               return(stats)
+            }
+            values <- tmp$col[!is.na(tmp$col) & grepl("^All \\(",tmp$site)]
+            bp <- boxplot.stats(values)
 
-            tmp$outliers[!grepl("^All",tmp$site) |
-                            (grepl("^All",tmp$site) &
-                            tmp$col < upper & tmp$col > lower)] <- NA
+            tmp$outliers[!(grepl("^All \\(", tmp$site) & !is.na(tmp$col) &
+                  (tmp$col < bp$stats[1] | tmp$col > bp$stats[5])
+            )] <- NA
 
-            g1 <- g1 + ggrepel::geom_text_repel(aes(x=tmp$site, y=tmp$col, label = tmp$outlier),
-                                 vjust=0.5, size=2.5, color="darkred")
+            g1 <- g1 + ggrepel::geom_text_repel(aes(x=tmp$site, y=tmp$col, label = tmp$outlier),vjust=0.5, size=2, color="darkred", force = 1, max.time = 5,
+                                                max.overlaps = 20) +
+               scale_y_continuous(expand = expansion(mult = 0.1))
 
          }
 

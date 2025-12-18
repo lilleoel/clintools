@@ -441,7 +441,7 @@ subgroups <- function(df,group,subgroups,outcome,
    }
    tbl <- cbind(tbl,res)
 
-   tbl2 <- tbl[,c("subgroup","group","C","E","estci","est","lcl","ucl","pval","p_interaction")]
+   tbl2 <- tbl[,c("subgroup","group","E","C","estci","est","lcl","ucl","pval","p_interaction")]
 
    tbl2$yaxis <- as.factor(c(1:nrow(tbl2)))
    tbl2$subgroup[duplicated(tbl2$subgroup)] <- ""
@@ -451,8 +451,8 @@ subgroups <- function(df,group,subgroups,outcome,
       tbl2[,c("yaxis","est","lcl","ucl")] <- NULL
       colnames(tbl2) <- c("",
                           "**Subgroup**",
-                          paste0("**",levels(d[[group]])[1],"**\\\n*n/N*"),
                           paste0("**",levels(d[[group]])[2],"**\\\n*n/N*"),
+                          paste0("**",levels(d[[group]])[1],"**\\\n*n/N*"),
                           paste0("**",unique(tbl$name),"**\\\n*",
                                  unique(tbl$estci_txt),"*"),
                           "**p-value**",
@@ -467,15 +467,15 @@ subgroups <- function(df,group,subgroups,outcome,
    }else{
       ######## FIGUR
       # Left
-      tmp <- cbind(tbl2$yaxis,stack(tbl2[,colnames(tbl2) %in% c("group","C","E","estci")]))
+      tmp <- cbind(tbl2$yaxis,stack(tbl2[,colnames(tbl2) %in% c("group","E","C","estci")]))
       colnames(tmp)[1] <- "yaxis"
       tmp$hjust <- (tmp$ind != "group")*0.5
 
       left <- ggplot(tmp, aes(y=yaxis, x=ind, label=values)) +
          geom_text(size = 3, hjust=tmp$hjust) +
          scale_x_discrete(position = "top",expand=expand_scale(mult = c(0, 0.25)),
-                          labels=c("Subgroups",paste0(levels(d[[group]])[1],"\nn/N"),
-                                   paste0(levels(d[[group]])[2],"\nn/N"),
+                          labels=c("Subgroups",paste0(levels(d[[group]])[2],"\nn/N"),
+                                   paste0(levels(d[[group]])[1],"\nn/N"),
                                    unique(tbl$estci_txt))
          ) +
          scale_y_discrete(limits=rev, labels=rev(tbl2$subgroup)) +

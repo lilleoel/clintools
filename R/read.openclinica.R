@@ -105,9 +105,15 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
 
       md <- NULL
       for (i in list.files("metadata/")) {
-         # Read with tab separator and Latin-1 encoding
-         mdtmp <- read.csv2(paste0("metadata/", i), sep = "\t", fileEncoding = "latin1")
+         if(!grepl(".tsv$",i)) next
 
+         # Read with tab separator and Latin-1 encoding
+         mdtmp <- read.delim(
+            text = gsub("\uFEFF|\r", "", paste(readLines(paste0("metadata/", i), warn=FALSE), collapse="\n")),
+            sep = "\t",
+            quote = "",
+            stringsAsFactors = FALSE
+         )
          # Check required columns and process
          if (all(c("name", "description", "reponse_set") %in% colnames(mdtmp))) {
             md <- rbind.fill(md, mdtmp)
