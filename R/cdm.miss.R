@@ -102,7 +102,7 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
    cat("**In total:**", nrow(tmp), "participants are included, of them \n\n",
        "*", sum(tmp$label == "Complete"), prntperc(sum(tmp$label == "Complete")/nrow(tmp)), "have complete data  *(green fields)*\n",
        "*", sum(tmp$label == "Waiting"), prntperc(sum(tmp$label == "Waiting")/nrow(tmp)), "are waiting for data input *(yellow fields)*\n",
-       "*", sum(tmp$label == "Lost"), prntperc(sum(tmp$label == "Lost")/nrow(tmp)), "are lost to follow-up *(blue fields)*\n",
+       "*", sum(tmp$label == "Lost"), prntperc(sum(tmp$label == "Lost")/nrow(tmp)), "are lost to follow-up", ifelse(filter != "missing","*(blue fields)\n*","\n"),
        "*", sum(tmp$label == "Missing"),  prntperc(sum(tmp$label == "Missing")/nrow(tmp)),"have missing data *(red fields)*\n\n")
 
    #Filter
