@@ -175,8 +175,8 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
       for(i in 1:(length(pts)/50)){
          tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*50+1):(i*50))]),]
          out <- ggplot(tmp2,
-                aes(x=tmp2[["time"]],y=.data[[id]],fill=tmp2[["fillz"]],
-                    label=tmp2[["labelz"]], color=tmp2[["colz"]])) +
+                aes(x=.data[["time"]],y=.data[[id]],fill=.data[["fillz"]],
+                    label=.data[["labelz"]],color=.data[["colz"]])) +
             geom_tile() +
             geom_text(size=2.5,color="black") +
             scale_fill_manual(
