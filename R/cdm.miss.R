@@ -174,32 +174,29 @@ cdm.miss <- function(df, id, cols, fudate = NULL, lostFU = NULL, filter = "all",
 
       for(i in 1:(length(pts)/50)){
          tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*50+1):(i*50))]),]
-         out <- ggplot(tmp2,
-                aes(x=.data[["time"]],y=.data[[id]],fill=.data[["fillz"]],
-                    label=.data[["labelz"]],color=.data[["colz"]])) +
-            geom_tile() +
-            geom_text(size=2.5,color="black") +
-            scale_fill_manual(
-               values=c(`red`="#FF5733",`green`="#50C878",`yellow`="#FFEA00",
-                        `blue`="#6495ED",`white`="#FFFFFF")) +
-            scale_color_manual(
-               values=c(`black`="black",`white`="#FFFFFF",`none`="")) +
-            scale_x_discrete(position = "top") +
-            scale_y_discrete(labels=function(x) gsub(" ", "", x, fixed=TRUE),
-                             limits=rev) +
-            theme_classic() +
-            theme(legend.position = "none", axis.title = element_blank(),
-                  axis.line = element_blank(), axis.ticks.y = element_blank(),
-                  axis.text.x = element_text(angle=60,hjust=0),
-                  plot.margin = margin(r=25),
-                  plot.subtitle = element_text(face="italic", hjust=0,size = 9),
-                  plot.title.position = "plot")
+
+    out <- ggplot(tmp2, aes(x = time, y = !!sym(id), fill = fillz, label = labelz)) +
+        geom_tile() +
+        geom_text(size = 2.5, color = "black") +
+        scale_fill_manual(values = c(red = "#FF5733", green = "#50C878",
+                                     yellow = "#FFEA00", blue = "#6495ED",
+                                     white = "#FFFFFF")) +
+        scale_x_discrete(position = "top") +
+        # scale_y_discrete(labels = function(x) gsub(" ", "", x, fixed = TRUE),
+        #                  limits = function(x) rev(x)) +
+        theme_classic() +
+        theme(legend.position = "none", axis.title = element_blank(),
+              axis.line = element_blank(), axis.ticks.y = element_blank(),
+              axis.text.x = element_text(angle = 60, hjust = 0),
+              plot.margin = ggplot2::margin(r = 25),
+              plot.subtitle = element_text(face = "italic", hjust = 0, size = 9),
+              plot.title.position = "plot")
 
          if(caption & i == 1){
             out <- out + labs(subtitle="Overview of each participant and their completeness. Participants with all forms completed are not shown.")
          }
 
-         suppressWarnings(print(out))
+         print(out)
          cat("\n\n")
       }
    }
