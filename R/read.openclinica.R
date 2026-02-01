@@ -107,13 +107,24 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
       for (i in list.files("metadata/")) {
          if(!grepl(".tsv$",i)) next
 
-         # Read with tab separator and Latin-1 encoding
+         txt <- paste(
+            readLines(paste0("metadata/", i), warn = FALSE),
+            collapse = "\n"
+         )
+
+         if (!utf8::utf8_valid(txt)) {
+            txt <- iconv(txt, from = "", to = "UTF-8", sub = "")
+         }
+
+         txt <- gsub("\uFEFF|\r", "", txt)
+
          mdtmp <- read.delim(
-            text = gsub("\uFEFF|\r", "", paste(readLines(paste0("metadata/", i), warn=FALSE), collapse="\n")),
+            text = txt,
             sep = "\t",
             quote = "",
             stringsAsFactors = FALSE
          )
+
          # Check required columns and process
          if (all(c("name", "description", "reponse_set") %in% colnames(mdtmp))) {
             md <- rbind.fill(md, mdtmp)
