@@ -112,10 +112,10 @@ read.openclinica <- function(trial, link, prefix = 4, ids, metadata=F){
             collapse = "\n"
          )
 
-         if (!utf8::utf8_valid(txt)) {
-            txt <- iconv(txt, from = "", to = "UTF-8", sub = "")
-         }
+         # Tving UTF-8 FØR gsub
+         txt <- iconv(txt, from = "", to = "UTF-8", sub = "")
 
+         # Fjern BOM og CR
          txt <- gsub("\uFEFF|\r", "", txt)
 
          mdtmp <- read.delim(
