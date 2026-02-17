@@ -874,7 +874,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       tage <- list(NA,
                    c(24:26),c(27:29),c(30:32),c(33:35),c(36:38),c(39:41),c(42:44),c(45:47),
                    c(48:50),c(51:53),c(54:56),c(57:59),c(60:62),c(63:65),c(66:68),c(69:71),
-                   c(72:96))
+                   c(72:120))
 
       tscore <- list(
          raw = 0:72,
