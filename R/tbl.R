@@ -681,8 +681,12 @@ if(any(!is.na(tests))){
       tsts <- merge(tsts,tmp,by="var",all=T)
    }
    tsts[tsts == "- (-;-)"] <- NA
-   tsts <- tsts[,colSums(is.na(tsts))<nrow(tsts)]
-   tsts <- tsts[rowSums(is.na(tsts))<ncol(tsts)-1,]
+   tsts <- tsts[, colSums(is.na(tsts)) < nrow(tsts), drop = FALSE]
+   if(nrow(tsts) > 1){
+      tsts <- tsts[rowSums(is.na(tsts)) < ncol(tsts) - 1, , drop = FALSE]
+   } else {
+      tsts <- tsts[!is.na(tsts[,1]) | rowSums(!is.na(tsts[,-1, drop=FALSE])) > 0, , drop = FALSE]
+   }
 
    # MERGE
    tbl$id <- 1:nrow(tbl)

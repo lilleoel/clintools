@@ -6,7 +6,7 @@
 \usage{
 subgroups(df,group,subgroups,outcome,test,time.to,
                   strata.fixed,strata.random,digs_p,digs_s,
-                  conf.level, paired,markdown, caption, fig)
+                  conf.level, paired,markdown, caption, fig, hide.zero.events)
 }
 \arguments{
 \item{df}{dataframe. (\code{df})}
@@ -38,6 +38,10 @@ subgroups(df,group,subgroups,outcome,test,time.to,
 \item{caption}{Table caption only in use when markdown is true (\code{string})}
 
 \item{fig}{If figure should be presented (\code{boolean})}
+
+\item{hide.zero.events}{If TRUE, hides estimates, n/N counts and p-values (but not p-value for
+interaction) for rows with zero events in either group. Only applies to dichotomous outcomes
+and only when fig=TRUE. (\code{boolean})}
 }
 \value{
 Returns summarised information in dataframe.
@@ -58,7 +62,8 @@ word or presented in as a subgroup analysis.
 
    subgroups(df,group="group",zubgroups,
       outcome="Infant survival without SAE",
-      test="glm",strata.fixed = "site")
+      test="glm",strata.fixed = "site",
+      fig=TRUE, hide.zero.events=TRUE)
 }
 
 }

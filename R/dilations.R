@@ -60,8 +60,8 @@ dilations <- function(pupils, markers,
                       not_assess = NULL, artefacts_static = c(0.55,9.95),
                       artefacts_dynamic = c(`1` = 1.5, `0.66` = 1, `0.33` = 0.5),
                       time_assess = c(`1` = 10, `3` = 5), sig.level = 0.05,
-                      min_change = NULL, resting_delay = c(`3` = 0)
-                      ){
+                      min_change = NULL, resting_delay = c(`3` = 0),
+                      impute_first_period = F, create_first_period = F){
    results <- NULL
 
    #Control colnames
@@ -145,6 +145,29 @@ dilations <- function(pupils, markers,
             }
          }
       }
+
+      # IMPUTE FIRST PERIOD
+      if(impute_first_period & length(unique(tmp$period)) > 2){
+         tst <- tmp$period %% 2 == 0 & tmp$period != 0
+         imp_m <- mean(tmp$size[tst],na.rm=T)
+         imp_s <- sd(tmp$size[tst],na.rm=T)
+         imp_hz <- mean(c(tmp$time,NA)-c(NA,tmp$time),na.rm=T)
+         imp_l <- mean(tapply(tmp$time[tst], tmp$period[tst], function(x) max(x) - min(x)),na.rm=T)
+         imp_end <- max(tmp$time[tmp$period == 0])
+         imp_start <- imp_end-imp_l
+         imp_z <- round(imp_l / imp_hz)
+
+         imp_df <- data.frame(
+            time = seq(imp_start, imp_end, length.out = imp_z),
+            size = rnorm(imp_z, mean = imp_m, sd = imp_s),
+            period = 0
+         )
+         tmp <- rbind(imp_df,tmp[tmp$period != 0,])
+      }
+      if(create_first_period){
+         stop("Creating first period is not implemented")
+      }
+      # IMPUTE FIRST PERIOD
 
       even <- nrow(tmp_m) %% 2 == 0
       t <- NULL

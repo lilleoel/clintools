@@ -37,12 +37,25 @@
 comparerel <- function(d1,d2,d3,d4,n_boot=1000,seedno=730){
 
    res <- NULL
-   res1 <- tryCatch(calcrel(d1,d2),error=function(e) e, warning=function(w) w)
-   res2 <- tryCatch(calcrel(d3,d4),error=function(e) e, warning=function(w) w)
+   res1 <- tryCatch(
+      withCallingHandlers(
+         calcrel(vec1, vec2),
+         warning = function(w) invokeRestart("muffleWarning")
+      ),
+      error = function(e) e
+   )
 
-   if(any(class(res1) %in% c("error","try-error","warning")) |
-      any(class(res2) %in% c("error","try-error","warning"))){
-         stop()
+   res2 <- tryCatch(
+      withCallingHandlers(
+         calcrel(vec3, vec4),
+         warning = function(w) invokeRestart("muffleWarning")
+      ),
+      error = function(e) e
+   )
+
+   if(any(class(res1) %in% c("error","try-error")) |
+      any(class(res2) %in% c("error","try-error"))){
+      stop("calcrel fejlede med en egentlig fejl")
    }
 
    diffs <- NULL

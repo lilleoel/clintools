@@ -9,7 +9,7 @@
 #'
 #' @usage subgroups(df,group,subgroups,outcome,test,time.to,
 #'                   strata.fixed,strata.random,digs_p,digs_s,
-#'                   conf.level, paired,markdown, caption, fig)
+#'                   conf.level, paired,markdown, caption, fig, hide.zero.events)
 #'
 #' @param df dataframe. (`df`)
 #' @param group Column name of stratification (`string`)
@@ -26,6 +26,9 @@
 #' @param markdown default is true and output is pander, while false output is a dataframe (`boolean`)
 #' @param caption Table caption only in use when markdown is true (`string`)
 #' @param fig If figure should be presented (`boolean`)
+#' @param hide.zero.events If TRUE, hides estimates, n/N counts and p-values (but not p-value for
+#'   interaction) for rows with zero events in either group. Only applies to dichotomous outcomes
+#'   and only when fig=TRUE. (`boolean`)
 #'
 #' @return Returns summarised information in dataframe.
 #'
@@ -41,7 +44,8 @@
 #'
 #'    subgroups(df,group="group",zubgroups,
 #'       outcome="Infant survival without SAE",
-#'       test="glm",strata.fixed = "site")
+#'       test="glm",strata.fixed = "site",
+#'       fig=TRUE, hide.zero.events=TRUE)
 #' }
 #'
 #' @importFrom stats as.formula anova setNames
@@ -72,7 +76,8 @@ subgroups <- function(df, group, subgroups, outcome,
                       digs_p = 3, digs_s = 2,
                       conf.level = 0.95, paired = F,
                       markdown = T, caption = "",
-                      fig = F, debug = F, xlim = NULL) {
+                      fig = F, debug = F, xlim = NULL,
+                      hide.zero.events = FALSE) {
 
    ####### HELPER FUNCTIONS #######
    format_p_value <- function(p_value, digs_p) {
@@ -532,8 +537,7 @@ subgroups <- function(df, group, subgroups, outcome,
 
       # Hvis der ikke er nok strata variabler tilbage, spring over
       if (length(strata_to_use) == 0 && all(is.na(strata_random_to_use))) {
-         warning(paste0("Skipping subgroup '", i, "' - no valid strata variables after filtering"))
-         next
+         if (debug) cat("No strata variables - running without strata\n")
       }
 
       if (debug) cat("Calling quickStat for reduced model...\n")
@@ -777,8 +781,32 @@ subgroups <- function(df, group, subgroups, outcome,
       }
    } else {
       ######## FIGUR
+
+      # Identificer rækker med zero events (kun for dikotome outcomes og kun til figuren)
+      zero_event_rows <- character(0)
+      if (hide.zero.events && !is_continuous) {
+         for (idx in seq_len(nrow(tbl2))) {
+            e_val <- trimws(tbl2$E[idx])
+            c_val <- trimws(tbl2$C[idx])
+            # E og C er på formen "n/N" - træk tælleren ud
+            e_events <- suppressWarnings(as.numeric(sub("/.*", "", e_val)))
+            c_events <- suppressWarnings(as.numeric(sub("/.*", "", c_val)))
+            if (!is.na(e_events) && !is.na(c_events) &&
+                (e_events == 0 || c_events == 0)) {
+               zero_event_rows <- c(zero_event_rows, as.character(tbl2$yaxis[idx]))
+            }
+         }
+      }
+
       # Left
-      tmp <- cbind(tbl2$yaxis, stack(tbl2[, colnames(tbl2) %in% c("group", "E", "C", "estci")]))
+      # Skjul kun estci for zero-event rækker i venstre panel (E og C/n/N beholdes)
+      tbl2_left <- tbl2
+      if (length(zero_event_rows) > 0) {
+         mask <- as.character(tbl2_left$yaxis) %in% zero_event_rows
+         tbl2_left$estci[mask] <- if (is_continuous) "\n " else ""
+      }
+
+      tmp <- cbind(tbl2_left$yaxis, stack(tbl2_left[, colnames(tbl2_left) %in% c("group", "E", "C", "estci")]))
       colnames(tmp)[1] <- "yaxis"
       tmp$hjust <- (tmp$ind != "group") * 0.5
       tmp$vjust <- if(is_continuous) 0.5 else 0.5
@@ -814,8 +842,9 @@ subgroups <- function(df, group, subgroups, outcome,
          )
 
       # Middle
-      # Filtrer rækker ud hvor lcl eller ucl er infinite
-      tbl2_plot <- tbl2[is.finite(tbl2$lcl) & is.finite(tbl2$ucl), ]
+      # Filtrer rækker ud hvor lcl eller ucl er infinite, samt zero-event rækker
+      tbl2_plot <- tbl2[is.finite(tbl2$lcl) & is.finite(tbl2$ucl) &
+                           !as.character(tbl2$yaxis) %in% zero_event_rows, ]
 
       if (nrow(tbl2_plot) > 0) {
          # Tjek for pile data
@@ -849,14 +878,14 @@ subgroups <- function(df, group, subgroups, outcome,
             }
          }
 
-         # TILFØJ DENNE LINJE - sikrer at tbl2_plot har alle levels fra tbl2
+         # Sikrer at tbl2_plot har alle levels fra tbl2
          tbl2_plot$yaxis <- factor(tbl2_plot$yaxis, levels = levels(tbl2$yaxis))
 
          # Brug ALLE levels fra tbl2, ikke kun dem i tbl2_plot
          middle <- ggplot(tbl2_plot, aes(x = yaxis, y = est, ymin = lcl,
                                          ymax = ucl)) +
             geom_hline(yintercept = if (is_continuous) 0 else 1, colour = "red") +
-            scale_x_discrete(limits = rev(levels(tbl2$yaxis)), drop = FALSE) +  # ÆNDRET: tilføjet drop = FALSE
+            scale_x_discrete(limits = rev(levels(tbl2$yaxis)), drop = FALSE) +
             ylab(unique(tbl$estci_txt))
 
          if(is_continuous){
@@ -872,7 +901,6 @@ subgroups <- function(df, group, subgroups, outcome,
 
          # Tilføj pile hvis der er nogen
          if (!is.null(arrow_data) && nrow(arrow_data) > 0) {
-            # TILFØJ OGSÅ HER - sikrer arrow_data har samme levels
             arrow_data$yaxis <- factor(arrow_data$yaxis, levels = levels(tbl2$yaxis))
             x_nudge <- 0
             if(is_continuous) x_nudge <- 0.15
@@ -910,7 +938,14 @@ subgroups <- function(df, group, subgroups, outcome,
       }
 
       # Right
-      tmp <- cbind(tbl2$yaxis, stack(tbl2[, colnames(tbl2) %in% c("pval", "p_interaction")]))
+      # Skjul pval for zero-event rækker, men behold p_interaction
+      tbl2_right <- tbl2
+      if (length(zero_event_rows) > 0) {
+         mask <- as.character(tbl2_right$yaxis) %in% zero_event_rows
+         tbl2_right$pval[mask] <- if (is_continuous) "\n " else ""
+      }
+
+      tmp <- cbind(tbl2_right$yaxis, stack(tbl2_right[, colnames(tbl2_right) %in% c("pval", "p_interaction")]))
       colnames(tmp)[1] <- "yaxis"
 
       right <- ggplot(tmp, aes(y = yaxis, x = ind, label = values)) +
