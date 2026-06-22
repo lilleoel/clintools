@@ -458,7 +458,8 @@ subgroups <- function(df, group, subgroups, outcome,
 
       # Find levels med tilstrækkelige observationer
       valid_levels <- c()
-      for (lvl in unique(na.omit(d[[i]]))) {
+      lvl_order <- if (is.factor(d[[i]])) levels(d[[i]]) else sort(unique(na.omit(d[[i]])))
+      for (lvl in lvl_order[lvl_order %in% na.omit(d[[i]])]) {
          # Tjek om dette level har observationer i begge grupper
          level_data <- d[!is.na(d[[i]]) & d[[i]] == lvl, ]
          level_data <- level_data[complete.cases(level_data[, na.omit(c(outcome, group, strata.fixed, strata.random))]), ]
