@@ -68,7 +68,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       set.seed(seedno)
       blind <- NULL
       blind$site <- unique(tmp$site)
-      blind$blind <- unique(stringi::stri_rand_strings(999, 2))[1:length(blind$site)]
+      blind$blind <- stringi::stri_rand_strings(length(unique(tmp$site)), 2)[1:length(blind$site)]
       blind <- as.data.frame(blind)
       tmp$blind_site <- tmp$site
       for(j in 1:nrow(blind)){
@@ -82,8 +82,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
    tmp <- data.frame(tmp)
 
    if(!is.null(outliers)){
-      tmp <- cbind(tmp,df[[outliers]])
-      colnames(tmp)[3] <- "outliers"
+      tmp$outliers <- df[[outliers]]
    }
    tmp$col[nchar(as.character(tmp$col)) == 0 | is.na(tmp$col)] <- NA
    tmp <- tmp[!is.na(tmp$col),]
@@ -181,7 +180,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
             bp <- boxplot.stats(values)
 
             tmp$outliers[!(grepl("^All \\(", tmp$site) & !is.na(tmp$col) &
-                  (tmp$col < bp$stats[1] | tmp$col > bp$stats[5])
+                              (tmp$col < bp$stats[1] | tmp$col > bp$stats[5])
             )] <- NA
 
             g1 <- g1 + ggrepel::geom_text_repel(aes(x=tmp$site, y=tmp$col, label = tmp$outlier),vjust=0.5, size=2, color="darkred", force = 1, max.time = 5,
@@ -217,7 +216,7 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
 
       tmp[[zite]] <- as.factor(tmp[[zite]])
       tmp[[zite]] <- factor(tmp[[zite]], levels=unique(c(tmp[grepl("^All",tmp[[zite]]),zite],
-                                                  tmp[!grepl("^All",tmp[[zite]]),zite])))
+                                                         tmp[!grepl("^All",tmp[[zite]]),zite])))
 
       tmp$n_Freq <- tmp$Freq
       tmp$perc[grepl("NaN%|^0%$",tmp$perc)] <- ""
@@ -230,30 +229,30 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       }
 
       g1 <- ggplot() +
-      geom_bar(aes(x=tmp[[zite]], y=tmp$n_Freq, fill=tmp$col), stat = "identity",
-               position = position_stack(reverse = TRUE)) +
-      ggfittext::geom_bar_text(aes(x=tmp[[zite]], y=tmp$n_Freq,label= tmp$perc),
-                    position="stack",
-                     color = "black",
-                    vjust = 1.2,
-                    size = 3 * ggplot2::.pt,
-                    min.size = 3 * ggplot2::.pt,
-                    padding.x = grid::unit(0, "pt"),
-                    padding.y = grid::unit(0, "pt"),
-                    outside = TRUE) +
+         geom_bar(aes(x=tmp[[zite]], y=tmp$n_Freq, fill=tmp$col), stat = "identity",
+                  position = position_stack(reverse = TRUE)) +
+         ggfittext::geom_bar_text(aes(x=tmp[[zite]], y=tmp$n_Freq,label= tmp$perc),
+                                  position="stack",
+                                  color = "black",
+                                  vjust = 1.2,
+                                  size = 3 * ggplot2::.pt,
+                                  min.size = 3 * ggplot2::.pt,
+                                  padding.x = grid::unit(0, "pt"),
+                                  padding.y = grid::unit(0, "pt"),
+                                  outside = TRUE) +
          scale_fill_brewer(palette="Paired",na.translate = F) +
          theme_classic() +
          labs(y=paste(meta_title,"\n(n)")) +
          theme(
-               axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
-               legend.title = element_blank(),
-               legend.position = "top",
-               plot.margin = margin())
+            axis.text.x = element_text(angle=90, vjust = 0.25,hjust=0),
+            legend.title = element_blank(),
+            legend.position = "top",
+            plot.margin = margin())
 
       if(setting=="full"){
          g1 <- g1 +  scale_y_continuous(expand=c(0,0),
-            sec.axis = sec_axis(~ . * allvssite)) +
-         geom_vline(aes(xintercept=1.5), linetype="dashed") +
+                                        sec.axis = sec_axis(~ . * allvssite)) +
+            geom_vline(aes(xintercept=1.5), linetype="dashed") +
             theme(axis.title.x = element_blank())
       }else{
          g1 <- g1 + coord_flip() +
