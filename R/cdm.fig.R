@@ -149,9 +149,13 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       }
 
       tmp$col <- as.numeric(tmp$col)
-      tmp[[zite]] <- as.factor(tmp[[zite]])
-      tmp[[zite]] <- factor(tmp[[zite]], levels=unique(c(tmp[grepl("^All",tmp[[zite]]),zite],
-                                                         tmp[!grepl("^All",tmp[[zite]]),zite])))
+      all_level <- unique(tmp[grepl("^All", tmp[[zite]]), zite])
+      site_levels <- sort(unique(tmp[!grepl("^All", tmp[[zite]]), zite]))
+
+      tmp[[zite]] <- factor(
+         tmp[[zite]],
+         levels = c(all_level, site_levels)
+      )
 
       g1 <- ggplot() +
          geom_boxplot(aes(y=tmp$col,x=tmp[[zite]])) +
@@ -216,9 +220,13 @@ cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
       tmp$prop <- tmp$Freq/tmp$sum
       tmp$perc <- paste0(round(tmp$prop*100),"%")
 
-      tmp[[zite]] <- as.factor(tmp[[zite]])
-      tmp[[zite]] <- factor(tmp[[zite]], levels=unique(c(tmp[grepl("^All",tmp[[zite]]),zite],
-                                                         tmp[!grepl("^All",tmp[[zite]]),zite])))
+      all_level <- unique(tmp[grepl("^All", tmp[[zite]]), zite])
+      site_levels <- sort(unique(tmp[!grepl("^All", tmp[[zite]]), zite]))
+
+      tmp[[zite]] <- factor(
+         tmp[[zite]],
+         levels = c(all_level, site_levels)
+      )
 
       tmp$n_Freq <- tmp$Freq
       tmp$perc[grepl("NaN%|^0%$",tmp$perc)] <- ""
