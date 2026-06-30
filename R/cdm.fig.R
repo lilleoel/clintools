@@ -43,19 +43,21 @@
 #'
 #' @export
 #
-# ==== FUNCTION ====
-# df=df
-# col=i
-# site="site"
+# # ==== FUNCTION ====
+# df <- tmp
+# site = NA
 # meta_title = NA
-# seedno = NA
-# output="fig"
-# nmin=5
+# seedno=NA
+# output = "fig"
+# nmin = 5
 # setting="full"
+# blind=T
+# outliers=NULL
 
 cdm.fig <- function(df, col, site = NA, meta_title = NA, seedno=NA,
                     output = "fig", nmin = 5, setting="full", blind=T, outliers=NULL){
    if(is.na(seedno)) seedno <- as.numeric(Sys.Date())
+   if(blind) outliers <- NULL
 
    tmp <- NULL
    tmp$col <- df[[col]]
