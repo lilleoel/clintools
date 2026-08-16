@@ -578,14 +578,22 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
       if(module != "est"){
 
+         age_range <- function(x) {
+            z <- as.numeric(strsplit(sub("^a", "", x), "_", fixed = TRUE)[[1]])
+            z
+         }
+
          # Convert to scale score
          rawtoscales <- questionaire_helper()$vineland3
          for(i in names(rawtoscales)){
             if(i %in% c("domains","gaf")) next
             # i <- names(rawtoscales)[1]
+
+            age <- age_range(i)
             rtst <- !is.na(d[[age.months]]) &
-               d[[age.months]] >= as.numeric(substr(i,2,3)) &
-               d[[age.months]] < as.numeric(substr(i,5,6))
+               d[[age.months]] >= age[1] &
+               d[[age.months]] < age[2]
+
             cur_r2s <- data.frame(rawtoscales[grepl(i,names(rawtoscales))])
             names(cur_r2s) <- gsub(paste0(i,"\\."),"",names(cur_r2s))
 
