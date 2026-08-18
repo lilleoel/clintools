@@ -1147,7 +1147,7 @@ questionaire_helper <- function(){
       115;;;;;;24;;;;;
       116;;;;;;24;;;;;"
 
-   x$vineland3$a96_108 <- "
+   x$vineland3$a96_999 <- "
       Rawscore;lyt_ss;tal_ss;laes_ss;per_ss;hje_ss;naer_ss;rel_ss;leg_ss;til_ss;gmo_ss;fmo_ss
       0;1;1;3;1;3;1;1;1;2;1;1
       1;1;1;4;1;4;2;1;1;3;1;1
