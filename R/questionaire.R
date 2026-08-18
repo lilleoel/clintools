@@ -488,7 +488,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }
       if(!exists("impute")) stop("There must T/F for 'impute', e.g. impute = T")
 
-      df[df[[age.months]] > 116,age.months] <- 116
+      d[which(d[[age.months]] > 116), age.months] <- 116
 
       d <- df[,c(id,age.months,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
