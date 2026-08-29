@@ -40,21 +40,7 @@
 
 # fudate = NULL; lostFU = NULL; filter = "all"; blind = F
 
-cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, filter = "all", blind = F, n_sites=15,setting="full", caption=T){
-
-   # # TEST
-   # df = dff[!is.na(dff$rand_date),]
-   # id = "pt_id"
-   # cols = form_longnames
-   # strata = "site"
-   # fudate = names(form_longnames)
-   # lostFU = "lostfu"
-   # filter = "missing"
-   # blind=F
-   # n_sites=13
-   # setting=report_type
-   # TEST
-
+cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, filter = "all", blind = F, n_sites=15,setting="full", caption=T, seedno=NA){
 
    df <- data.frame(df,check.names = F)
    if(length(cols) > 25) stop("No more than 25 columns can be monitored")
@@ -74,14 +60,13 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
    if(is.null(lostFU)){ lostFU <- "lostFU"; df$lostFU <- F}
    tmp <- df[,c(id,strata,cols,fudate,lostFU)]
 
+   # BLIND SETUP - mirrors cdm.fig: same seed/order/length -> same codes
    if(blind){
-      tmp[[id]] <- as.factor(tmp[[id]])
-      blinders <- NULL
-      for(i in 1:10000){
-         blinders <- c(blinders,paste0(sample(c(letters,LETTERS),5,replace=T),collapse=""))
-      }
-      levels(tmp[[id]]) <- unique(blinders)[1:length(levels(tmp[[id]]))]
-      tmp[[id]] <- as.character(tmp[[id]])
+      if(is.na(seedno)) seedno <- as.numeric(Sys.Date())
+      strata_levels <- unique(as.character(tmp[[strata]]))
+      set.seed(seedno)
+      blind_codes <- stringi::stri_rand_strings(length(strata_levels), 2)[1:length(strata_levels)]
+      blind_map <- setNames(blind_codes, strata_levels)
    }
 
    # 0 complete; 1 missing; 2 waiting; 3 lostFU
@@ -103,12 +88,17 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
    tmp_all <- tmp
    tmp_all[[strata]] <- "All "
    tmp <- rbind(tmp_all,tmp)
-   # Create dftmp_eligible# Create df with percentage missingness of all
 
+   # Create df with percentage missingness of all
    if(setting == "short"){
       tmp <- tmp[tmp[[strata]] == "All ",]
    }else if(setting != "full"){
       tmp <- tmp[tmp[[strata]] %in% c("All ",setting),]
+   }
+
+   # BLIND APPLY - same map as cdm.fig would produce for the same data/seed
+   if(blind){
+      tmp[[strata]][tmp[[strata]] != "All "] <- blind_map[tmp[[strata]][tmp[[strata]] != "All "]]
    }
 
    tmp1 <- aggregate(tmp[[cols[i]]],by=list(tmp[[strata]]),length)
@@ -127,9 +117,9 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
 
    # ADD EMPTY LINE BETWEEN ALL AND REST
    tmp <- rbind(tmp[1,],rbind(c(paste(" ",collapse=""),rep(NA,ncol(tmp)-1)),
-                             tmp[2:nrow(tmp),]))
+                              tmp[2:nrow(tmp),]))
 
-   #Ensure rounded to 50
+   #Ensure rounded to n_sites
    add.n <- ceiling(nrow(tmp)/n_sites)*n_sites-nrow(tmp)
    for(i in 1:add.n) tmp <-rbind(tmp,c(paste(rep(" ",i+2),collapse=""),rep(NA,ncol(tmp)-1)))
    siteorder <- tmp[[id]]
@@ -151,11 +141,6 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
       tmp[[id]] <- as.factor(tmp[[id]])
       tmp[[id]] <- factor(tmp[[id]],levels=siteorder)
       newlvls <- unique(tmp[!is.na(tmp$variable) & order(tmp[[id]]),id])
-      # if(add.n > 0){
-      #    tmplvls2 <- levels(tmp[[id]])[c(1:add.n)]
-      #    newlvls <- c(as.character(newlvls),tmplvls2)
-      # }
-      # tmp[[id]] <- factor(tmp[[id]], levels=newlvls)
 
       pts <- levels(tmp[[id]])
 
@@ -165,8 +150,8 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
       for(i in 1:(length(pts)/n_sites)){
          tmp2 <- tmp[which(tmp[[id]] %in% pts[c(((i-1)*n_sites+1):(i*n_sites))]),]
          out <- ggplot(tmp2,
-                aes(x=tmp2[["time"]],y=get(id), color=tmp2[["colz"]],
-                    label=tmp2[["label"]], fill=tmp2[["variable"]])) +
+                       aes(x=tmp2[["time"]],y=get(id), color=tmp2[["colz"]],
+                           label=tmp2[["label"]], fill=tmp2[["variable"]])) +
             geom_tile() +
             geom_text(size=2.5,color="black") +
             scale_color_manual(
@@ -186,7 +171,6 @@ cdm.miss.strata <- function(df, id, cols, strata, fudate = NULL, lostFU = NULL, 
          if(caption & i == 1){
             out <- out + labs(subtitle="Percentage of participants who have incomplete data after a specified deadline overall and at each site.")
          }
-
 
          suppressWarnings(print(out))
          cat("\n\n")
