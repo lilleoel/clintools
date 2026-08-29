@@ -494,20 +494,20 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
       # Calculate raw score domains
       domainz <- list(
-         v_lyt = c(1:39),
-         v_tal = c(40:88),
-         v_laes = c(89:126),
-         v_per = c(127:181),
-         v_hje = c(182:211),
-         v_naer = c(212:251),
-         v_rel = c(252:286),
-         v_leg = c(287:322),
-         v_til = c(323:355),
-         v_gmo = c(356:398),
-         v_fmo = c(399:432),
-         v_ma = c(433:445),
-         v_mb = c(446:456),
-         v_mc = c(457:476)
+         vabs3_lyt = c(1:39),
+         vabs3_tal = c(40:88),
+         vabs3_laes = c(89:126),
+         vabs3_per = c(127:181),
+         vabs3_hje = c(182:211),
+         vabs3_naer = c(212:251),
+         vabs3_rel = c(252:286),
+         vabs3_leg = c(287:322),
+         vabs3_til = c(323:355),
+         vabs3_gmo = c(356:398),
+         vabs3_fmo = c(399:432),
+         vabs3_ma = c(433:445),
+         vabs3_mb = c(446:456),
+         vabs3_mc = c(457:476)
 
       )
 
@@ -600,13 +600,13 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
             for(j in 1:ncol(cur_r2s)){
                # j <- 1
-               ctst <- grepl(paste0("^v_",substr(names(cur_r2s[j]),1,3)),colnames(d)) &
+               ctst <- grepl(paste0("^vabs3_",substr(names(cur_r2s[j]),1,3)),colnames(d)) &
                   !grepl("ss",colnames(d))
 
                nmd_lst <- cur_r2s[[j]]
                names(nmd_lst) <- rownames(cur_r2s)
                if(sum(rtst,na.rm=T) > 0){
-                  d[rtst,paste0("v_",names(cur_r2s)[j])] <- dplyr::recode(
+                  d[rtst,paste0("vabs3_",names(cur_r2s)[j])] <- dplyr::recode(
                      d[rtst,ctst],!!!nmd_lst)
                }
             }
@@ -615,23 +615,23 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          #Calculate domain score
          domains <- questionaire_helper()$vineland3$domains
 
-         d$v_kom_domscore <- dplyr::recode(
-            rowSums(d[,c("v_lyt_ss","v_tal_ss","v_laes_ss")]),
+         d$vabs3_kom_domscore <- dplyr::recode(
+            rowSums(d[,c("vabs3_lyt_ss","vabs3_tal_ss","vabs3_laes_ss")]),
             !!!setNames(domains$kom_domainscore, rownames(domains)))
-         d$v_fdd_domscore <- dplyr::recode(
-            rowSums(d[,c("v_per_ss","v_hje_ss","v_naer_ss")]),
+         d$vabs3_fdd_domscore <- dplyr::recode(
+            rowSums(d[,c("vabs3_per_ss","vabs3_hje_ss","vabs3_naer_ss")]),
             !!!setNames(domains$fdd_domainscore, rownames(domains)))
-         d$v_soc_domscore <- dplyr::recode(
-            rowSums(d[,c("v_rel_ss","v_leg_ss","v_til_ss")]),
+         d$vabs3_soc_domscore <- dplyr::recode(
+            rowSums(d[,c("vabs3_rel_ss","vabs3_leg_ss","vabs3_til_ss")]),
             !!!setNames(domains$soc_domainscore, rownames(domains)))
-         d$v_mot_domscore <- dplyr::recode(
-            rowSums(d[,c("v_gmo_ss","v_fmo_ss")]),
+         d$vabs3_mot_domscore <- dplyr::recode(
+            rowSums(d[,c("vabs3_gmo_ss","vabs3_fmo_ss")]),
             !!!setNames(domains$mot_domainscore, rownames(domains)))
 
          #Calculate gaf
          gaf <- questionaire_helper()$vineland3$gaf
-         d$v_gaf <- dplyr::recode(
-            rowSums(d[,c("v_kom_domscore","v_fdd_domscore","v_soc_domscore")]),
+         d$vabs3_gaf <- dplyr::recode(
+            rowSums(d[,c("vabs3_kom_domscore","vabs3_fdd_domscore","vabs3_soc_domscore")]),
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
 
