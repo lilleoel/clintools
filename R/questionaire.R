@@ -435,7 +435,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             d[tst,names(cur_dom)[j]] <-
                rowSums(d[tst,questions[cur_dom[[j]]]],na.rm=T)
             # Ensure more than 90% of the questions has been answered
-            d[tst,n_miss/length(cur_dom[[j]]) > 0.1] <- NA
+            d[tst,names(cur_dom)[j]][n_miss/length(cur_dom[[j]]) > 0.1] <- NA
          }
       }
       d$ados_tot_raw <- d$ados_sa_raw+d$ados_ir_raw
