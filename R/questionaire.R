@@ -100,7 +100,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       # Change reverse questions
       d[d == 0]  <- NA
       recoding_rules <- list(
-         list(indices=c(1,6,8,9,11,12,14,15,22,27,30,32,36), mapping=setNames(c(5:1),c(1:5)))
+         list(indices=c(1,6,8,9,11,12,14,15,22,27,30,32,36,38,41,42,46,47,48), mapping=setNames(c(5:1),c(1:5)))
       )
       for (rule in recoding_rules) {
          d[,questions[rule$indices]] <- lapply(d[,questions[rule$indices]],
