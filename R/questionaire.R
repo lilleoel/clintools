@@ -355,12 +355,11 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       d[,questions] <- lapply(d[,questions],as.numeric)
 
       # ADOS QUALITY
-      d$ados_N8s_tot <- rowSums(d[,questions] == 8,na.rm=T)
       d$ados_N9s_tot <- rowSums(d[,questions] == 9,na.rm=T)
 
-      # Change 5-7 to 0
+      # Change 5-8 to 0
       d[,questions] <- lapply(d[,questions], function(x) {
-         if (is.numeric(x)) { x[x >= 5 & x <= 7] <- 0 }; return(x) })
+         if (is.numeric(x)) { x[x >= 5 & x <= 8] <- 0 }; return(x) })
       # Change 3 to 2
       d[,questions[2:length(questions)]] <- lapply(d[,questions[2:length(questions)]], function(x) {
          if (is.numeric(x)) { x[x == 3] <- 2 }; return(x) })
@@ -516,7 +515,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }else{
          suffix <- "raw"
       }
-      # Helper function for raw scores
+
       beregn_vineland_raascore <- function(scores, impute = T) {
          # Hvis alle svar mangler → NA
          if (all(is.na(scores))) return(NA)
@@ -531,18 +530,22 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          r <- rle(scores)
          pos <- cumsum(r$lengths)
 
-         # Find gulv (første sekvens med 5 eller flere 2’ere)
+         # Find gulv (første sekvens med 5 eller flere 2'ere)
          gulv_idx <- which(r$values == 2 & r$lengths >= 5)
-         if (length(gulv_idx) == 0) return(sum(scores, na.rm = TRUE)) # fallback
+         gulv_slut <- if (length(gulv_idx) > 0) pos[gulv_idx[1]] else 0
 
-         gulv_slut <- pos[gulv_idx[1]]
-
-         # Find loft (første sekvens med 5 eller flere 0’ere efter gulv)
+         # Find loft (første sekvens med 5 eller flere 0'ere EFTER gulvet -
+         # eller hvor som helst, hvis der ikke findes noget gulv)
          loft_idx <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
          if (length(loft_idx) > 0) {
             loft_start <- pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
          } else {
             loft_start <- length(scores) + 1
+         }
+
+         # Kun hvis HVERKEN gulv ELLER loft findes: summer samtlige udsagnsscorer
+         if (gulv_slut == 0 && loft_start == length(scores) + 1) {
+            return(sum(scores, na.rm = TRUE))
          }
 
          gulv_score <- gulv_slut * 2
@@ -555,6 +558,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          return(gulv_score + mellem_score)
       }
+
       # Calculate raw scores
       for(i in 1:length(domainz)){
          n_miss <- rowSums(is.na(d[,questions[domainz[[i]]]]))
