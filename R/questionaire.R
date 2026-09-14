@@ -415,14 +415,12 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             tst <- !is.na(d$algorithm) & d$algorithm == i
             n_miss <- rowSums(is.na(d[tst,questions[cur_dom[[j]]]]))
             # Convert 8 and 9 to average
-            d[tst,paste0("ados_N8s_",substr(names(cur_dom[j]),6,7))] <-
-               rowSums(d[tst,questions[cur_dom[[j]]]] == 8,na.rm=T)
             d[tst,paste0("ados_N9s_",substr(names(cur_dom[j]),6,7))] <-
                rowSums(d[tst,questions[cur_dom[[j]]]] == 9,na.rm=T)
 
             d[tst,questions[cur_dom[[j]]]] <-
                   lapply(d[tst,questions[cur_dom[[j]]]], function(x) {
-                  if (is.numeric(x)) { x[x >= 8 & x <= 9] <- NA }; return(x) })
+                  if (is.numeric(x)) { x[x == 9] <- NA }; return(x) })
             if(impute == T){
                tmp <- round(rowMeans(d[tst,questions[cur_dom[[j]]]],na.rm=T))
                for(k in 1:sum(tst)){
