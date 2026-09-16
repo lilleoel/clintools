@@ -515,44 +515,42 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }
 
       beregn_vineland_raascore <- function(scores, impute = T) {
-         # Hvis alle svar mangler → NA
          if (all(is.na(scores))) return(NA)
 
-         # Genskab collapsed_row som karakterstreng
-         collapsed <- paste0(scores, collapse = "")
+         n_items <- length(scores)
+         last_answered_pos <- suppressWarnings(max(which(!is.na(scores))))
+         if (is.infinite(last_answered_pos)) last_answered_pos <- 0
 
-         # Hvis der findes NA, men ikke en "00000NA"-sekvens → NA
-         if(!impute) if (grepl("NA", collapsed) && !grepl("00000NA", collapsed)) return(NA)
-
-         # Fortsæt som normalt herfra
          r <- rle(scores)
          pos <- cumsum(r$lengths)
 
-         # Find gulv (første sekvens med 5 eller flere 2'ere)
          gulv_idx <- which(r$values == 2 & r$lengths >= 5)
          gulv_slut <- if (length(gulv_idx) > 0) pos[gulv_idx[1]] else 0
 
-         # Find loft (første sekvens med 5 eller flere 0'ere EFTER gulvet -
-         # eller hvor som helst, hvis der ikke findes noget gulv)
          loft_idx <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
-         if (length(loft_idx) > 0) {
-            loft_start <- pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
+         reached_ceiling <- length(loft_idx) > 0
+         loft_start <- if (reached_ceiling) {
+            pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
          } else {
-            loft_start <- length(scores) + 1
+            n_items + 1
          }
 
-         # Kun hvis HVERKEN gulv ELLER loft findes: summer samtlige udsagnsscorer
-         if (gulv_slut == 0 && loft_start == length(scores) + 1) {
+         # Her er selve rettelsen: hvis der HVERKEN er naaet et loft,
+         # OG domaenet ikke er gennemfoert til sidste item -> vi ved
+         # ikke, om administrationen naturligt sluttede tidligt eller
+         # blev afbrudt. Kan derfor ikke beregnes -> NA.
+         if (!reached_ceiling && last_answered_pos < n_items) {
+            return(NA)
+         }
+
+         if (gulv_slut == 0 && loft_start == n_items + 1) {
             return(sum(scores, na.rm = TRUE))
          }
 
          gulv_score <- gulv_slut * 2
-
-         if (gulv_slut + 1 <= loft_start - 1) {
-            mellem_score <- sum(scores[(gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
-         } else {
-            mellem_score <- 0
-         }
+         mellem_score <- if (gulv_slut + 1 <= loft_start - 1) {
+            sum(scores[(gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
+         } else 0
 
          return(gulv_score + mellem_score)
       }
