@@ -581,7 +581,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          agemo <- d[[age.months]]
          n <- nrow(d)
 
-         #klassificér items i ALLE domæner på én gang
+         # --- klassificér items i ALLE domæner på én gang (under_gulv/mellem/
+         #     over_loft/ikke_administreret), samme rle()-logik som
+         #     beregn_vineland_raascore ------------------------------------------
          status_list <- list()
          items_out_list <- list()
          eligible_list <- list()
@@ -626,10 +628,20 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             rows_to_impute_list[[dom]] <- which(eligible & has_missing_mellem)
          }
 
-         # byg ÉT kombineret datasæt + ÉN restriktiv prædiktormatrix
+         # --- byg ÉT kombineret datasæt + ÉN restriktiv prædiktormatrix ---------
          all_cols <- unique(unlist(lapply(adaptive_domains, function(dom) questions[domainz[[dom]]])))
-         mi_data <- do.call(cbind, lapply(items_out_list, function(x) x))[, all_cols, drop = FALSE]
-         # (items_out_list har allerede under_gulv=2 og over_loft=NA pr. domæne)
+         mi_data <- d[, all_cols, drop = FALSE]
+         # læg samme under_gulv=2 / over_loft=NA maskering ind som items_out_list
+         # allerede har pr. domæne (bygges direkte fra d i stedet for via cbind,
+         # som kunne miste/omdøbe kolonnenavne)
+         for (dom in adaptive_domains) {
+            target_cols <- questions[domainz[[dom]]]
+            status_mat <- status_list[[dom]]
+            for (j in seq_along(target_cols)) {
+               mi_data[status_mat[, j] == "under_gulv", target_cols[j]] <- 2
+               mi_data[status_mat[, j] == "over_loft", target_cols[j]]  <- NA
+            }
+         }
          mi_data$agemo <- agemo
 
          pred_mat <- matrix(0, nrow = ncol(mi_data), ncol = ncol(mi_data),
@@ -657,7 +669,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                            m = m, maxit = maxit, seed = seed, printFlag = FALSE)
          long <- mice::complete(imp, action = "long")
 
-         # pak resultatet ud pr. domæne
+         # --- pak resultatet ud pr. domæne --------------------------------------
          out <- list()
          for (dom in adaptive_domains) {
             target_cols <- questions[domainz[[dom]]]
