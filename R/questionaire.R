@@ -555,6 +555,137 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          return(gulv_score + mellem_score)
       }
 
+      impute_domain <- function(d, questions, domainz, target_domain, age.months, m = 20, seed = 1) {
+
+         if (!requireNamespace("mice", quietly = TRUE)) {
+            stop("Pakken 'mice' skal være installeret: install.packages('mice')")
+         }
+
+         # Søsterdomæner
+         # (Vineland-3: KOM/FDD/SOC/MOT-indeksstrukturen)
+         sibling_map <- list(
+            vabs3_lyt  = c("vabs3_tal", "vabs3_laes"),
+            vabs3_tal  = c("vabs3_lyt", "vabs3_laes"),
+            vabs3_laes = c("vabs3_lyt", "vabs3_tal"),
+
+            vabs3_per  = c("vabs3_hje", "vabs3_naer"),
+            vabs3_hje  = c("vabs3_per", "vabs3_naer"),
+            vabs3_naer = c("vabs3_per", "vabs3_hje"),
+
+            vabs3_rel  = c("vabs3_leg", "vabs3_til"),
+            vabs3_leg  = c("vabs3_rel", "vabs3_til"),
+            vabs3_til  = c("vabs3_rel", "vabs3_leg"),
+
+            vabs3_gmo  = c("vabs3_fmo"),
+            vabs3_fmo  = c("vabs3_gmo")
+         )
+         if (!target_domain %in% names(sibling_map)) {
+            stop("target_domain skal være ét af de 11 adaptive Vineland-3 domæner")
+         }
+
+         target_cols <- questions[domainz[[target_domain]]]
+         agemo <- d[[age.months]]
+         n <- nrow(d)
+         n_items <- length(target_cols)
+
+         items_out   <- d[, target_cols, drop = FALSE]
+         was_imputed <- rep(FALSE, n)
+
+         status_mat <- matrix("mellem", nrow = n, ncol = n_items)
+         for (i in seq_len(n)) {
+            scores <- as.numeric(items_out[i, ])
+            if (all(is.na(scores))) {
+               status_mat[i, ] <- "ikke_administreret"
+               next
+            }
+
+            r <- rle(scores)
+            pos <- cumsum(r$lengths)
+
+            gulv_idx  <- which(r$values == 2 & r$lengths >= 5)
+            gulv_slut <- if (length(gulv_idx) > 0) pos[gulv_idx[1]] else 0
+
+            loft_idx <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
+            loft_start <- if (length(loft_idx) > 0) {
+               pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
+            } else n_items + 1
+
+            if (gulv_slut > 0)          status_mat[i, 1:gulv_slut] <- "under_gulv"
+            if (loft_start <= n_items)  status_mat[i, loft_start:n_items] <- "over_loft"
+         }
+
+         # Krav: mindst 1 besvaret item i domænet, før det imputeres
+         n_answered <- rowSums(!is.na(items_out))
+         eligible   <- n_answered >= 1
+         has_missing_mellem <- apply(status_mat == "mellem" & is.na(items_out), 1, any)
+         rows_to_impute <- which(eligible & has_missing_mellem)
+
+         # under_gulv -> strukturel 2,
+         # over_loft -> forbliver NA (tæller ikke med)
+         for (j in seq_len(n_items)) {
+            items_out[status_mat[, j] == "under_gulv", j] <- 2
+            items_out[status_mat[, j] == "over_loft", j]  <- NA
+         }
+
+         fmi_val <- NA_real_
+
+         if (length(rows_to_impute) > 0) {
+            siblings <- sibling_map[[target_domain]]
+            sibling_cols <- unlist(lapply(siblings, function(dom) questions[domainz[[dom]]]))
+            sibling_cols <- intersect(sibling_cols, names(d))
+
+            mi_data <- d[, c(target_cols, sibling_cols), drop = FALSE]
+            mi_data$agemo <- agemo
+
+            for (j in seq_len(n_items)) {
+               mi_data[status_mat[, j] == "under_gulv", target_cols[j]] <- 2
+               mi_data[status_mat[, j] == "over_loft", target_cols[j]]  <- NA
+            }
+
+            pred_mat <- mice::quickpred(mi_data, mincor = 0)
+            pred_mat[, "agemo"] <- 1
+            diag(pred_mat) <- 0
+
+            meth <- rep("pmm", ncol(mi_data))
+            names(meth) <- names(mi_data)
+            meth["agemo"] <- ""
+
+            imp <- tryCatch(
+               mice::mice(mi_data, method = meth,
+                          predictorMatrix = pred_mat,
+                          m = m, seed = seed, printFlag = FALSE),
+               error = function(e) NULL
+            )
+
+            if (!is.null(imp)) {
+               long <- mice::complete(imp, action = "long")
+               pooled <- aggregate(long[, target_cols, drop = FALSE],
+                                   by = list(.id = long$.id),
+                                   FUN = function(x) round(mean(x)))
+               pooled <- pooled[order(pooled$.id), ]
+
+               for (j in seq_len(n_items)) {
+                  col <- target_cols[j]
+                  fill_rows <- rows_to_impute[status_mat[rows_to_impute, j] == "mellem" &
+                                                 is.na(d[rows_to_impute, col])]
+                  items_out[fill_rows, col] <- pooled[fill_rows, col]
+               }
+               was_imputed[rows_to_impute] <- TRUE
+
+               fit <- tryCatch(
+                  with(imp, lm(as.formula(paste(target_cols[1], "~ agemo")))),
+                  error = function(e) NULL
+               )
+               if (!is.null(fit)) {
+                  s <- tryCatch(summary(mice::pool(fit)), error = function(e) NULL)
+                  if (!is.null(s) && nrow(s) > 1) fmi_val <- s$fmi[2]
+               }
+            }
+         }
+
+         list(items_imputed = items_out, was_imputed = was_imputed, fmi = fmi_val)
+      }
+
       # Calculate raw scores
       for(i in 1:length(domainz)){
          n_miss <- rowSums(is.na(d[,questions[domainz[[i]]]]))
@@ -635,6 +766,81 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
 
+      # Multiple imputation
+      if (exists("multiple_imputation") && isTRUE(multiple_imputation) && module != "est") {
+
+         adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
+                               "vabs3_per","vabs3_hje","vabs3_naer",
+                               "vabs3_rel","vabs3_leg","vabs3_til",
+                               "vabs3_gmo","vabs3_fmo")
+
+         # 1) Imputér items pr. domæne og
+         # genberegn råscore pr. domæne
+         for (dom in adaptive_domains) {
+            res <- impute_domain(d, questions, domainz, dom, age.months)
+
+            d_imp_items <- d
+            d_imp_items[, questions[domainz[[dom]]]] <- res$items_imputed
+
+            d[[paste0(dom, "_raw_imputed")]] <- apply(
+               d_imp_items[, questions[domainz[[dom]]]], 1,
+               beregn_vineland_raascore, impute = TRUE)
+
+            d[[paste0(dom, "_imputed_flag")]] <- res$was_imputed
+            attr(d, paste0(dom, "_fmi")) <- res$fmi
+         }
+
+         # 2) Råscore -> v-score/ss,
+         #  samme opslag som complete-case, men kørt
+         #  på *_raw_imputed i stedet for *_raw
+         for (i in names(rawtoscales)) {
+            if (i %in% c("domains","gaf")) next
+
+            age <- age_range(i)
+            rtst <- !is.na(d[[age.months]]) &
+               d[[age.months]] >= age[1] &
+               d[[age.months]] < age[2]
+
+            cur_r2s <- data.frame(rawtoscales[grepl(i, names(rawtoscales))])
+            names(cur_r2s) <- gsub(paste0(i, "\\."), "", names(cur_r2s))
+
+            for (j in 1:ncol(cur_r2s)) {
+               dom_short <- substr(names(cur_r2s[j]), 1, 3)
+               raw_imp_col <- paste0("vabs3_", dom_short, "_raw_imputed")
+               if (!raw_imp_col %in% names(d)) next
+
+               nmd_lst <- cur_r2s[[j]]
+               names(nmd_lst) <- rownames(cur_r2s)
+
+               if (sum(rtst, na.rm = TRUE) > 0) {
+                  d[rtst, paste0("vabs3_", names(cur_r2s)[j], "_imputed")] <-
+                     dplyr::recode(d[rtst, raw_imp_col], !!!nmd_lst)
+               }
+            }
+         }
+
+         # 3) Domænescorer + GAF, samme opslag som complete-case,
+         #    men på *_ss_imputed
+         d$vabs3_kom_domscore_imputed <- dplyr::recode(
+            rowSums(d[,c("vabs3_lyt_ss_imputed","vabs3_tal_ss_imputed","vabs3_laes_ss_imputed")]),
+            !!!setNames(domains$kom_domainscore, rownames(domains)))
+
+         d$vabs3_fdd_domscore_imputed <- dplyr::recode(
+            rowSums(d[,c("vabs3_per_ss_imputed","vabs3_hje_ss_imputed","vabs3_naer_ss_imputed")]),
+            !!!setNames(domains$fdd_domainscore, rownames(domains)))
+
+         d$vabs3_soc_domscore_imputed <- dplyr::recode(
+            rowSums(d[,c("vabs3_rel_ss_imputed","vabs3_leg_ss_imputed","vabs3_til_ss_imputed")]),
+            !!!setNames(domains$soc_domainscore, rownames(domains)))
+
+         d$vabs3_mot_domscore_imputed <- dplyr::recode(
+            rowSums(d[,c("vabs3_gmo_ss_imputed","vabs3_fmo_ss_imputed")]),
+            !!!setNames(domains$mot_domainscore, rownames(domains)))
+
+         d$vabs3_gaf_imputed <- dplyr::recode(
+            rowSums(d[,c("vabs3_kom_domscore_imputed","vabs3_fdd_domscore_imputed","vabs3_soc_domscore_imputed")]),
+            !!!setNames(gaf$GAF, rownames(gaf)))
+      }
 
       o <- d[,!(colnames(d) %in% c(age.months,questions))]
 
