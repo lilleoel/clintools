@@ -693,8 +693,10 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
             fmi_val <- NA_real_
             if (length(rows_to_impute) > 0) {
-               fit <- tryCatch(with(imp, lm(as.formula(paste(target_cols[1], "~ agemo")))),
-                               error = function(e) NULL)
+               # kolonnenavne kan starte med tal/indeholde punktum (fx "14MD.V_K11_02")
+               # og skal derfor stå i backticks for at være et gyldigt formel-symbol
+               frm <- as.formula(paste0("`", target_cols[1], "` ~ agemo"))
+               fit <- tryCatch(with(imp, lm(frm)), error = function(e) NULL)
                if (!is.null(fit)) {
                   s <- tryCatch(summary(mice::pool(fit)), error = function(e) NULL)
                   if (!is.null(s) && nrow(s) > 1) fmi_val <- s$fmi[2]
