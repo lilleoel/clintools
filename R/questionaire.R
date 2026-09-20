@@ -783,10 +783,12 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                "vabs3_rel","vabs3_leg","vabs3_til",
                                "vabs3_gmo","vabs3_fmo")
 
-         # 1) Imputér items pr. domæne og
-         # genberegn råscore pr. domæne
+         # 1) Imputér ALLE domæner i ÉT mice-kald
+         # og genberegn råscore pr. domæne
+         imp_res <- impute_vineland_domains(d, questions, domainz, age.months)
+
          for (dom in adaptive_domains) {
-            res <- impute_domain(d, questions, domainz, dom, age.months)
+            res <- imp_res[[dom]]
 
             d_imp_items <- d
             d_imp_items[, questions[domainz[[dom]]]] <- res$items_imputed
@@ -799,9 +801,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             attr(d, paste0(dom, "_fmi")) <- res$fmi
          }
 
-         # 2) Råscore -> v-score/ss,
-         #  samme opslag som complete-case, men kørt
-         #  på *_raw_imputed i stedet for *_raw
+         # 2) Råscore -> v-score/ss, samme opslag som complete-case          #    men kørt på *_raw_imputed i stedet for *_raw
          for (i in names(rawtoscales)) {
             if (i %in% c("domains","gaf")) next
 
@@ -828,8 +828,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             }
          }
 
-         # 3) Domænescorer + GAF, samme opslag som complete-case,
-         #    men på *_ss_imputed
+         # 3) Domænescorer + GAF, samme opslag som complete-case
+         # men på *_ss_imputed
          d$vabs3_kom_domscore_imputed <- dplyr::recode(
             rowSums(d[,c("vabs3_lyt_ss_imputed","vabs3_tal_ss_imputed","vabs3_laes_ss_imputed")]),
             !!!setNames(domains$kom_domainscore, rownames(domains)))
