@@ -483,7 +483,6 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       if (!"module" %in% names(list(...))) {
          stop("Der skal defineres et modul - fx 'est' eller noget andet")
       }
-      if(!exists("impute")) stop("There must T/F for 'impute', e.g. impute = T")
 
       d <- df[,c(id,age.months,questions)]
       d[,questions] <- lapply(d[,questions],as.numeric)
@@ -555,14 +554,13 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          return(gulv_score + mellem_score)
       }
 
-      impute_domain <- function(d, questions, domainz, target_domain, age.months, m = 20, seed = 1) {
+      impute_vineland_domains <- function(d, questions, domainz, age.months,
+                                          m = 5, maxit = 5, mincor = 0.15, seed = 1) {
 
          if (!requireNamespace("mice", quietly = TRUE)) {
             stop("Pakken 'mice' skal være installeret: install.packages('mice')")
          }
 
-         # Søsterdomæner
-         # (Vineland-3: KOM/FDD/SOC/MOT-indeksstrukturen)
          sibling_map <- list(
             vabs3_lyt  = c("vabs3_tal", "vabs3_laes"),
             vabs3_tal  = c("vabs3_lyt", "vabs3_laes"),
@@ -579,111 +577,122 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             vabs3_gmo  = c("vabs3_fmo"),
             vabs3_fmo  = c("vabs3_gmo")
          )
-         if (!target_domain %in% names(sibling_map)) {
-            stop("target_domain skal være ét af de 11 adaptive Vineland-3 domæner")
-         }
-
-         target_cols <- questions[domainz[[target_domain]]]
+         adaptive_domains <- names(sibling_map)
          agemo <- d[[age.months]]
          n <- nrow(d)
-         n_items <- length(target_cols)
 
-         items_out   <- d[, target_cols, drop = FALSE]
-         was_imputed <- rep(FALSE, n)
+         #klassificér items i ALLE domæner på én gang
+         status_list <- list()
+         items_out_list <- list()
+         eligible_list <- list()
+         rows_to_impute_list <- list()
 
-         status_mat <- matrix("mellem", nrow = n, ncol = n_items)
-         for (i in seq_len(n)) {
-            scores <- as.numeric(items_out[i, ])
-            if (all(is.na(scores))) {
-               status_mat[i, ] <- "ikke_administreret"
-               next
+         for (dom in adaptive_domains) {
+            target_cols <- questions[domainz[[dom]]]
+            n_items <- length(target_cols)
+            items <- d[, target_cols, drop = FALSE]
+
+            status_mat <- matrix("mellem", nrow = n, ncol = n_items)
+            for (i in seq_len(n)) {
+               scores <- as.numeric(items[i, ])
+               if (all(is.na(scores))) { status_mat[i, ] <- "ikke_administreret"; next }
+
+               r <- rle(scores)
+               pos <- cumsum(r$lengths)
+               gulv_idx  <- which(r$values == 2 & r$lengths >= 5)
+               gulv_slut <- if (length(gulv_idx) > 0) pos[gulv_idx[1]] else 0
+               loft_idx  <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
+               loft_start <- if (length(loft_idx) > 0) {
+                  pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
+               } else n_items + 1
+
+               if (gulv_slut > 0)         status_mat[i, 1:gulv_slut] <- "under_gulv"
+               if (loft_start <= n_items) status_mat[i, loft_start:n_items] <- "over_loft"
             }
-
-            r <- rle(scores)
-            pos <- cumsum(r$lengths)
-
-            gulv_idx  <- which(r$values == 2 & r$lengths >= 5)
-            gulv_slut <- if (length(gulv_idx) > 0) pos[gulv_idx[1]] else 0
-
-            loft_idx <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
-            loft_start <- if (length(loft_idx) > 0) {
-               pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
-            } else n_items + 1
-
-            if (gulv_slut > 0)          status_mat[i, 1:gulv_slut] <- "under_gulv"
-            if (loft_start <= n_items)  status_mat[i, loft_start:n_items] <- "over_loft"
-         }
-
-         # Krav: mindst 1 besvaret item i domænet, før det imputeres
-         n_answered <- rowSums(!is.na(items_out))
-         eligible   <- n_answered >= 1
-         has_missing_mellem <- apply(status_mat == "mellem" & is.na(items_out), 1, any)
-         rows_to_impute <- which(eligible & has_missing_mellem)
-
-         # under_gulv -> strukturel 2,
-         # over_loft -> forbliver NA (tæller ikke med)
-         for (j in seq_len(n_items)) {
-            items_out[status_mat[, j] == "under_gulv", j] <- 2
-            items_out[status_mat[, j] == "over_loft", j]  <- NA
-         }
-
-         fmi_val <- NA_real_
-
-         if (length(rows_to_impute) > 0) {
-            siblings <- sibling_map[[target_domain]]
-            sibling_cols <- unlist(lapply(siblings, function(dom) questions[domainz[[dom]]]))
-            sibling_cols <- intersect(sibling_cols, names(d))
-
-            mi_data <- d[, c(target_cols, sibling_cols), drop = FALSE]
-            mi_data$agemo <- agemo
 
             for (j in seq_len(n_items)) {
-               mi_data[status_mat[, j] == "under_gulv", target_cols[j]] <- 2
-               mi_data[status_mat[, j] == "over_loft", target_cols[j]]  <- NA
+               items[status_mat[, j] == "under_gulv", j] <- 2
+               items[status_mat[, j] == "over_loft", j]  <- NA
             }
 
-            pred_mat <- mice::quickpred(mi_data, mincor = 0)
-            pred_mat[, "agemo"] <- 1
-            diag(pred_mat) <- 0
+            n_answered <- rowSums(!is.na(d[, target_cols, drop = FALSE]))
+            eligible <- n_answered >= 1   # krav: mindst 1 besvaret item i domænet
+            has_missing_mellem <- apply(status_mat == "mellem" &
+                                           is.na(d[, target_cols, drop = FALSE]), 1, any)
 
-            meth <- rep("pmm", ncol(mi_data))
-            names(meth) <- names(mi_data)
-            meth["agemo"] <- ""
+            status_list[[dom]] <- status_mat
+            items_out_list[[dom]] <- items
+            eligible_list[[dom]] <- eligible
+            rows_to_impute_list[[dom]] <- which(eligible & has_missing_mellem)
+         }
 
-            imp <- tryCatch(
-               mice::mice(mi_data, method = meth,
-                          predictorMatrix = pred_mat,
-                          m = m, seed = seed, printFlag = FALSE),
-               error = function(e) NULL
-            )
+         # byg ÉT kombineret datasæt + ÉN restriktiv prædiktormatrix
+         all_cols <- unique(unlist(lapply(adaptive_domains, function(dom) questions[domainz[[dom]]])))
+         mi_data <- do.call(cbind, lapply(items_out_list, function(x) x))[, all_cols, drop = FALSE]
+         # (items_out_list har allerede under_gulv=2 og over_loft=NA pr. domæne)
+         mi_data$agemo <- agemo
 
-            if (!is.null(imp)) {
-               long <- mice::complete(imp, action = "long")
-               pooled <- aggregate(long[, target_cols, drop = FALSE],
-                                   by = list(.id = long$.id),
-                                   FUN = function(x) round(mean(x)))
-               pooled <- pooled[order(pooled$.id), ]
+         pred_mat <- matrix(0, nrow = ncol(mi_data), ncol = ncol(mi_data),
+                            dimnames = list(names(mi_data), names(mi_data)))
+         for (dom in adaptive_domains) {
+            own_cols <- questions[domainz[[dom]]]
+            sib_cols <- unlist(lapply(sibling_map[[dom]], function(s) questions[domainz[[s]]]))
+            for (col in own_cols) {
+               pred_mat[col, setdiff(own_cols, col)] <- 1
+               pred_mat[col, sib_cols] <- 1
+               pred_mat[col, "agemo"] <- 1
+            }
+         }
+         # mincor-filtrering: fjern svage/ustabile prædiktorer for at gøre hvert
+         # PMM-fit hurtigere (kun items der reelt korrelerer >= mincor beholdes)
+         qp <- mice::quickpred(mi_data, mincor = mincor)
+         pred_mat <- pred_mat * qp
+         pred_mat[, "agemo"] <- (rowSums(pred_mat) > 0) * 1  # agemo altid med hvor relevant
+         diag(pred_mat) <- 0
 
-               for (j in seq_len(n_items)) {
-                  col <- target_cols[j]
-                  fill_rows <- rows_to_impute[status_mat[rows_to_impute, j] == "mellem" &
-                                                 is.na(d[rows_to_impute, col])]
-                  items_out[fill_rows, col] <- pooled[fill_rows, col]
-               }
-               was_imputed[rows_to_impute] <- TRUE
+         meth <- rep("pmm", ncol(mi_data)); names(meth) <- names(mi_data)
+         meth["agemo"] <- ""
 
-               fit <- tryCatch(
-                  with(imp, lm(as.formula(paste(target_cols[1], "~ agemo")))),
-                  error = function(e) NULL
-               )
+         imp <- mice::mice(mi_data, method = meth, predictorMatrix = pred_mat,
+                           m = m, maxit = maxit, seed = seed, printFlag = FALSE)
+         long <- mice::complete(imp, action = "long")
+
+         # pak resultatet ud pr. domæne
+         out <- list()
+         for (dom in adaptive_domains) {
+            target_cols <- questions[domainz[[dom]]]
+            status_mat <- status_list[[dom]]
+            rows_to_impute <- rows_to_impute_list[[dom]]
+
+            pooled <- aggregate(long[, target_cols, drop = FALSE],
+                                by = list(.id = long$.id),
+                                FUN = function(x) round(mean(x)))
+            pooled <- pooled[order(pooled$.id), ]
+
+            items_final <- items_out_list[[dom]]
+            was_imputed <- rep(FALSE, n)
+            for (j in seq_along(target_cols)) {
+               col <- target_cols[j]
+               fill_rows <- rows_to_impute[status_mat[rows_to_impute, j] == "mellem" &
+                                              is.na(d[rows_to_impute, col])]
+               items_final[fill_rows, col] <- pooled[fill_rows, col]
+            }
+            was_imputed[rows_to_impute] <- TRUE
+
+            fmi_val <- NA_real_
+            if (length(rows_to_impute) > 0) {
+               fit <- tryCatch(with(imp, lm(as.formula(paste(target_cols[1], "~ agemo")))),
+                               error = function(e) NULL)
                if (!is.null(fit)) {
                   s <- tryCatch(summary(mice::pool(fit)), error = function(e) NULL)
                   if (!is.null(s) && nrow(s) > 1) fmi_val <- s$fmi[2]
                }
             }
+
+            out[[dom]] <- list(items_imputed = items_final, was_imputed = was_imputed, fmi = fmi_val)
          }
 
-         list(items_imputed = items_out, was_imputed = was_imputed, fmi = fmi_val)
+         out
       }
 
       # Calculate raw scores
