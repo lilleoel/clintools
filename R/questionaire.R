@@ -860,6 +860,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }
 
       # Multiple imputation
+
       if (exists("multiple_imputation") && isTRUE(multiple_imputation) && module != "est") {
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
@@ -870,6 +871,20 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          # 1) Imputér ALLE domæner i ÉT mice-kald (impute_vineland_domains, se
          #    CHUNK 1) og genberegn råscore pr. domæne ---------------------------
          imp_res <- impute_vineland_domains(d, questions, domainz, age.months)
+
+         # Diagnostik-print (kan fjernes senere) - viser pr. domæne hvor mange
+         # rækker der var KANDIDATER til imputation (afbrudt administration,
+         # mindst 1 besvaret item), hvor mange der blev KASSERET af sikkerheds-
+         # tjekket (mice kunne reelt ikke udfylde dem), og hvor mange der endte
+         # med rent faktisk at blive imputeret. Nyttigt til at se hvorfor et
+         # domæne/tidspunkt giver 0 (eller få) imputerede rækker.
+         diag_tab <- t(sapply(imp_res, function(x) c(
+            n_candidates = x$n_candidates,
+            n_dropped    = x$n_dropped_safety_net,
+            n_filled     = sum(x$was_imputed)
+         )))
+         cat("=== multiple_imputation diagnostik (module=", module, ") ===\n", sep = "")
+         print(diag_tab)
 
          for (dom in adaptive_domains) {
             res <- imp_res[[dom]]
