@@ -691,15 +691,27 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             }
             was_imputed[rows_to_impute] <- TRUE
 
+            # FMI beregnes via Rubin's regler direkte på middelværdien af det
+            # første item i domænet blandt de imputerede rækker - IKKE via
+            # as.formula()/lm()/with.mids(), da jeres item-kolonnenavne (fx
+            # "14MD.V_K11_02") ikke er gyldige R-symboler og gav parse-fejl selv
+            # med backticks (with.mids genfortolker udtrykket internt). Denne
+            # metode undgår helt at et kolonnenavn skal parses som symbol.
             fmi_val <- NA_real_
-            if (length(rows_to_impute) > 0) {
-               # kolonnenavne kan starte med tal/indeholde punktum (fx "14MD.V_K11_02")
-               # og skal derfor stå i backticks for at være et gyldigt formel-symbol
-               frm <- as.formula(paste0("`", target_cols[1], "` ~ agemo"))
-               fit <- tryCatch(with(imp, lm(frm)), error = function(e) NULL)
-               if (!is.null(fit)) {
-                  s <- tryCatch(summary(mice::pool(fit)), error = function(e) NULL)
-                  if (!is.null(s) && nrow(s) > 1) fmi_val <- s$fmi[2]
+            if (length(rows_to_impute) > 1) {
+               col <- target_cols[1]
+               comp_list <- tryCatch(mice::complete(imp, action = "all"), error = function(e) NULL)
+               if (!is.null(comp_list)) {
+                  qhat <- sapply(comp_list, function(dd) mean(dd[[col]][rows_to_impute]))
+                  uhat <- sapply(comp_list, function(dd) {
+                     v <- dd[[col]][rows_to_impute]
+                     stats::var(v) / length(v)
+                  })
+                  pooled <- tryCatch(
+                     mice::pool.scalar(qhat, uhat, n = length(rows_to_impute)),
+                     error = function(e) NULL
+                  )
+                  if (!is.null(pooled)) fmi_val <- pooled$fmi
                }
             }
 
