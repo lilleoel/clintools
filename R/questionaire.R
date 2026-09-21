@@ -773,7 +773,15 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                }
             }
 
-            out[[dom]] <- list(items_imputed = items_final, was_imputed = was_imputed, fmi = fmi_val)
+            # Diagnostik: hvor mange raekker var reelt KANDIDATER til imputation
+            # (>=1 besvaret item + mindst ét manglende "mellem"-item), og hvor
+            # mange af dem blev efterfoelgende KASSERET af sikkerhedstjekket ovenfor
+            # (fordi mice ikke kunne udfylde et eller flere af deres items). Brug
+            # disse til at forstaa hvorfor et domaene faar 0 (eller faa) imputerede
+            # raekker i den rigtige data: sammenlign n_candidates og n_dropped.
+            out[[dom]] <- list(items_imputed = items_final, was_imputed = was_imputed,
+                               fmi = fmi_val, n_candidates = length(rows_to_impute),
+                               n_dropped_safety_net = length(still_na))
          }
 
          out
@@ -859,8 +867,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
 
-      # Multiple imputation
-
+      #****** Multiple imputation
       if (exists("multiple_imputation") && isTRUE(multiple_imputation) && module != "est") {
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
