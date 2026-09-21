@@ -554,6 +554,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          return(gulv_score + mellem_score)
       }
 
+
       impute_vineland_domains <- function(d, questions, domainz, age.months,
                                           m = 5, maxit = 5, mincor = 0.15, seed = 1) {
 
@@ -622,10 +623,24 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             has_missing_mellem <- apply(status_mat == "mellem" &
                                            is.na(d[, target_cols, drop = FALSE]), 1, any)
 
+            rows_to_impute_dom <- which(eligible & has_missing_mellem)
+
+            # VIGTIGT: for rækker der IKKE reelt skal imputeres (ingen manglende
+            # "mellem"-items), bruges de HELT UÆNDREDE originale items - ikke den
+            # gulv/loft-maskerede version. Masken (under_gulv=2/over_loft=NA) er
+            # nødvendig som "rensning" for de rækker der rent faktisk skal
+            # imputeres, men hvis den lægges ind for en allerede komplet række, kan
+            # en efterfølgende gentagelse af beregn_vineland_raascore() i sjældne
+            # tilfælde give et andet resultat end originalen (fx hvis der er
+            # besvarede items efter den detekterede loft-grænse). Uændrede rækker
+            # skal altid give PRÆCIS samme _raw_imputed som den oprindelige _raw.
+            non_impute_rows <- setdiff(seq_len(n), rows_to_impute_dom)
+            items[non_impute_rows, ] <- d[non_impute_rows, target_cols]
+
             status_list[[dom]] <- status_mat
             items_out_list[[dom]] <- items
             eligible_list[[dom]] <- eligible
-            rows_to_impute_list[[dom]] <- which(eligible & has_missing_mellem)
+            rows_to_impute_list[[dom]] <- rows_to_impute_dom
          }
 
          # --- byg ÉT kombineret datasæt + ÉN restriktiv prædiktormatrix ---------
@@ -852,8 +867,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                "vabs3_rel","vabs3_leg","vabs3_til",
                                "vabs3_gmo","vabs3_fmo")
 
-         # 1) Imputér ALLE domæner i ÉT mice-kald
-         # og genberegn råscore pr. domæne
+         # 1) Imputér ALLE domæner i ÉT mice-kald (impute_vineland_domains, se
+         #    CHUNK 1) og genberegn råscore pr. domæne ---------------------------
          imp_res <- impute_vineland_domains(d, questions, domainz, age.months)
 
          for (dom in adaptive_domains) {
@@ -870,7 +885,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             attr(d, paste0(dom, "_fmi")) <- res$fmi
          }
 
-         # 2) Råscore -> v-score/ss, samme opslag som complete-case          #    men kørt på *_raw_imputed i stedet for *_raw
+         # 2) Råscore -> v-score/ss, samme opslag som complete-case (linje ~587-613
+         #    i questionaire.R), men kørt på *_raw_imputed i stedet for *_raw -----
          for (i in names(rawtoscales)) {
             if (i %in% c("domains","gaf")) next
 
@@ -883,7 +899,14 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             names(cur_r2s) <- gsub(paste0(i, "\\."), "", names(cur_r2s))
 
             for (j in 1:ncol(cur_r2s)) {
-               dom_short <- substr(names(cur_r2s[j]), 1, 3)
+               # NB: dom_short må IKKE afkortes til substr(...,1,3) - to af domæne-
+               # koderne ("laes","naer") er 4 tegn, og en 3-tegns forkortelse ("lae",
+               # "nae") rammer aldrig den rigtige _raw_imputed-kolonne ved en eksakt
+               # match (i modsætning til complete-case-koden, hvor de 3 tegn kun
+               # bruges som grepl()-præfiks og derfor stadig matcher "laes"/"naer"
+               # som delstreng). Vi udleder i stedet det fulde domænenavn ved at
+               # fjerne "_ss"-suffikset.
+               dom_short <- sub("_ss$", "", names(cur_r2s[j]))
                raw_imp_col <- paste0("vabs3_", dom_short, "_raw_imputed")
                if (!raw_imp_col %in% names(d)) next
 
@@ -897,8 +920,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             }
          }
 
-         # 3) Domænescorer + GAF, samme opslag som complete-case
-         # men på *_ss_imputed
+         # 3) Domænescorer + GAF, samme opslag som complete-case (linje ~615-635),
+         #    men på *_ss_imputed ------------------------------------------------
          d$vabs3_kom_domscore_imputed <- dplyr::recode(
             rowSums(d[,c("vabs3_lyt_ss_imputed","vabs3_tal_ss_imputed","vabs3_laes_ss_imputed")]),
             !!!setNames(domains$kom_domainscore, rownames(domains)))
