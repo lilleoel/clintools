@@ -662,12 +662,29 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          pred_mat[, "agemo"] <- (rowSums(pred_mat) > 0) * 1  # agemo altid med hvor relevant
          diag(pred_mat) <- 0
 
+         # --- "sikre" kolonnenavne til selve mice()-kaldet -----------------------
+         # Jeres rå item-kolonner (fx "14MD.V_K11_02") er ikke gyldige R-symboler
+         # (starter med tal, indeholder punktum). mice() konverterer internt
+         # predictorMatrix til formler (reformulate()/str2lang()) uden at sætte
+         # navne i backticks, hvilket giver præcis den parse-fejl I ser - uanset
+         # hvad vi selv gør udenom med as.formula()/backticks. Løsningen er at give
+         # mice() midlertidige lovlige navne og mappe tilbage bagefter.
+         orig_names <- names(mi_data)
+         safe_names <- make.names(orig_names, unique = TRUE)
+         orig_to_safe <- setNames(safe_names, orig_names)
+
+         names(mi_data) <- safe_names
+         dimnames(pred_mat) <- list(safe_names, safe_names)
+
          meth <- rep("pmm", ncol(mi_data)); names(meth) <- names(mi_data)
-         meth["agemo"] <- ""
+         meth[orig_to_safe[["agemo"]]] <- ""
 
          imp <- mice::mice(mi_data, method = meth, predictorMatrix = pred_mat,
                            m = m, maxit = maxit, seed = seed, printFlag = FALSE)
          long <- mice::complete(imp, action = "long")
+         names(long)[names(long) %in% safe_names] <- names(orig_to_safe)[match(
+            names(long)[names(long) %in% safe_names], orig_to_safe)]
+         # (long har nu igen jeres oprindelige kolonnenavne, .imp/.id uændret)
 
          # --- pak resultatet ud pr. domæne --------------------------------------
          out <- list()
@@ -691,27 +708,53 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             }
             was_imputed[rows_to_impute] <- TRUE
 
-            # FMI beregnes via Rubin's regler direkte på middelværdien af det
-            # første item i domænet blandt de imputerede rækker - IKKE via
-            # as.formula()/lm()/with.mids(), da jeres item-kolonnenavne (fx
-            # "14MD.V_K11_02") ikke er gyldige R-symboler og gav parse-fejl selv
-            # med backticks (with.mids genfortolker udtrykket internt). Denne
-            # metode undgår helt at et kolonnenavn skal parses som symbol.
+            # Sikkerhedstjek: mice() kan stille og roligt springe imputation af et
+            # enkelt item over for nogle rækker (fx ved kollinearitet/for lidt
+            # varians i donorpuljen) uden fejl - kun en "logged event". Er der
+            # stadig NA tilbage i de "mellem"-celler vi forsøgte at udfylde for en
+            # given række, er domænet IKKE reelt fuldt imputeret for den række -
+            # den skal forblive NA (ligesom complete-case gør ved ufuldstændig
+            # administration), ikke få et halvt/forkert resultat.
+            mellem_mat <- status_mat == "mellem"
+            still_na <- rows_to_impute[
+               sapply(rows_to_impute, function(r) any(is.na(items_final[r, target_cols][mellem_mat[r, ]])))
+            ]
+            if (length(still_na) > 0) {
+               items_final[still_na, target_cols] <- NA
+               # (kun de items der reelt manglede sættes reelt tilbage til NA her,
+               # men da domænets råscore ikke kan beregnes med huller, er hele
+               # domænet for den række ikke pålideligt imputeret)
+               was_imputed[still_na] <- FALSE
+            }
+
+            # FMI beregnes via Rubin's regler på DOMÆNETS SUMSCORE (alle items i
+            # domænet lagt sammen) blandt de imputerede rækker - IKKE på ét enkelt
+            # item, og IKKE via as.formula()/lm()/with.mids() (jeres item-
+            # kolonnenavne, fx "14MD.V_K11_02", er ikke gyldige R-symboler og gav
+            # parse-fejl selv med backticks, fordi with.mids genfortolker udtrykket
+            # internt). Et enkelt item er ofte næsten konstant (mange 0'er/2'er tæt
+            # på gulv/loft) og giver let 0-varians -> FMI=NaN; sumscoren har langt
+            # mere varians og er samtidig et mere meningsfuldt kvalitetsmål for
+            # domænet som helhed.
             fmi_val <- NA_real_
             if (length(rows_to_impute) > 1) {
-               col <- target_cols[1]
+               safe_cols <- unname(orig_to_safe[target_cols])  # comp_list bruger stadig de "sikre" navne
                comp_list <- tryCatch(mice::complete(imp, action = "all"), error = function(e) NULL)
                if (!is.null(comp_list)) {
-                  qhat <- sapply(comp_list, function(dd) mean(dd[[col]][rows_to_impute]))
+                  qhat <- sapply(comp_list, function(dd) {
+                     sumscore <- rowSums(dd[, safe_cols, drop = FALSE])
+                     mean(sumscore[rows_to_impute])
+                  })
                   uhat <- sapply(comp_list, function(dd) {
-                     v <- dd[[col]][rows_to_impute]
+                     sumscore <- rowSums(dd[, safe_cols, drop = FALSE])
+                     v <- sumscore[rows_to_impute]
                      stats::var(v) / length(v)
                   })
                   pooled <- tryCatch(
                      mice::pool.scalar(qhat, uhat, n = length(rows_to_impute)),
                      error = function(e) NULL
                   )
-                  if (!is.null(pooled)) fmi_val <- pooled$fmi
+                  if (!is.null(pooled) && is.finite(pooled$fmi)) fmi_val <- pooled$fmi
                }
             }
 
