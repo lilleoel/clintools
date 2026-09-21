@@ -555,6 +555,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }
 
 
+
       impute_vineland_domains <- function(d, questions, domainz, age.months,
                                           m = 5, maxit = 5, mincor = 0.15, seed = 1) {
 
@@ -696,6 +697,20 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          imp <- mice::mice(mi_data, method = meth, predictorMatrix = pred_mat,
                            m = m, maxit = maxit, seed = seed, printFlag = FALSE)
+
+         # Gem mice's egen loggedEvents (kollinearitet/konstante items/fjernede
+         # praediktorer m.v.) - normalt kasseres den tavst, men den er noeglen til
+         # at forstaa HVORFOR bestemte domaener (fx laes/hje/leg) ender med 0
+         # udfyldte raekker paa trods af flere kandidater. Kolonnenavnene i loggen
+         # er stadig de "sikre" navne paa dette tidspunkt - mappes tilbage nedenfor.
+         logged <- imp$loggedEvents
+         if (!is.null(logged) && nrow(logged) > 0 && "out" %in% names(logged)) {
+            logged$out <- sapply(strsplit(as.character(logged$out), ", "), function(v) {
+               hit <- names(orig_to_safe)[match(v, orig_to_safe)]
+               paste(ifelse(is.na(hit), v, hit), collapse = ", ")
+            })
+         }
+
          long <- mice::complete(imp, action = "long")
          names(long)[names(long) %in% safe_names] <- names(orig_to_safe)[match(
             names(long)[names(long) %in% safe_names], orig_to_safe)]
@@ -784,6 +799,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                n_dropped_safety_net = length(still_na))
          }
 
+         attr(out, "loggedEvents") <- logged
          out
       }
 
@@ -867,7 +883,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
 
-      #****** Multiple imputation
+      #****** Multiple imputation -----
+
       if (exists("multiple_imputation") && isTRUE(multiple_imputation) && module != "est") {
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
@@ -892,6 +909,18 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          )))
          cat("=== multiple_imputation diagnostik (module=", module, ") ===\n", sep = "")
          print(diag_tab)
+
+         # mice's egen loggedEvents - viser PRAECIS hvorfor et item ikke kunne
+         # udfyldes (fx "collinear"/"constant"/fjernet praediktor). Noeglen til at
+         # forstaa hvorfor fx laes/hje/leg giver 0 udfyldte raekker paa trods af
+         # flere kandidater.
+         le <- attr(imp_res, "loggedEvents")
+         if (!is.null(le) && nrow(le) > 0) {
+            cat("--- mice loggedEvents (", nrow(le), " raekker) ---\n", sep = "")
+            print(le)
+         } else {
+            cat("--- mice loggedEvents: ingen ---\n")
+         }
 
          for (dom in adaptive_domains) {
             res <- imp_res[[dom]]
