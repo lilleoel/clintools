@@ -992,8 +992,16 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          # tjekket (mice kunne reelt ikke udfylde dem), og hvor mange der endte
          # med rent faktisk at blive imputeret. Nyttigt til at se hvorfor et
          # domæne/tidspunkt giver 0 (eller få) imputerede rækker.
+         # NB: n_fully_observed taeller literal 0-NA paa tvaers af ALLE raa items i
+         # domaenet - det er misvisende som "donorpulje", fordi de fleste items
+         # uden for gulv/loft-vinduet er STRUKTURELT ikke-administrerede (by
+         # design, ikke reel missingness). n_donor_pool = n_administered -
+         # n_candidates er det korrekte maal: administrerede raekker UDEN
+         # manglende "mellem"-items, dvs. reelt brugbare som traeningsdata for
+         # mice's PMM-model.
          diag_tab <- t(sapply(imp_res, function(x) c(
             n_administered   = x$n_administered,
+            n_donor_pool     = x$n_administered - x$n_candidates,
             n_fully_observed = x$n_fully_observed,
             n_candidates     = x$n_candidates,
             n_dropped        = x$n_dropped_safety_net,
@@ -1005,11 +1013,21 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          # mice's egen loggedEvents - viser PRAECIS hvorfor et item ikke kunne
          # udfyldes (fx "collinear"/"constant"/fjernet praediktor). Noeglen til at
          # forstaa hvorfor fx laes/hje/leg giver 0 udfyldte raekker paa trods af
-         # flere kandidater.
+         # flere kandidater. Vi printer KUN de raekker der vedroerer de domaener
+         # der reelt har n_dropped>0 - den fulde log kan let ramme R's
+         # getOption("max.print") og blive afskaaret foer vi naar det relevante.
          le <- attr(imp_res, "loggedEvents")
          if (!is.null(le) && nrow(le) > 0) {
-            cat("--- mice loggedEvents (", nrow(le), " raekker) ---\n", sep = "")
-            print(le)
+            cat("--- mice loggedEvents: ", nrow(le), " raekker totalt (viser kun ",
+                "domaener med n_dropped>0, saa outputtet ikke afskaeres) ---\n", sep = "")
+            doms_with_drop <- names(which(sapply(imp_res, function(x) x$n_dropped_safety_net) > 0))
+            for (dom in doms_with_drop) {
+               target_cols <- questions[domainz[[dom]]]
+               pat <- paste(c(target_cols, paste0(dom, "__")), collapse = "|")
+               hit <- grepl(pat, le$dep, fixed = FALSE) | grepl(pat, le$out, fixed = FALSE)
+               cat("\n>>> ", dom, " (", sum(hit), " raekker) <<<\n", sep = "")
+               if (sum(hit) > 0) print(utils::head(le[hit, ], 80)) else cat("(ingen match)\n")
+            }
          } else {
             cat("--- mice loggedEvents: ingen ---\n")
          }
@@ -1085,7 +1103,6 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             rowSums(d[,c("vabs3_kom_domscore_imputed","vabs3_fdd_domscore_imputed","vabs3_soc_domscore_imputed")]),
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
-
 
       o <- d[,!(colnames(d) %in% c(age.months,questions))]
 
