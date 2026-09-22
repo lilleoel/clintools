@@ -828,8 +828,13 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             # den skal forblive NA (ligesom complete-case gør ved ufuldstændig
             # administration), ikke få et halvt/forkert resultat.
             mellem_mat <- status_mat == "mellem"
+            # vapply (ikke sapply): sapply returnerer en TOM LISTE (ikke logical(0))
+            # naar rows_to_impute er tom, hvilket giver "invalid subscript type
+            # 'list'" ved det efterfoelgende opslag - vapply undgaar det, uanset
+            # om domaenet har 0 eller flere kandidater.
             still_na <- rows_to_impute[
-               sapply(rows_to_impute, function(r) any(is.na(items_final[r, target_cols][mellem_mat[r, ]])))
+               vapply(rows_to_impute, function(r) any(is.na(items_final[r, target_cols][mellem_mat[r, ]])),
+                      logical(1))
             ]
             if (length(still_na) > 0) {
                items_final[still_na, target_cols] <- NA
@@ -837,6 +842,53 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                # men da domænets råscore ikke kan beregnes med huller, er hele
                # domænet for den række ikke pålideligt imputeret)
                was_imputed[still_na] <- FALSE
+            }
+
+            # RÅSCORE beregnes HER, direkte ud fra den ALLEREDE KENDTE gulv/loft-
+            # graense (status_mat, beregnet ÉN GANG fra de ORIGINALE, umaskerede
+            # data) - IKKE ved at genkoere beregn_vineland_raascore()'s egen
+            # rle()-baserede gulv/loft-DETEKTION paa det maskerede/imputerede
+            # item-array. Det er en bevidst rettelse: over_loft-cellerne er sat
+            # til NA (inkl. de 5 rigtige nuller der oprindeligt UDLØSTE loft-
+            # detektionen), saa en gentaget rle()-detektion paa det maskerede
+            # array finder INTET loft (NA != 0), hvilket faar funktionen til
+            # fejlagtigt at returnere NA for naesten alle raekker der reelt naaede
+            # loft. Ved i stedet at bruge den kendte graense direkte kan gulv/loft
+            # hverken forsvinde eller opstaa som artefakt af imputationen.
+            n_items <- length(target_cols)
+            raw_imputed <- rep(NA_real_, n)
+            for (i in seq_len(n)) {
+               if (all(is.na(d[i, target_cols]))) next  # ikke administreret -> NA
+               st <- status_mat[i, ]
+               gulv_slut <- if (any(st == "under_gulv")) max(which(st == "under_gulv")) else 0
+               loft_pos <- which(st == "over_loft")
+               loft_start <- if (length(loft_pos) > 0) min(loft_pos) else n_items + 1
+               reached_ceiling <- length(loft_pos) > 0
+               # VIGTIGT: last_answered_pos beregnes ud fra items_final (det
+               # FAERDIGUDFYLDTE array), IKKE ud fra det oprindelige d. Hvis en
+               # raekke aldrig naaede et rigtigt loft, men alle dens manglende
+               # "mellem"-items netop er blevet imputeret, ER administrationen nu
+               # reelt komplet til sidste item - og skal behandles saadan. Ved
+               # fejlagtigt at blive ved med at tjekke mod det oprindelige,
+               # ufuldstaendige d ville disse raekker ALTID faa NA, uanset hvor
+               # godt imputationen lykkedes (praecis den samme slags fejl som
+               # gulv/loft-rettelsen ovenfor - stale "foer-imputation"-info brugt
+               # efter imputationen er sket).
+               last_answered_pos <- suppressWarnings(max(which(!is.na(items_final[i, target_cols]))))
+               if (is.infinite(last_answered_pos)) last_answered_pos <- 0
+               # samme regel som beregn_vineland_raascore(): hverken loft naaet
+               # eller domaenet gennemfoert til sidste item -> vi ved ikke om det
+               # var en naturlig afslutning eller en afbrudt administration
+               if (!reached_ceiling && last_answered_pos < n_items) next
+               if (gulv_slut == 0 && loft_start == n_items + 1) {
+                  raw_imputed[i] <- sum(items_final[i, ], na.rm = TRUE)
+                  next
+               }
+               gulv_score <- gulv_slut * 2
+               mellem_score <- if (gulv_slut + 1 <= loft_start - 1) {
+                  sum(items_final[i, (gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
+               } else 0
+               raw_imputed[i] <- gulv_score + mellem_score
             }
 
             # FMI beregnes via Rubin's regler på DOMÆNETS SUMSCORE (alle items i
@@ -883,7 +935,11 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             # der en øvre graense for hvor godt NOGEN imputationsmetode kan goere
             # det for det domaene, uanset praediktorvalg - fordi der reelt ikke
             # findes nok mennesker med domaenet besvaret til at "laere" af.
+            # raw_imputed er NA for raekker der blev kasseret af sikkerhedstjekket
+            # (still_na), ligesom was_imputed allerede afspejler
+            raw_imputed[still_na] <- NA_real_
             out[[dom]] <- list(items_imputed = items_final, was_imputed = was_imputed,
+                               raw_imputed = raw_imputed,
                                fmi = fmi_val, n_candidates = length(rows_to_impute),
                                n_dropped_safety_net = length(still_na),
                                n_administered = n_administered_list[[dom]],
@@ -1035,13 +1091,18 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          for (dom in adaptive_domains) {
             res <- imp_res[[dom]]
 
-            d_imp_items <- d
-            d_imp_items[, questions[domainz[[dom]]]] <- res$items_imputed
-
-            d[[paste0(dom, "_raw_imputed")]] <- apply(
-               d_imp_items[, questions[domainz[[dom]]]], 1,
-               beregn_vineland_raascore, impute = TRUE)
-
+            # raw_imputed kommer FÆRDIGBEREGNET fra impute_vineland_domains() (se
+            # CHUNK 1) - IKKE ved at genkøre beregn_vineland_raascore() her. Det er
+            # en bevidst rettelse: beregn_vineland_raascore()'s egen gulv/loft-
+            # DETEKTION (rle() på item-arrayet) fejler på det maskerede/imputerede
+            # array, fordi de 5 rigtige nuller der udløste loft-detektionen er sat
+            # til NA i vores maskering - en gentaget detektion finder derfor intet
+            # loft og returnerer fejlagtigt NA for stort set alle rækker der reelt
+            # nåede loft. CHUNK 1 beregner i stedet råscoren direkte ud fra den
+            # ALLEREDE KENDTE gulv/loft-grænse (fra de originale, umaskerede data),
+            # så gulv/loft hverken kan opstå eller forsvinde som artefakt af
+            # imputationen.
+            d[[paste0(dom, "_raw_imputed")]] <- res$raw_imputed
             d[[paste0(dom, "_imputed_flag")]] <- res$was_imputed
             attr(d, paste0(dom, "_fmi")) <- res$fmi
          }
@@ -1103,6 +1164,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             rowSums(d[,c("vabs3_kom_domscore_imputed","vabs3_fdd_domscore_imputed","vabs3_soc_domscore_imputed")]),
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
+
 
       o <- d[,!(colnames(d) %in% c(age.months,questions))]
 
