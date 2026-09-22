@@ -590,6 +590,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          items_out_list <- list()
          eligible_list <- list()
          rows_to_impute_list <- list()
+         n_administered_list <- list()
+         n_fully_observed_list <- list()
 
          for (dom in adaptive_domains) {
             target_cols <- questions[domainz[[dom]]]
@@ -642,6 +644,16 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             items_out_list[[dom]] <- items
             eligible_list[[dom]] <- eligible
             rows_to_impute_list[[dom]] <- rows_to_impute_dom
+            # Diagnostik uafhaengigt af selve imputationsforsoeget: hvor mange
+            # raekker har domaenet overhovedet naaet at blive administreret til
+            # (>=1 besvaret item), og hvor mange er 100% komplette (0 manglende
+            # raw items)? Hvis n_administered i sig selv er lille (fx <15-20), er
+            # der en øvre graense for hvor godt NOGEN imputationsmetode kan goere
+            # det - uanset praediktorantal - fordi donorpuljen for domaenet reelt
+            # er lille i hele datasaettet, ikke kun blandt kandidaterne.
+            n_answered_dom <- rowSums(!is.na(d[, target_cols, drop = FALSE]))
+            n_administered_list[[dom]] <- sum(n_answered_dom >= 1)
+            n_fully_observed_list[[dom]] <- sum(n_answered_dom == n_items)
          }
 
          # --- byg ÉT kombineret datasæt + ÉN restriktiv prædiktormatrix ---------
@@ -864,9 +876,18 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             # (fordi mice ikke kunne udfylde et eller flere af deres items). Brug
             # disse til at forstaa hvorfor et domaene faar 0 (eller faa) imputerede
             # raekker i den rigtige data: sammenlign n_candidates og n_dropped.
+            #
+            # n_administered/n_fully_observed er UAFHAENGIGE af selve imputations-
+            # forsoeget - de siger noget om domaenets TOTALE donorpulje i hele
+            # datasaettet. Hvis n_administered i sig selv er lille (fx <15-20), er
+            # der en øvre graense for hvor godt NOGEN imputationsmetode kan goere
+            # det for det domaene, uanset praediktorvalg - fordi der reelt ikke
+            # findes nok mennesker med domaenet besvaret til at "laere" af.
             out[[dom]] <- list(items_imputed = items_final, was_imputed = was_imputed,
                                fmi = fmi_val, n_candidates = length(rows_to_impute),
-                               n_dropped_safety_net = length(still_na))
+                               n_dropped_safety_net = length(still_na),
+                               n_administered = n_administered_list[[dom]],
+                               n_fully_observed = n_fully_observed_list[[dom]])
          }
 
          attr(out, "loggedEvents") <- logged
@@ -954,7 +975,6 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }
 
       #****** Multiple imputation -----
-
       if (exists("multiple_imputation") && isTRUE(multiple_imputation) && module != "est") {
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
@@ -973,9 +993,11 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          # med rent faktisk at blive imputeret. Nyttigt til at se hvorfor et
          # domæne/tidspunkt giver 0 (eller få) imputerede rækker.
          diag_tab <- t(sapply(imp_res, function(x) c(
-            n_candidates = x$n_candidates,
-            n_dropped    = x$n_dropped_safety_net,
-            n_filled     = sum(x$was_imputed)
+            n_administered   = x$n_administered,
+            n_fully_observed = x$n_fully_observed,
+            n_candidates     = x$n_candidates,
+            n_dropped        = x$n_dropped_safety_net,
+            n_filled         = sum(x$was_imputed)
          )))
          cat("=== multiple_imputation diagnostik (module=", module, ") ===\n", sep = "")
          print(diag_tab)
@@ -1063,6 +1085,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             rowSums(d[,c("vabs3_kom_domscore_imputed","vabs3_fdd_domscore_imputed","vabs3_soc_domscore_imputed")]),
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
+
 
       o <- d[,!(colnames(d) %in% c(age.months,questions))]
 
