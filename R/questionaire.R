@@ -660,33 +660,49 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          }
          mi_data$agemo <- agemo
 
-         # VIGTIGT (fund via loggedEvents-diagnostik): at bruge ALLE enkelt-items
-         # fra BEGGE søsterdomæner som prædiktorer giver 90-130 prædiktorer pr.
-         # model, langt flere end antallet af raekker uden manglende data paa
-         # tvaers af dem (loggen viste "df set to 1, # observed cases: 19-86,
-         # # predictors: 76-100" - dvs. p > n). Det goer PMM-modellen rangdefekt,
-         # tvinger mice's ridge-fallback igennem, og for nogle domaener ender
-         # modellen saa ustabil at intet item kan udfyldes -> 0 imputerede.
-         #
-         # Fix: eget domaenes items bruges stadig enkeltvis (det er dem vi rent
-         # faktisk skal udfylde paa itemniveau), men hvert SOESTERdomaene
-         # reduceres til ÉN prædiktor: soesterdomaenets sumscore (sum af domaenets
-         # besvarede items, NA hvis slet intet er besvaret). Det bevarer praecis
-         # den information soesterdomaenerne bidrager med (deres overordnede
-         # niveau), men skaerer prædiktorantallet fra 90-130 ned til typisk 5-15.
+         # VIGTIGT (fund via loggedEvents-diagnostik, runde 1): at bruge ALLE
+         # enkelt-items fra BEGGE søsterdomæner som prædiktorer gav 90-130
+         # prædiktorer pr. model, langt flere end antallet af raekker uden
+         # manglende data paa tvaers af dem ("df set to 1, # observed cases:
+         # 19-86, # predictors: 76-100" - dvs. p > n). Det blev fixet ved at
+         # reducere hvert SOESTERdomaene til ÉN prædiktor: soesterdomaenets
+         # sumscore (sum af besvarede items, NA hvis slet intet er besvaret).
          for (dom in adaptive_domains) {
             sib_col <- paste0(dom, "__sibsum")
             dom_cols <- questions[domainz[[dom]]]
             dom_items <- mi_data[, dom_cols, drop = FALSE]
-            # sum af BESVAREDE items (na.rm=TRUE) - saa ét enkelt manglende item i
-            # soesterdomaenet ikke goer hele __sibsum-praediktoren NA (det ville
-            # give det samme p>>n/missingness-problem igen, blot flyttet fra 90
-            # kolonner til 1). Kun hvis domaenet slet ikke er administreret
-            # (ingen items besvaret) er __sibsum reelt NA.
             any_answered <- rowSums(!is.na(dom_items)) > 0
             s <- rowSums(dom_items, na.rm = TRUE)
             s[!any_answered] <- NA
             mi_data[[sib_col]] <- s
+         }
+
+         # VIGTIGT (fund via loggedEvents-diagnostik, runde 2): selv EFTER
+         # soester-fixet blev en raekke domaener/tidspunkter stadig 100 % kasseret
+         # af sikkerhedstjekket. Loggen viste samme p>n-moenster, nu fra EGET
+         # domaenes egne items ("df set to 1, # observed cases: 7-24,
+         # # predictors: 24-29") - i sparsomme rigtige data er der langt faerre
+         # raekker med ALLE ovrige items i domaenet besvaret end der er items i
+         # domaenet (op til 30-50).
+         #
+         # Fix: samme princip som for soesterdomaener, men "leave-one-out" - hvert
+         # item faar sin EGEN hjaelpe-praediktor "<item>__ownsum_excl" = summen af
+         # domaenets OVRIGE besvarede items (ekskl. netop dette item). Det er ikke
+         # bare ÉN faelles sumscore for hele domaenet (det ville lade et items
+         # egen besvarede vaerdi indgaa som praediktor for sig selv i de raekker
+         # hvor det ER besvaret - cirkulaert/overfittet under selve mice-fittet).
+         # Med leave-one-out er praediktoren altid uafhaengig af det item den skal
+         # forudsige. Praediktorantallet pr. item bliver dermed ~4 (egen-sum +
+         # 1-2 soester-sum + agemo) uanset hvor mange items domaenet har.
+         for (dom in adaptive_domains) {
+            dom_cols <- questions[domainz[[dom]]]
+            dom_items <- mi_data[, dom_cols, drop = FALSE]
+            dom_sum_all <- rowSums(dom_items, na.rm = TRUE)
+            for (col in dom_cols) {
+               val <- dom_items[[col]]
+               excl <- dom_sum_all - ifelse(is.na(val), 0, val)
+               mi_data[[paste0(col, "__ownsum_excl")]] <- excl
+            }
          }
 
          pred_mat <- matrix(0, nrow = ncol(mi_data), ncol = ncol(mi_data),
@@ -695,29 +711,39 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             own_cols <- questions[domainz[[dom]]]
             sib_sumcols <- paste0(sibling_map[[dom]], "__sibsum")
             for (col in own_cols) {
-               pred_mat[col, setdiff(own_cols, col)] <- 1
+               own_excl_col <- paste0(col, "__ownsum_excl")
+               pred_mat[col, own_excl_col] <- 1
                pred_mat[col, sib_sumcols] <- 1
                pred_mat[col, "agemo"] <- 1
             }
          }
-         # __sibsum-kolonnerne skal selv aldrig imputeres (de er kun afledte
-         # hjaelpe-praediktorer) og skal ikke bruges som praediktor for hinanden
+         # __sibsum/__ownsum_excl-kolonnerne skal selv aldrig imputeres (de er kun
+         # afledte hjaelpe-praediktorer) og skal ikke bruges som praediktor for
+         # hinanden eller for raa-items
          sibsum_cols <- paste0(adaptive_domains, "__sibsum")
+         ownsum_cols <- paste0(all_cols, "__ownsum_excl")
+         helper_cols <- c(sibsum_cols, ownsum_cols)
 
-         # mincor-filtrering: fjern svage/ustabile prædiktorer blandt EGET domænes
-         # items (kun items der reelt korrelerer >= mincor beholdes). __sibsum og
-         # agemo er allerede saa faa/informative at de altid beholdes - de
-         # generhverves eksplicit lige efter, saa quickpreds korrelationsfilter
-         # aldrig kan fjerne dem igen.
+         # mincor-filtrering: droppet for de afledte hjaelpe-kolonner (__sibsum/
+         # __ownsum_excl er per konstruktion allerede de eneste, mest informative
+         # praediktorer vi vil bruge - de generhverves eksplicit lige efter, saa
+         # quickpreds korrelationsfilter aldrig kan fjerne dem igen). mincor
+         # bruges kun til evt. yderligere at fjerne raa-item-praediktorer, hvilket
+         # efter denne omlaegning ikke laengere findes i pred_mat, saa qp har reelt
+         # ingen effekt mere - beholdes alligevel for fremtidssikring hvis flere
+         # raa-item-praediktorer tilfoejes senere.
          qp <- mice::quickpred(mi_data, mincor = mincor)
          pred_mat <- pred_mat * qp
          for (dom in adaptive_domains) {
             own_cols <- questions[domainz[[dom]]]
             sib_sumcols <- paste0(sibling_map[[dom]], "__sibsum")
-            pred_mat[own_cols, sib_sumcols] <- 1
-            pred_mat[own_cols, "agemo"] <- 1
+            for (col in own_cols) {
+               pred_mat[col, paste0(col, "__ownsum_excl")] <- 1
+               pred_mat[col, sib_sumcols] <- 1
+               pred_mat[col, "agemo"] <- 1
+            }
          }
-         pred_mat[sibsum_cols, ] <- 0  # __sibsum skal aldrig selv imputeres
+         pred_mat[helper_cols, ] <- 0  # hjaelpekolonner skal aldrig selv imputeres
          pred_mat[, "agemo"] <- (rowSums(pred_mat) > 0) * 1  # agemo altid med hvor relevant
          diag(pred_mat) <- 0
 
@@ -737,7 +763,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          meth <- rep("pmm", ncol(mi_data)); names(meth) <- names(mi_data)
          meth[orig_to_safe[["agemo"]]] <- ""
-         meth[orig_to_safe[sibsum_cols]] <- ""  # __sibsum er kun hjaelpe-praediktor, imputeres ikke selv
+         meth[orig_to_safe[helper_cols]] <- ""  # __sibsum/__ownsum_excl er kun hjaelpe-praediktorer, imputeres ikke selv
 
          imp <- mice::mice(mi_data, method = meth, predictorMatrix = pred_mat,
                            m = m, maxit = maxit, seed = seed, printFlag = FALSE)
