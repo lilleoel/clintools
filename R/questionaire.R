@@ -660,21 +660,64 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          }
          mi_data$agemo <- agemo
 
+         # VIGTIGT (fund via loggedEvents-diagnostik): at bruge ALLE enkelt-items
+         # fra BEGGE søsterdomæner som prædiktorer giver 90-130 prædiktorer pr.
+         # model, langt flere end antallet af raekker uden manglende data paa
+         # tvaers af dem (loggen viste "df set to 1, # observed cases: 19-86,
+         # # predictors: 76-100" - dvs. p > n). Det goer PMM-modellen rangdefekt,
+         # tvinger mice's ridge-fallback igennem, og for nogle domaener ender
+         # modellen saa ustabil at intet item kan udfyldes -> 0 imputerede.
+         #
+         # Fix: eget domaenes items bruges stadig enkeltvis (det er dem vi rent
+         # faktisk skal udfylde paa itemniveau), men hvert SOESTERdomaene
+         # reduceres til ÉN prædiktor: soesterdomaenets sumscore (sum af domaenets
+         # besvarede items, NA hvis slet intet er besvaret). Det bevarer praecis
+         # den information soesterdomaenerne bidrager med (deres overordnede
+         # niveau), men skaerer prædiktorantallet fra 90-130 ned til typisk 5-15.
+         for (dom in adaptive_domains) {
+            sib_col <- paste0(dom, "__sibsum")
+            dom_cols <- questions[domainz[[dom]]]
+            dom_items <- mi_data[, dom_cols, drop = FALSE]
+            # sum af BESVAREDE items (na.rm=TRUE) - saa ét enkelt manglende item i
+            # soesterdomaenet ikke goer hele __sibsum-praediktoren NA (det ville
+            # give det samme p>>n/missingness-problem igen, blot flyttet fra 90
+            # kolonner til 1). Kun hvis domaenet slet ikke er administreret
+            # (ingen items besvaret) er __sibsum reelt NA.
+            any_answered <- rowSums(!is.na(dom_items)) > 0
+            s <- rowSums(dom_items, na.rm = TRUE)
+            s[!any_answered] <- NA
+            mi_data[[sib_col]] <- s
+         }
+
          pred_mat <- matrix(0, nrow = ncol(mi_data), ncol = ncol(mi_data),
                             dimnames = list(names(mi_data), names(mi_data)))
          for (dom in adaptive_domains) {
             own_cols <- questions[domainz[[dom]]]
-            sib_cols <- unlist(lapply(sibling_map[[dom]], function(s) questions[domainz[[s]]]))
+            sib_sumcols <- paste0(sibling_map[[dom]], "__sibsum")
             for (col in own_cols) {
                pred_mat[col, setdiff(own_cols, col)] <- 1
-               pred_mat[col, sib_cols] <- 1
+               pred_mat[col, sib_sumcols] <- 1
                pred_mat[col, "agemo"] <- 1
             }
          }
-         # mincor-filtrering: fjern svage/ustabile prædiktorer for at gøre hvert
-         # PMM-fit hurtigere (kun items der reelt korrelerer >= mincor beholdes)
+         # __sibsum-kolonnerne skal selv aldrig imputeres (de er kun afledte
+         # hjaelpe-praediktorer) og skal ikke bruges som praediktor for hinanden
+         sibsum_cols <- paste0(adaptive_domains, "__sibsum")
+
+         # mincor-filtrering: fjern svage/ustabile prædiktorer blandt EGET domænes
+         # items (kun items der reelt korrelerer >= mincor beholdes). __sibsum og
+         # agemo er allerede saa faa/informative at de altid beholdes - de
+         # generhverves eksplicit lige efter, saa quickpreds korrelationsfilter
+         # aldrig kan fjerne dem igen.
          qp <- mice::quickpred(mi_data, mincor = mincor)
          pred_mat <- pred_mat * qp
+         for (dom in adaptive_domains) {
+            own_cols <- questions[domainz[[dom]]]
+            sib_sumcols <- paste0(sibling_map[[dom]], "__sibsum")
+            pred_mat[own_cols, sib_sumcols] <- 1
+            pred_mat[own_cols, "agemo"] <- 1
+         }
+         pred_mat[sibsum_cols, ] <- 0  # __sibsum skal aldrig selv imputeres
          pred_mat[, "agemo"] <- (rowSums(pred_mat) > 0) * 1  # agemo altid med hvor relevant
          diag(pred_mat) <- 0
 
@@ -694,6 +737,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          meth <- rep("pmm", ncol(mi_data)); names(meth) <- names(mi_data)
          meth[orig_to_safe[["agemo"]]] <- ""
+         meth[orig_to_safe[sibsum_cols]] <- ""  # __sibsum er kun hjaelpe-praediktor, imputeres ikke selv
 
          imp <- mice::mice(mi_data, method = meth, predictorMatrix = pred_mat,
                            m = m, maxit = maxit, seed = seed, printFlag = FALSE)
