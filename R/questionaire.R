@@ -556,397 +556,93 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
 
 
-      impute_vineland_domains <- function(d, questions, domainz, age.months,
-                                          m = 5, maxit = 5, mincor = 0.15, seed = 1) {
+      impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20,
+                                             mincor = 0.1, seed = 1) {
 
          if (!requireNamespace("mice", quietly = TRUE)) {
             stop("Pakken 'mice' skal være installeret: install.packages('mice')")
          }
 
-         sibling_map <- list(
-            vabs3_lyt  = c("vabs3_tal", "vabs3_laes"),
-            vabs3_tal  = c("vabs3_lyt", "vabs3_laes"),
-            vabs3_laes = c("vabs3_lyt", "vabs3_tal"),
+         adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
+                               "vabs3_per","vabs3_hje","vabs3_naer",
+                               "vabs3_rel","vabs3_leg","vabs3_til",
+                               "vabs3_gmo","vabs3_fmo")
+         ss_cols <- paste0(adaptive_domains, "_ss")
 
-            vabs3_per  = c("vabs3_hje", "vabs3_naer"),
-            vabs3_hje  = c("vabs3_per", "vabs3_naer"),
-            vabs3_naer = c("vabs3_per", "vabs3_hje"),
+         missing_cols <- setdiff(ss_cols, names(d))
+         if (length(missing_cols) > 0) {
+            stop("Mangler SS-kolonner i d: ", paste(missing_cols, collapse = ", "),
+                 " - impute_vineland_ss_domains() skal kaldes EFTER complete-case",
+                 " raascore/SS-beregningen (module != 'est').")
+         }
 
-            vabs3_rel  = c("vabs3_leg", "vabs3_til"),
-            vabs3_leg  = c("vabs3_rel", "vabs3_til"),
-            vabs3_til  = c("vabs3_rel", "vabs3_leg"),
-
-            vabs3_gmo  = c("vabs3_fmo"),
-            vabs3_fmo  = c("vabs3_gmo")
-         )
-         adaptive_domains <- names(sibling_map)
-         agemo <- d[[age.months]]
          n <- nrow(d)
+         out <- list()
 
-         # --- klassificér items i ALLE domæner på én gang (under_gulv/mellem/
-         #     over_loft/ikke_administreret), samme rle()-logik som
-         #     beregn_vineland_raascore ------------------------------------------
-         status_list <- list()
-         items_out_list <- list()
-         eligible_list <- list()
-         rows_to_impute_list <- list()
-         n_administered_list <- list()
-         n_fully_observed_list <- list()
+         mi_data <- d[, ss_cols, drop = FALSE]
+         names(mi_data) <- adaptive_domains  # midlertidige, rene navne til mice
+         mi_data$agemo <- d[[age.months]]
 
-         for (dom in adaptive_domains) {
-            target_cols <- questions[domainz[[dom]]]
-            n_items <- length(target_cols)
-            items <- d[, target_cols, drop = FALSE]
+         n_miss <- vapply(mi_data[adaptive_domains], function(x) sum(is.na(x)), integer(1))
 
-            status_mat <- matrix("mellem", nrow = n, ncol = n_items)
-            for (i in seq_len(n)) {
-               scores <- as.numeric(items[i, ])
-               if (all(is.na(scores))) { status_mat[i, ] <- "ikke_administreret"; next }
-
-               r <- rle(scores)
-               pos <- cumsum(r$lengths)
-               gulv_idx  <- which(r$values == 2 & r$lengths >= 5)
-               gulv_slut <- if (length(gulv_idx) > 0) pos[gulv_idx[1]] else 0
-               loft_idx  <- which(r$values == 0 & r$lengths >= 5 & pos > gulv_slut)
-               loft_start <- if (length(loft_idx) > 0) {
-                  pos[loft_idx[1]] - r$lengths[loft_idx[1]] + 1
-               } else n_items + 1
-
-               if (gulv_slut > 0)         status_mat[i, 1:gulv_slut] <- "under_gulv"
-               if (loft_start <= n_items) status_mat[i, loft_start:n_items] <- "over_loft"
+         # ingen manglende SS-scorer overhovedet -> intet at imputere, returnér
+         # uændrede værdier så downstream-kode (domænescore/GAF) altid kan regne
+         # med at *_ss_imputed/_imputed_flag findes
+         if (all(n_miss == 0)) {
+            for (dom in adaptive_domains) {
+               out[[dom]] <- list(ss_imputed = d[[paste0(dom, "_ss")]],
+                                  was_imputed = rep(FALSE, n),
+                                  fmi = NA_real_, n_candidates = 0)
             }
-
-            for (j in seq_len(n_items)) {
-               items[status_mat[, j] == "under_gulv", j] <- 2
-               items[status_mat[, j] == "over_loft", j]  <- NA
-            }
-
-            n_answered <- rowSums(!is.na(d[, target_cols, drop = FALSE]))
-            eligible <- n_answered >= 1   # krav: mindst 1 besvaret item i domænet
-            has_missing_mellem <- apply(status_mat == "mellem" &
-                                           is.na(d[, target_cols, drop = FALSE]), 1, any)
-
-            rows_to_impute_dom <- which(eligible & has_missing_mellem)
-
-            # VIGTIGT: for rækker der IKKE reelt skal imputeres (ingen manglende
-            # "mellem"-items), bruges de HELT UÆNDREDE originale items - ikke den
-            # gulv/loft-maskerede version. Masken (under_gulv=2/over_loft=NA) er
-            # nødvendig som "rensning" for de rækker der rent faktisk skal
-            # imputeres, men hvis den lægges ind for en allerede komplet række, kan
-            # en efterfølgende gentagelse af beregn_vineland_raascore() i sjældne
-            # tilfælde give et andet resultat end originalen (fx hvis der er
-            # besvarede items efter den detekterede loft-grænse). Uændrede rækker
-            # skal altid give PRÆCIS samme _raw_imputed som den oprindelige _raw.
-            non_impute_rows <- setdiff(seq_len(n), rows_to_impute_dom)
-            items[non_impute_rows, ] <- d[non_impute_rows, target_cols]
-
-            status_list[[dom]] <- status_mat
-            items_out_list[[dom]] <- items
-            eligible_list[[dom]] <- eligible
-            rows_to_impute_list[[dom]] <- rows_to_impute_dom
-            # Diagnostik uafhaengigt af selve imputationsforsoeget: hvor mange
-            # raekker har domaenet overhovedet naaet at blive administreret til
-            # (>=1 besvaret item), og hvor mange er 100% komplette (0 manglende
-            # raw items)? Hvis n_administered i sig selv er lille (fx <15-20), er
-            # der en øvre graense for hvor godt NOGEN imputationsmetode kan goere
-            # det - uanset praediktorantal - fordi donorpuljen for domaenet reelt
-            # er lille i hele datasaettet, ikke kun blandt kandidaterne.
-            n_answered_dom <- rowSums(!is.na(d[, target_cols, drop = FALSE]))
-            n_administered_list[[dom]] <- sum(n_answered_dom >= 1)
-            n_fully_observed_list[[dom]] <- sum(n_answered_dom == n_items)
+            attr(out, "loggedEvents") <- NULL
+            attr(out, "predictorMatrix") <- NULL
+            return(out)
          }
 
-         # --- byg ÉT kombineret datasæt + ÉN restriktiv prædiktormatrix ---------
-         all_cols <- unique(unlist(lapply(adaptive_domains, function(dom) questions[domainz[[dom]]])))
-         mi_data <- d[, all_cols, drop = FALSE]
-         # læg samme under_gulv=2 / over_loft=NA maskering ind som items_out_list
-         # allerede har pr. domæne (bygges direkte fra d i stedet for via cbind,
-         # som kunne miste/omdøbe kolonnenavne)
-         for (dom in adaptive_domains) {
-            target_cols <- questions[domainz[[dom]]]
-            status_mat <- status_list[[dom]]
-            for (j in seq_along(target_cols)) {
-               mi_data[status_mat[, j] == "under_gulv", target_cols[j]] <- 2
-               mi_data[status_mat[, j] == "over_loft", target_cols[j]]  <- NA
-            }
-         }
-         mi_data$agemo <- agemo
+         pred <- mice::quickpred(mi_data, mincor = mincor, include = "agemo")
+         pred["agemo", ] <- 0  # agemo skal aldrig selv imputeres/prædikteres af andre
 
-         # VIGTIGT (fund via loggedEvents-diagnostik, runde 1): at bruge ALLE
-         # enkelt-items fra BEGGE søsterdomæner som prædiktorer gav 90-130
-         # prædiktorer pr. model, langt flere end antallet af raekker uden
-         # manglende data paa tvaers af dem ("df set to 1, # observed cases:
-         # 19-86, # predictors: 76-100" - dvs. p > n). Det blev fixet ved at
-         # reducere hvert SOESTERdomaene til ÉN prædiktor: soesterdomaenets
-         # sumscore (sum af besvarede items, NA hvis slet intet er besvaret).
-         for (dom in adaptive_domains) {
-            sib_col <- paste0(dom, "__sibsum")
-            dom_cols <- questions[domainz[[dom]]]
-            dom_items <- mi_data[, dom_cols, drop = FALSE]
-            any_answered <- rowSums(!is.na(dom_items)) > 0
-            s <- rowSums(dom_items, na.rm = TRUE)
-            s[!any_answered] <- NA
-            mi_data[[sib_col]] <- s
-         }
+         meth <- rep("pmm", ncol(mi_data))
+         names(meth) <- names(mi_data)
+         meth["agemo"] <- ""
 
-         # VIGTIGT (fund via loggedEvents-diagnostik, runde 2): selv EFTER
-         # soester-fixet blev en raekke domaener/tidspunkter stadig 100 % kasseret
-         # af sikkerhedstjekket. Loggen viste samme p>n-moenster, nu fra EGET
-         # domaenes egne items ("df set to 1, # observed cases: 7-24,
-         # # predictors: 24-29") - i sparsomme rigtige data er der langt faerre
-         # raekker med ALLE ovrige items i domaenet besvaret end der er items i
-         # domaenet (op til 30-50).
-         #
-         # Fix: samme princip som for soesterdomaener, men "leave-one-out" - hvert
-         # item faar sin EGEN hjaelpe-praediktor "<item>__ownsum_excl" = summen af
-         # domaenets OVRIGE besvarede items (ekskl. netop dette item). Det er ikke
-         # bare ÉN faelles sumscore for hele domaenet (det ville lade et items
-         # egen besvarede vaerdi indgaa som praediktor for sig selv i de raekker
-         # hvor det ER besvaret - cirkulaert/overfittet under selve mice-fittet).
-         # Med leave-one-out er praediktoren altid uafhaengig af det item den skal
-         # forudsige. Praediktorantallet pr. item bliver dermed ~4 (egen-sum +
-         # 1-2 soester-sum + agemo) uanset hvor mange items domaenet har.
-         for (dom in adaptive_domains) {
-            dom_cols <- questions[domainz[[dom]]]
-            dom_items <- mi_data[, dom_cols, drop = FALSE]
-            dom_sum_all <- rowSums(dom_items, na.rm = TRUE)
-            for (col in dom_cols) {
-               val <- dom_items[[col]]
-               excl <- dom_sum_all - ifelse(is.na(val), 0, val)
-               mi_data[[paste0(col, "__ownsum_excl")]] <- excl
-            }
-         }
-
-         pred_mat <- matrix(0, nrow = ncol(mi_data), ncol = ncol(mi_data),
-                            dimnames = list(names(mi_data), names(mi_data)))
-         for (dom in adaptive_domains) {
-            own_cols <- questions[domainz[[dom]]]
-            sib_sumcols <- paste0(sibling_map[[dom]], "__sibsum")
-            for (col in own_cols) {
-               own_excl_col <- paste0(col, "__ownsum_excl")
-               pred_mat[col, own_excl_col] <- 1
-               pred_mat[col, sib_sumcols] <- 1
-               pred_mat[col, "agemo"] <- 1
-            }
-         }
-         # __sibsum/__ownsum_excl-kolonnerne skal selv aldrig imputeres (de er kun
-         # afledte hjaelpe-praediktorer) og skal ikke bruges som praediktor for
-         # hinanden eller for raa-items
-         sibsum_cols <- paste0(adaptive_domains, "__sibsum")
-         ownsum_cols <- paste0(all_cols, "__ownsum_excl")
-         helper_cols <- c(sibsum_cols, ownsum_cols)
-
-         # mincor-filtrering: droppet for de afledte hjaelpe-kolonner (__sibsum/
-         # __ownsum_excl er per konstruktion allerede de eneste, mest informative
-         # praediktorer vi vil bruge - de generhverves eksplicit lige efter, saa
-         # quickpreds korrelationsfilter aldrig kan fjerne dem igen). mincor
-         # bruges kun til evt. yderligere at fjerne raa-item-praediktorer, hvilket
-         # efter denne omlaegning ikke laengere findes i pred_mat, saa qp har reelt
-         # ingen effekt mere - beholdes alligevel for fremtidssikring hvis flere
-         # raa-item-praediktorer tilfoejes senere.
-         qp <- mice::quickpred(mi_data, mincor = mincor)
-         pred_mat <- pred_mat * qp
-         for (dom in adaptive_domains) {
-            own_cols <- questions[domainz[[dom]]]
-            sib_sumcols <- paste0(sibling_map[[dom]], "__sibsum")
-            for (col in own_cols) {
-               pred_mat[col, paste0(col, "__ownsum_excl")] <- 1
-               pred_mat[col, sib_sumcols] <- 1
-               pred_mat[col, "agemo"] <- 1
-            }
-         }
-         pred_mat[helper_cols, ] <- 0  # hjaelpekolonner skal aldrig selv imputeres
-         pred_mat[, "agemo"] <- (rowSums(pred_mat) > 0) * 1  # agemo altid med hvor relevant
-         diag(pred_mat) <- 0
-
-         # --- "sikre" kolonnenavne til selve mice()-kaldet -----------------------
-         # Jeres rå item-kolonner (fx "14MD.V_K11_02") er ikke gyldige R-symboler
-         # (starter med tal, indeholder punktum). mice() konverterer internt
-         # predictorMatrix til formler (reformulate()/str2lang()) uden at sætte
-         # navne i backticks, hvilket giver præcis den parse-fejl I ser - uanset
-         # hvad vi selv gør udenom med as.formula()/backticks. Løsningen er at give
-         # mice() midlertidige lovlige navne og mappe tilbage bagefter.
-         orig_names <- names(mi_data)
-         safe_names <- make.names(orig_names, unique = TRUE)
-         orig_to_safe <- setNames(safe_names, orig_names)
-
-         names(mi_data) <- safe_names
-         dimnames(pred_mat) <- list(safe_names, safe_names)
-
-         meth <- rep("pmm", ncol(mi_data)); names(meth) <- names(mi_data)
-         meth[orig_to_safe[["agemo"]]] <- ""
-         meth[orig_to_safe[helper_cols]] <- ""  # __sibsum/__ownsum_excl er kun hjaelpe-praediktorer, imputeres ikke selv
-
-         imp <- mice::mice(mi_data, method = meth, predictorMatrix = pred_mat,
-                           m = m, maxit = maxit, seed = seed, printFlag = FALSE)
-
-         # Gem mice's egen loggedEvents (kollinearitet/konstante items/fjernede
-         # praediktorer m.v.) - normalt kasseres den tavst, men den er noeglen til
-         # at forstaa HVORFOR bestemte domaener (fx laes/hje/leg) ender med 0
-         # udfyldte raekker paa trods af flere kandidater. Kolonnenavnene i loggen
-         # er stadig de "sikre" navne paa dette tidspunkt - mappes tilbage nedenfor.
-         logged <- imp$loggedEvents
-         if (!is.null(logged) && nrow(logged) > 0 && "out" %in% names(logged)) {
-            logged$out <- sapply(strsplit(as.character(logged$out), ", "), function(v) {
-               hit <- names(orig_to_safe)[match(v, orig_to_safe)]
-               paste(ifelse(is.na(hit), v, hit), collapse = ", ")
-            })
-         }
+         imp <- mice::mice(mi_data, m = m, maxit = maxit, method = meth,
+                           predictorMatrix = pred, seed = seed, printFlag = FALSE)
 
          long <- mice::complete(imp, action = "long")
-         names(long)[names(long) %in% safe_names] <- names(orig_to_safe)[match(
-            names(long)[names(long) %in% safe_names], orig_to_safe)]
-         # (long har nu igen jeres oprindelige kolonnenavne, .imp/.id uændret)
+         pooled <- stats::aggregate(long[, adaptive_domains, drop = FALSE],
+                                    by = list(.id = long$.id),
+                                    FUN = function(x) round(mean(x)))
+         pooled <- pooled[order(pooled$.id), ]
 
-         # --- pak resultatet ud pr. domæne --------------------------------------
-         out <- list()
+         comp_list <- tryCatch(mice::complete(imp, action = "all"), error = function(e) NULL)
+
          for (dom in adaptive_domains) {
-            target_cols <- questions[domainz[[dom]]]
-            status_mat <- status_list[[dom]]
-            rows_to_impute <- rows_to_impute_list[[dom]]
+            orig <- d[[paste0(dom, "_ss")]]
+            was_imputed <- is.na(orig)
+            filled <- orig
+            filled[was_imputed] <- pooled[[dom]][was_imputed]
 
-            pooled <- aggregate(long[, target_cols, drop = FALSE],
-                                by = list(.id = long$.id),
-                                FUN = function(x) round(mean(x)))
-            pooled <- pooled[order(pooled$.id), ]
-
-            items_final <- items_out_list[[dom]]
-            was_imputed <- rep(FALSE, n)
-            for (j in seq_along(target_cols)) {
-               col <- target_cols[j]
-               fill_rows <- rows_to_impute[status_mat[rows_to_impute, j] == "mellem" &
-                                              is.na(d[rows_to_impute, col])]
-               items_final[fill_rows, col] <- pooled[fill_rows, col]
-            }
-            was_imputed[rows_to_impute] <- TRUE
-
-            # Sikkerhedstjek: mice() kan stille og roligt springe imputation af et
-            # enkelt item over for nogle rækker (fx ved kollinearitet/for lidt
-            # varians i donorpuljen) uden fejl - kun en "logged event". Er der
-            # stadig NA tilbage i de "mellem"-celler vi forsøgte at udfylde for en
-            # given række, er domænet IKKE reelt fuldt imputeret for den række -
-            # den skal forblive NA (ligesom complete-case gør ved ufuldstændig
-            # administration), ikke få et halvt/forkert resultat.
-            mellem_mat <- status_mat == "mellem"
-            # vapply (ikke sapply): sapply returnerer en TOM LISTE (ikke logical(0))
-            # naar rows_to_impute er tom, hvilket giver "invalid subscript type
-            # 'list'" ved det efterfoelgende opslag - vapply undgaar det, uanset
-            # om domaenet har 0 eller flere kandidater.
-            still_na <- rows_to_impute[
-               vapply(rows_to_impute, function(r) any(is.na(items_final[r, target_cols][mellem_mat[r, ]])),
-                      logical(1))
-            ]
-            if (length(still_na) > 0) {
-               items_final[still_na, target_cols] <- NA
-               # (kun de items der reelt manglede sættes reelt tilbage til NA her,
-               # men da domænets råscore ikke kan beregnes med huller, er hele
-               # domænet for den række ikke pålideligt imputeret)
-               was_imputed[still_na] <- FALSE
-            }
-
-            # RÅSCORE beregnes HER, direkte ud fra den ALLEREDE KENDTE gulv/loft-
-            # graense (status_mat, beregnet ÉN GANG fra de ORIGINALE, umaskerede
-            # data) - IKKE ved at genkoere beregn_vineland_raascore()'s egen
-            # rle()-baserede gulv/loft-DETEKTION paa det maskerede/imputerede
-            # item-array. Det er en bevidst rettelse: over_loft-cellerne er sat
-            # til NA (inkl. de 5 rigtige nuller der oprindeligt UDLØSTE loft-
-            # detektionen), saa en gentaget rle()-detektion paa det maskerede
-            # array finder INTET loft (NA != 0), hvilket faar funktionen til
-            # fejlagtigt at returnere NA for naesten alle raekker der reelt naaede
-            # loft. Ved i stedet at bruge den kendte graense direkte kan gulv/loft
-            # hverken forsvinde eller opstaa som artefakt af imputationen.
-            n_items <- length(target_cols)
-            raw_imputed <- rep(NA_real_, n)
-            for (i in seq_len(n)) {
-               if (all(is.na(d[i, target_cols]))) next  # ikke administreret -> NA
-               st <- status_mat[i, ]
-               gulv_slut <- if (any(st == "under_gulv")) max(which(st == "under_gulv")) else 0
-               loft_pos <- which(st == "over_loft")
-               loft_start <- if (length(loft_pos) > 0) min(loft_pos) else n_items + 1
-               reached_ceiling <- length(loft_pos) > 0
-               # VIGTIGT: last_answered_pos beregnes ud fra items_final (det
-               # FAERDIGUDFYLDTE array), IKKE ud fra det oprindelige d. Hvis en
-               # raekke aldrig naaede et rigtigt loft, men alle dens manglende
-               # "mellem"-items netop er blevet imputeret, ER administrationen nu
-               # reelt komplet til sidste item - og skal behandles saadan. Ved
-               # fejlagtigt at blive ved med at tjekke mod det oprindelige,
-               # ufuldstaendige d ville disse raekker ALTID faa NA, uanset hvor
-               # godt imputationen lykkedes (praecis den samme slags fejl som
-               # gulv/loft-rettelsen ovenfor - stale "foer-imputation"-info brugt
-               # efter imputationen er sket).
-               last_answered_pos <- suppressWarnings(max(which(!is.na(items_final[i, target_cols]))))
-               if (is.infinite(last_answered_pos)) last_answered_pos <- 0
-               # samme regel som beregn_vineland_raascore(): hverken loft naaet
-               # eller domaenet gennemfoert til sidste item -> vi ved ikke om det
-               # var en naturlig afslutning eller en afbrudt administration
-               if (!reached_ceiling && last_answered_pos < n_items) next
-               if (gulv_slut == 0 && loft_start == n_items + 1) {
-                  raw_imputed[i] <- sum(items_final[i, ], na.rm = TRUE)
-                  next
-               }
-               gulv_score <- gulv_slut * 2
-               mellem_score <- if (gulv_slut + 1 <= loft_start - 1) {
-                  sum(items_final[i, (gulv_slut + 1):(loft_start - 1)], na.rm = TRUE)
-               } else 0
-               raw_imputed[i] <- gulv_score + mellem_score
-            }
-
-            # FMI beregnes via Rubin's regler på DOMÆNETS SUMSCORE (alle items i
-            # domænet lagt sammen) blandt de imputerede rækker - IKKE på ét enkelt
-            # item, og IKKE via as.formula()/lm()/with.mids() (jeres item-
-            # kolonnenavne, fx "14MD.V_K11_02", er ikke gyldige R-symboler og gav
-            # parse-fejl selv med backticks, fordi with.mids genfortolker udtrykket
-            # internt). Et enkelt item er ofte næsten konstant (mange 0'er/2'er tæt
-            # på gulv/loft) og giver let 0-varians -> FMI=NaN; sumscoren har langt
-            # mere varians og er samtidig et mere meningsfuldt kvalitetsmål for
-            # domænet som helhed.
+            # FMI (fraction of missing information) via Rubin's regler, kun
+            # meningsfuldt med >=2 imputerede rækker (kræver varians)
             fmi_val <- NA_real_
-            if (length(rows_to_impute) > 1) {
-               safe_cols <- unname(orig_to_safe[target_cols])  # comp_list bruger stadig de "sikre" navne
-               comp_list <- tryCatch(mice::complete(imp, action = "all"), error = function(e) NULL)
-               if (!is.null(comp_list)) {
-                  qhat <- sapply(comp_list, function(dd) {
-                     sumscore <- rowSums(dd[, safe_cols, drop = FALSE])
-                     mean(sumscore[rows_to_impute])
-                  })
-                  uhat <- sapply(comp_list, function(dd) {
-                     sumscore <- rowSums(dd[, safe_cols, drop = FALSE])
-                     v <- sumscore[rows_to_impute]
-                     stats::var(v) / length(v)
-                  })
-                  pooled <- tryCatch(
-                     mice::pool.scalar(qhat, uhat, n = length(rows_to_impute)),
-                     error = function(e) NULL
-                  )
-                  if (!is.null(pooled) && is.finite(pooled$fmi)) fmi_val <- pooled$fmi
-               }
+            if (sum(was_imputed) > 1 && !is.null(comp_list)) {
+               qhat <- vapply(comp_list, function(dd) mean(dd[[dom]][was_imputed]), numeric(1))
+               uhat <- vapply(comp_list, function(dd) {
+                  v <- dd[[dom]][was_imputed]
+                  stats::var(v) / length(v)
+               }, numeric(1))
+               pooled_fmi <- tryCatch(mice::pool.scalar(qhat, uhat, n = sum(was_imputed)),
+                                      error = function(e) NULL)
+               if (!is.null(pooled_fmi) && is.finite(pooled_fmi$fmi)) fmi_val <- pooled_fmi$fmi
             }
 
-            # Diagnostik: hvor mange raekker var reelt KANDIDATER til imputation
-            # (>=1 besvaret item + mindst ét manglende "mellem"-item), og hvor
-            # mange af dem blev efterfoelgende KASSERET af sikkerhedstjekket ovenfor
-            # (fordi mice ikke kunne udfylde et eller flere af deres items). Brug
-            # disse til at forstaa hvorfor et domaene faar 0 (eller faa) imputerede
-            # raekker i den rigtige data: sammenlign n_candidates og n_dropped.
-            #
-            # n_administered/n_fully_observed er UAFHAENGIGE af selve imputations-
-            # forsoeget - de siger noget om domaenets TOTALE donorpulje i hele
-            # datasaettet. Hvis n_administered i sig selv er lille (fx <15-20), er
-            # der en øvre graense for hvor godt NOGEN imputationsmetode kan goere
-            # det for det domaene, uanset praediktorvalg - fordi der reelt ikke
-            # findes nok mennesker med domaenet besvaret til at "laere" af.
-            # raw_imputed er NA for raekker der blev kasseret af sikkerhedstjekket
-            # (still_na), ligesom was_imputed allerede afspejler
-            raw_imputed[still_na] <- NA_real_
-            out[[dom]] <- list(items_imputed = items_final, was_imputed = was_imputed,
-                               raw_imputed = raw_imputed,
-                               fmi = fmi_val, n_candidates = length(rows_to_impute),
-                               n_dropped_safety_net = length(still_na),
-                               n_administered = n_administered_list[[dom]],
-                               n_fully_observed = n_fully_observed_list[[dom]])
+            out[[dom]] <- list(ss_imputed = filled, was_imputed = was_imputed,
+                               fmi = fmi_val, n_candidates = sum(was_imputed))
          }
 
-         attr(out, "loggedEvents") <- logged
+         attr(out, "loggedEvents") <- imp$loggedEvents
+         attr(out, "predictorMatrix") <- pred
          out
       }
 
@@ -1031,119 +727,47 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
       }
 
       #****** Multiple imputation -----
-      if (exists("multiple_imputation") && isTRUE(multiple_imputation) && module != "est") {
+      #****** Multiple imputation (SS-niveau, alternativ til item-niveau ovenfor) -----
+      if (exists("multiple_imputation") && identical(multiple_imputation, "ss") && module != "est") {
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
                                "vabs3_per","vabs3_hje","vabs3_naer",
                                "vabs3_rel","vabs3_leg","vabs3_til",
                                "vabs3_gmo","vabs3_fmo")
 
-         # 1) Imputér ALLE domæner i ÉT mice-kald (impute_vineland_domains, se
-         #    CHUNK 1) og genberegn råscore pr. domæne ---------------------------
-         imp_res <- impute_vineland_domains(d, questions, domainz, age.months)
+         # 1) Imputér alle 11 domæners SS-score i ÉT mice-kald ------------------
+         ss_res <- impute_vineland_ss_domains(d, age.months)
 
-         # Diagnostik-print (kan fjernes senere) - viser pr. domæne hvor mange
-         # rækker der var KANDIDATER til imputation (afbrudt administration,
-         # mindst 1 besvaret item), hvor mange der blev KASSERET af sikkerheds-
-         # tjekket (mice kunne reelt ikke udfylde dem), og hvor mange der endte
-         # med rent faktisk at blive imputeret. Nyttigt til at se hvorfor et
-         # domæne/tidspunkt giver 0 (eller få) imputerede rækker.
-         # NB: n_fully_observed taeller literal 0-NA paa tvaers af ALLE raa items i
-         # domaenet - det er misvisende som "donorpulje", fordi de fleste items
-         # uden for gulv/loft-vinduet er STRUKTURELT ikke-administrerede (by
-         # design, ikke reel missingness). n_donor_pool = n_administered -
-         # n_candidates er det korrekte maal: administrerede raekker UDEN
-         # manglende "mellem"-items, dvs. reelt brugbare som traeningsdata for
-         # mice's PMM-model.
-         diag_tab <- t(sapply(imp_res, function(x) c(
-            n_administered   = x$n_administered,
-            n_donor_pool     = x$n_administered - x$n_candidates,
-            n_fully_observed = x$n_fully_observed,
-            n_candidates     = x$n_candidates,
-            n_dropped        = x$n_dropped_safety_net,
-            n_filled         = sum(x$was_imputed)
+         # Diagnostik-print (kan fjernes senere) - langt kortere end item-niveau-
+         # varianten, fordi der ikke er nogen sikkerhedsnet/kandidat-kasseret-
+         # logik på dette niveau: enten er SS-scoren observeret, eller den
+         # mangler og bliver forsøgt udfyldt af mice direkte.
+         diag_tab <- t(sapply(ss_res, function(x) c(
+            n_missing = x$n_candidates,
+            n_filled  = sum(x$was_imputed),
+            fmi       = round(x$fmi, 3)
          )))
-         cat("=== multiple_imputation diagnostik (module=", module, ") ===\n", sep = "")
+         cat("=== multiple_imputation diagnostik (SS-niveau, module=", module, ") ===\n", sep = "")
          print(diag_tab)
 
-         # mice's egen loggedEvents - viser PRAECIS hvorfor et item ikke kunne
-         # udfyldes (fx "collinear"/"constant"/fjernet praediktor). Noeglen til at
-         # forstaa hvorfor fx laes/hje/leg giver 0 udfyldte raekker paa trods af
-         # flere kandidater. Vi printer KUN de raekker der vedroerer de domaener
-         # der reelt har n_dropped>0 - den fulde log kan let ramme R's
-         # getOption("max.print") og blive afskaaret foer vi naar det relevante.
-         le <- attr(imp_res, "loggedEvents")
+         le <- attr(ss_res, "loggedEvents")
          if (!is.null(le) && nrow(le) > 0) {
-            cat("--- mice loggedEvents: ", nrow(le), " raekker totalt (viser kun ",
-                "domaener med n_dropped>0, saa outputtet ikke afskaeres) ---\n", sep = "")
-            doms_with_drop <- names(which(sapply(imp_res, function(x) x$n_dropped_safety_net) > 0))
-            for (dom in doms_with_drop) {
-               target_cols <- questions[domainz[[dom]]]
-               pat <- paste(c(target_cols, paste0(dom, "__")), collapse = "|")
-               hit <- grepl(pat, le$dep, fixed = FALSE) | grepl(pat, le$out, fixed = FALSE)
-               cat("\n>>> ", dom, " (", sum(hit), " raekker) <<<\n", sep = "")
-               if (sum(hit) > 0) print(utils::head(le[hit, ], 80)) else cat("(ingen match)\n")
-            }
+            cat("--- mice loggedEvents (SS-niveau): ", nrow(le), " raekker ---\n", sep = "")
+            print(le)
          } else {
-            cat("--- mice loggedEvents: ingen ---\n")
+            cat("--- mice loggedEvents (SS-niveau): ingen ---\n")
          }
 
          for (dom in adaptive_domains) {
-            res <- imp_res[[dom]]
-
-            # raw_imputed kommer FÆRDIGBEREGNET fra impute_vineland_domains() (se
-            # CHUNK 1) - IKKE ved at genkøre beregn_vineland_raascore() her. Det er
-            # en bevidst rettelse: beregn_vineland_raascore()'s egen gulv/loft-
-            # DETEKTION (rle() på item-arrayet) fejler på det maskerede/imputerede
-            # array, fordi de 5 rigtige nuller der udløste loft-detektionen er sat
-            # til NA i vores maskering - en gentaget detektion finder derfor intet
-            # loft og returnerer fejlagtigt NA for stort set alle rækker der reelt
-            # nåede loft. CHUNK 1 beregner i stedet råscoren direkte ud fra den
-            # ALLEREDE KENDTE gulv/loft-grænse (fra de originale, umaskerede data),
-            # så gulv/loft hverken kan opstå eller forsvinde som artefakt af
-            # imputationen.
-            d[[paste0(dom, "_raw_imputed")]] <- res$raw_imputed
+            res <- ss_res[[dom]]
+            d[[paste0(dom, "_ss_imputed")]] <- res$ss_imputed
             d[[paste0(dom, "_imputed_flag")]] <- res$was_imputed
             attr(d, paste0(dom, "_fmi")) <- res$fmi
          }
 
-         # 2) Råscore -> v-score/ss, samme opslag som complete-case (linje ~587-613
-         #    i questionaire.R), men kørt på *_raw_imputed i stedet for *_raw -----
-         for (i in names(rawtoscales)) {
-            if (i %in% c("domains","gaf")) next
-
-            age <- age_range(i)
-            rtst <- !is.na(d[[age.months]]) &
-               d[[age.months]] >= age[1] &
-               d[[age.months]] < age[2]
-
-            cur_r2s <- data.frame(rawtoscales[grepl(i, names(rawtoscales))])
-            names(cur_r2s) <- gsub(paste0(i, "\\."), "", names(cur_r2s))
-
-            for (j in 1:ncol(cur_r2s)) {
-               # NB: dom_short må IKKE afkortes til substr(...,1,3) - to af domæne-
-               # koderne ("laes","naer") er 4 tegn, og en 3-tegns forkortelse ("lae",
-               # "nae") rammer aldrig den rigtige _raw_imputed-kolonne ved en eksakt
-               # match (i modsætning til complete-case-koden, hvor de 3 tegn kun
-               # bruges som grepl()-præfiks og derfor stadig matcher "laes"/"naer"
-               # som delstreng). Vi udleder i stedet det fulde domænenavn ved at
-               # fjerne "_ss"-suffikset.
-               dom_short <- sub("_ss$", "", names(cur_r2s[j]))
-               raw_imp_col <- paste0("vabs3_", dom_short, "_raw_imputed")
-               if (!raw_imp_col %in% names(d)) next
-
-               nmd_lst <- cur_r2s[[j]]
-               names(nmd_lst) <- rownames(cur_r2s)
-
-               if (sum(rtst, na.rm = TRUE) > 0) {
-                  d[rtst, paste0("vabs3_", names(cur_r2s)[j], "_imputed")] <-
-                     dplyr::recode(d[rtst, raw_imp_col], !!!nmd_lst)
-               }
-            }
-         }
-
-         # 3) Domænescorer + GAF, samme opslag som complete-case (linje ~615-635),
-         #    men på *_ss_imputed ------------------------------------------------
+         # 2) Domænescorer + GAF genberegnet på de imputerede SS-scorer, samme
+         #    opslagstabeller (domains/gaf fra questionaire_helper()) og samme
+         #    dplyr::recode-mønster som complete-case-blokken længere oppe -------
          d$vabs3_kom_domscore_imputed <- dplyr::recode(
             rowSums(d[,c("vabs3_lyt_ss_imputed","vabs3_tal_ss_imputed","vabs3_laes_ss_imputed")]),
             !!!setNames(domains$kom_domainscore, rownames(domains)))
@@ -1214,7 +838,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          }
       }
 
-      # Create output
+      #******* Create output
       o <- d[,!(colnames(d) %in% questions)]
 
    }else if(scale == "SRS-2"){
