@@ -554,13 +554,15 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          return(gulv_score + mellem_score)
       }
 
-
-
-      impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20,
-                                             mincor = 0.1, seed = 1) {
+      impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20, mincor = 0.1, seed = 1) {
 
          if (!requireNamespace("mice", quietly = TRUE)) {
             stop("Pakken 'mice' skal være installeret: install.packages('mice')")
+         }
+         if (!age.months %in% names(d)) {
+            stop("Mangler alderskolonnen '", age.months, "' i d - ",
+                 "impute_vineland_ss_domains() kræver agemo som tvungen ",
+                 "prædiktor i alle 11 domænemodeller.")
          }
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
@@ -573,7 +575,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          if (length(missing_cols) > 0) {
             stop("Mangler SS-kolonner i d: ", paste(missing_cols, collapse = ", "),
                  " - impute_vineland_ss_domains() skal kaldes EFTER complete-case",
-                 " raascore/SS-beregningen (module != 'est').")
+                 " råscore/SS-beregningen (module != 'est').")
          }
 
          n <- nrow(d)
@@ -587,7 +589,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          # ingen manglende SS-scorer overhovedet -> intet at imputere, returnér
          # uændrede værdier så downstream-kode (domænescore/GAF) altid kan regne
-         # med at *_ss_imputed/_imputed_flag findes
+         # med at *_ss_imputed/_imputed_flag findes, uanset om der reelt var
+         # noget at imputere i dette kald
          if (all(n_miss == 0)) {
             for (dom in adaptive_domains) {
                out[[dom]] <- list(ss_imputed = d[[paste0(dom, "_ss")]],
@@ -609,6 +612,8 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          imp <- mice::mice(mi_data, m = m, maxit = maxit, method = meth,
                            predictorMatrix = pred, seed = seed, printFlag = FALSE)
 
+         # poolet værdi pr. imputeret celle = gennemsnit over de m imputationer,
+         # afrundet til nærmeste heltal (SS-score er per definition et heltal)
          long <- mice::complete(imp, action = "long")
          pooled <- stats::aggregate(long[, adaptive_domains, drop = FALSE],
                                     by = list(.id = long$.id),
@@ -623,8 +628,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             filled <- orig
             filled[was_imputed] <- pooled[[dom]][was_imputed]
 
-            # FMI (fraction of missing information) via Rubin's regler, kun
-            # meningsfuldt med >=2 imputerede rækker (kræver varians)
+            # FMI (fraction of missing information) via Rubins regler, kun
+            # meningsfuldt med >=2 imputerede rækker (kræver varians mellem
+            # imputationerne)
             fmi_val <- NA_real_
             if (sum(was_imputed) > 1 && !is.null(comp_list)) {
                qhat <- vapply(comp_list, function(dd) mean(dd[[dom]][was_imputed]), numeric(1))
@@ -726,8 +732,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
 
-      #****** Multiple imputation -----
-      #****** Multiple imputation (SS-niveau, alternativ til item-niveau ovenfor) -----
+      # Multiple imputation -----
       if (exists("multiple_imputation") && identical(multiple_imputation, "ss") && module != "est") {
 
          adaptive_domains <- c("vabs3_lyt","vabs3_tal","vabs3_laes",
@@ -735,13 +740,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                "vabs3_rel","vabs3_leg","vabs3_til",
                                "vabs3_gmo","vabs3_fmo")
 
-         # 1) Imputér alle 11 domæners SS-score i ÉT mice-kald ------------------
+         # 1) Imputér alle 11 domæners SS-score i ÉT fælles mice-kald
          ss_res <- impute_vineland_ss_domains(d, age.months)
 
-         # Diagnostik-print (kan fjernes senere) - langt kortere end item-niveau-
-         # varianten, fordi der ikke er nogen sikkerhedsnet/kandidat-kasseret-
-         # logik på dette niveau: enten er SS-scoren observeret, eller den
-         # mangler og bliver forsøgt udfyldt af mice direkte.
          diag_tab <- t(sapply(ss_res, function(x) c(
             n_missing = x$n_candidates,
             n_filled  = sum(x$was_imputed),
@@ -752,7 +753,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          le <- attr(ss_res, "loggedEvents")
          if (!is.null(le) && nrow(le) > 0) {
-            cat("--- mice loggedEvents (SS-niveau): ", nrow(le), " raekker ---\n", sep = "")
+            cat("--- mice loggedEvents (SS-niveau): ", nrow(le), " rækker ---\n", sep = "")
             print(le)
          } else {
             cat("--- mice loggedEvents (SS-niveau): ingen ---\n")
@@ -765,9 +766,6 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             attr(d, paste0(dom, "_fmi")) <- res$fmi
          }
 
-         # 2) Domænescorer + GAF genberegnet på de imputerede SS-scorer, samme
-         #    opslagstabeller (domains/gaf fra questionaire_helper()) og samme
-         #    dplyr::recode-mønster som complete-case-blokken længere oppe -------
          d$vabs3_kom_domscore_imputed <- dplyr::recode(
             rowSums(d[,c("vabs3_lyt_ss_imputed","vabs3_tal_ss_imputed","vabs3_laes_ss_imputed")]),
             !!!setNames(domains$kom_domainscore, rownames(domains)))
