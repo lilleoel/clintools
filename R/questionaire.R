@@ -645,21 +645,36 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
             # FMI (fraction of missing information) via Rubins regler, kun
             # meningsfuldt med >=2 imputerede rækker (kræver varians mellem
-            # imputationerne)
+            # imputationerne).
+            #
+            # VIGTIGT: "was_imputed" er ALLE oprindeligt manglende rækker i dette
+            # domæne - herunder de rækker der VAR kandidater, men som STADIG
+            # ender som NA efter imputationsforsøget (fx børn hvor samtlige 11
+            # domæner mangler samtidig på dette tidspunkt, jf.
+            # check_why_unimputable.R). Sådanne rækker er også NA i hver af de
+            # m completede datasæt i comp_list. Uden at frasortere dem her ville
+            # mean()/var() (som IKKE dropper NA som standard) blive NA for HELE
+            # domænet, uanset hvor mange andre rækker der reelt blev imputeret -
+            # nøjagtig samme fejlmønster som blev rettet i
+            # summarize_vineland_mi()'s mean_imputed/var_imputed/cohens_d.
+            # Vi bruger derfor kun de FAKTISK udfyldte rækker (filled ikke-NA)
+            # til selve FMI-beregningen.
             fmi_val <- NA_real_
-            if (sum(was_imputed) <= 1) {
-               fmi_notes[dom] <- paste0("kun ", sum(was_imputed), " imputeret raekke ",
-                                        "(kraever >=2 for en meningsfuld FMI)")
+            success_idx <- which(was_imputed & !is.na(filled))
+            if (length(success_idx) <= 1) {
+               fmi_notes[dom] <- paste0("kun ", length(success_idx), " raekke(r) reelt ",
+                                        "udfyldt (kraever >=2 for en meningsfuld FMI) - ud af ",
+                                        sum(was_imputed), " kandidater")
             } else if (is.null(comp_list)) {
                fmi_notes[dom] <- "comp_list er NULL (se fmi_error)"
             } else {
-               qhat <- vapply(comp_list, function(dd) mean(dd[[dom]][was_imputed]), numeric(1))
+               qhat <- vapply(comp_list, function(dd) mean(dd[[dom]][success_idx]), numeric(1))
                uhat <- vapply(comp_list, function(dd) {
-                  v <- dd[[dom]][was_imputed]
+                  v <- dd[[dom]][success_idx]
                   stats::var(v) / length(v)
                }, numeric(1))
                pool_error <- NULL
-               pooled_fmi <- tryCatch(mice::pool.scalar(qhat, uhat, n = sum(was_imputed)),
+               pooled_fmi <- tryCatch(mice::pool.scalar(qhat, uhat, n = length(success_idx)),
                                       error = function(e) { pool_error <<- conditionMessage(e); NULL })
                if (!is.null(pooled_fmi) && is.finite(pooled_fmi$fmi)) {
                   fmi_val <- pooled_fmi$fmi
