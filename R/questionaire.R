@@ -554,7 +554,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          return(gulv_score + mellem_score)
       }
 
-      i
+
       impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20,
                                              mincor = 0.1, seed = 1) {
 
@@ -631,6 +631,12 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          comp_list <- tryCatch(mice::complete(imp, action = "all"),
                                error = function(e) { comp_list_error <<- conditionMessage(e); NULL })
 
+         # pr.-domæne fejl/årsag til NA-fmi, gemmes samlet som attribut (se
+         # nedenfor) - IKKE kun den øverste comp_list-hentning fejler stille,
+         # selve pool.scalar()-kaldet pr. domæne kan også fejle eller give et
+         # ikke-endeligt (NaN/Inf) resultat uden at kaste en fejl
+         fmi_notes <- character(0)
+
          for (dom in adaptive_domains) {
             orig <- d[[paste0(dom, "_ss")]]
             was_imputed <- is.na(orig)
@@ -641,15 +647,29 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             # meningsfuldt med >=2 imputerede rækker (kræver varians mellem
             # imputationerne)
             fmi_val <- NA_real_
-            if (sum(was_imputed) > 1 && !is.null(comp_list)) {
+            if (sum(was_imputed) <= 1) {
+               fmi_notes[dom] <- paste0("kun ", sum(was_imputed), " imputeret raekke ",
+                                        "(kraever >=2 for en meningsfuld FMI)")
+            } else if (is.null(comp_list)) {
+               fmi_notes[dom] <- "comp_list er NULL (se fmi_error)"
+            } else {
                qhat <- vapply(comp_list, function(dd) mean(dd[[dom]][was_imputed]), numeric(1))
                uhat <- vapply(comp_list, function(dd) {
                   v <- dd[[dom]][was_imputed]
                   stats::var(v) / length(v)
                }, numeric(1))
+               pool_error <- NULL
                pooled_fmi <- tryCatch(mice::pool.scalar(qhat, uhat, n = sum(was_imputed)),
-                                      error = function(e) NULL)
-               if (!is.null(pooled_fmi) && is.finite(pooled_fmi$fmi)) fmi_val <- pooled_fmi$fmi
+                                      error = function(e) { pool_error <<- conditionMessage(e); NULL })
+               if (!is.null(pooled_fmi) && is.finite(pooled_fmi$fmi)) {
+                  fmi_val <- pooled_fmi$fmi
+               } else if (!is.null(pool_error)) {
+                  fmi_notes[dom] <- paste0("mice::pool.scalar() fejlede: ", pool_error)
+               } else {
+                  fmi_notes[dom] <- paste0("pool.scalar() gav et ikke-endeligt fmi (qhat=",
+                                           paste(round(qhat, 2), collapse = ","), "; uhat=",
+                                           paste(round(uhat, 4), collapse = ","), ")")
+               }
             }
 
             out[[dom]] <- list(ss_imputed = filled, was_imputed = was_imputed,
@@ -659,6 +679,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          attr(out, "loggedEvents") <- imp$loggedEvents
          attr(out, "predictorMatrix") <- pred
          attr(out, "fmi_error") <- comp_list_error
+         attr(out, "fmi_notes") <- fmi_notes
          out
       }
 
@@ -750,9 +771,18 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                "vabs3_rel","vabs3_leg","vabs3_til",
                                "vabs3_gmo","vabs3_fmo")
 
-         # 1) Imputér alle 11 domæners SS-score i ÉT fælles mice-kald
+         # 1) Imputér alle 11 domæners SS-score i ÉT fælles mice-kald -------------
          ss_res <- impute_vineland_ss_domains(d, age.months)
 
+         # Diagnostik-print - langt kortere end item-niveau-variantens, fordi der
+         # ikke findes nogen sikkerhedsnet/kandidat-kasseret-logik på dette
+         # niveau: en SS-score er enten observeret, eller den mangler og bliver
+         # FORSØGT udfyldt direkte af mice. n_missing = antal kandidater (SS var
+         # NA), n_filled = antal af dem der REELT fik en værdi (kan være LAVERE
+         # end n_missing - se check_why_unimputable() for at undersøge rækker der
+         # stadig ender som NA, typisk børn hvor samtlige 11 domæner - og dermed
+         # også agemo/administrations-status - mangler samtidig på dette
+         # tidspunkt, så modellen ingen prædiktorer har at basere en værdi på).
          diag_tab <- t(sapply(adaptive_domains, function(dom) {
             x <- ss_res[[dom]]
             c(n_missing = x$n_candidates,
@@ -762,9 +792,20 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          cat("=== multiple_imputation diagnostik (SS-niveau, module=", module, ") ===\n", sep = "")
          print(diag_tab)
 
-         if (all(is.na(diag_tab[, "fmi"])) && !is.null(attr(ss_res, "fmi_error"))) {
-            cat("--- OBS: fmi er NA for ALLE domæner - underliggende fejl: ",
-                attr(ss_res, "fmi_error"), " ---\n", sep = "")
+         # fmi er NA for ALLE domæner samtidig er usædvanligt (forventes kun for
+         # domæner med <2 imputerede rækker) - print den underliggende årsag pr.
+         # domæne (fmi_notes) og en evt. øverste fejl (fmi_error), så det kan
+         # fejlfindes i stedet for at gå ubemærket hen
+         if (all(is.na(diag_tab[, "fmi"]))) {
+            cat("--- OBS: fmi er NA for ALLE domæner ---\n")
+            if (!is.null(attr(ss_res, "fmi_error"))) {
+               cat("  overordnet fejl (mice::complete(action='all')): ",
+                   attr(ss_res, "fmi_error"), "\n", sep = "")
+            }
+            notes <- attr(ss_res, "fmi_notes")
+            if (!is.null(notes) && length(notes) > 0) {
+               for (dom in names(notes)) cat("  ", dom, ": ", notes[dom], "\n", sep = "")
+            }
          }
 
          le <- attr(ss_res, "loggedEvents")
@@ -806,7 +847,6 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             rowSums(d[,c("vabs3_kom_domscore_imputed","vabs3_fdd_domscore_imputed","vabs3_soc_domscore_imputed")]),
             !!!setNames(gaf$GAF, rownames(gaf)))
       }
-
 
       o <- d[,!(colnames(d) %in% c(age.months,questions))]
 
