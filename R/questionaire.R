@@ -554,7 +554,9 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          return(gulv_score + mellem_score)
       }
 
-      impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20, mincor = 0.1, seed = 1) {
+      i
+      impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20,
+                                             mincor = 0.1, seed = 1) {
 
          if (!requireNamespace("mice", quietly = TRUE)) {
             stop("Pakken 'mice' skal være installeret: install.packages('mice')")
@@ -620,7 +622,14 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                     FUN = function(x) round(mean(x)))
          pooled <- pooled[order(pooled$.id), ]
 
-         comp_list <- tryCatch(mice::complete(imp, action = "all"), error = function(e) NULL)
+         # NB: hvis dette kald fejler, bliver comp_list NULL og ALLE domæners fmi
+         # ender som NA (se nedenfor) - fejlbeskeden gemmes som et attribut på
+         # returværdien (attr(out, "fmi_error")) i stedet for at forsvinde
+         # stille, så en gennemgående NA-fmi kan fejlfindes i stedet for at blive
+         # overset.
+         comp_list_error <- NULL
+         comp_list <- tryCatch(mice::complete(imp, action = "all"),
+                               error = function(e) { comp_list_error <<- conditionMessage(e); NULL })
 
          for (dom in adaptive_domains) {
             orig <- d[[paste0(dom, "_ss")]]
@@ -649,6 +658,7 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
          attr(out, "loggedEvents") <- imp$loggedEvents
          attr(out, "predictorMatrix") <- pred
+         attr(out, "fmi_error") <- comp_list_error
          out
       }
 
@@ -743,13 +753,19 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          # 1) Imputér alle 11 domæners SS-score i ÉT fælles mice-kald
          ss_res <- impute_vineland_ss_domains(d, age.months)
 
-         diag_tab <- t(sapply(ss_res, function(x) c(
-            n_missing = x$n_candidates,
-            n_filled  = sum(x$was_imputed),
-            fmi       = round(x$fmi, 3)
-         )))
+         diag_tab <- t(sapply(adaptive_domains, function(dom) {
+            x <- ss_res[[dom]]
+            c(n_missing = x$n_candidates,
+              n_filled  = sum(!is.na(x$ss_imputed[x$was_imputed])),
+              fmi       = round(x$fmi, 3))
+         }))
          cat("=== multiple_imputation diagnostik (SS-niveau, module=", module, ") ===\n", sep = "")
          print(diag_tab)
+
+         if (all(is.na(diag_tab[, "fmi"])) && !is.null(attr(ss_res, "fmi_error"))) {
+            cat("--- OBS: fmi er NA for ALLE domæner - underliggende fejl: ",
+                attr(ss_res, "fmi_error"), " ---\n", sep = "")
+         }
 
          le <- attr(ss_res, "loggedEvents")
          if (!is.null(le) && nrow(le) > 0) {
@@ -766,6 +782,10 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
             attr(d, paste0(dom, "_fmi")) <- res$fmi
          }
 
+         # 2) Domænescorer + GAF genberegnet på de imputerede SS-scorer, samme
+         #    opslagstabeller (domains/gaf fra questionaire_helper(), linje 1011/
+         #    1027) og samme dplyr::recode-mønster som complete-case-blokken
+         #    længere oppe (linje 1013-1030) -----------------------------------
          d$vabs3_kom_domscore_imputed <- dplyr::recode(
             rowSums(d[,c("vabs3_lyt_ss_imputed","vabs3_tal_ss_imputed","vabs3_laes_ss_imputed")]),
             !!!setNames(domains$kom_domainscore, rownames(domains)))
