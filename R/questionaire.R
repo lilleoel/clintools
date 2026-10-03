@@ -556,7 +556,11 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
 
 
       impute_vineland_ss_domains <- function(d, age.months, m = 5, maxit = 20,
-                                             mincor = 0.1, seed = 1) {
+                                             mincor = 0.1,
+                                             predictor_mode = c("auto", "same_domain"),
+                                             donors = 5, seed = 1) {
+
+         predictor_mode <- match.arg(predictor_mode)
 
          if (!requireNamespace("mice", quietly = TRUE)) {
             stop("Pakken 'mice' skal være installeret: install.packages('mice')")
@@ -571,6 +575,18 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
                                "vabs3_per","vabs3_hje","vabs3_naer",
                                "vabs3_rel","vabs3_leg","vabs3_til",
                                "vabs3_gmo","vabs3_fmo")
+
+         # Officiel Vineland-3-komposit-struktur, brugt til (a) den faste
+         # motor-udelukkelse (altid) og (b) predictor_mode="same_domain"
+         domain_map <- list(
+            kom = c("vabs3_lyt","vabs3_tal","vabs3_laes"),
+            fdd = c("vabs3_per","vabs3_hje","vabs3_naer"),
+            soc = c("vabs3_rel","vabs3_leg","vabs3_til"),
+            mot = c("vabs3_gmo","vabs3_fmo")
+         )
+         motor_vars <- domain_map$mot
+         non_motor_vars <- setdiff(adaptive_domains, motor_vars)
+
          ss_cols <- paste0(adaptive_domains, "_ss")
 
          missing_cols <- setdiff(ss_cols, names(d))
@@ -607,12 +623,35 @@ questionaire <- function(df,id,questions,scale,prefix="",...){
          pred <- mice::quickpred(mi_data, mincor = mincor, include = "agemo")
          pred["agemo", ] <- 0  # agemo skal aldrig selv imputeres/prædikteres af andre
 
+         # --- FAST REGEL: motor er altid kun hinandens prædiktor (+agemo), og
+         # bruges ALDRIG som prædiktor for de 9 andre - uanset predictor_mode og
+         # uanset hvad quickpred selv ville have valgt. ------------------------
+         pred["vabs3_gmo", ] <- 0
+         pred["vabs3_gmo", c("vabs3_fmo", "agemo")] <- 1
+         pred["vabs3_fmo", ] <- 0
+         pred["vabs3_fmo", c("vabs3_gmo", "agemo")] <- 1
+         pred[non_motor_vars, motor_vars] <- 0
+
+         # --- predictor_mode="same_domain": overskriv quickpred's valg for de 9
+         # ikke-motoriske subdomæner med en fast, komposit-tro prædiktorstruktur
+         # (kun de 2 øvrige subdomæner i SAMME officielle Vineland-domæne, + agemo).
+         if (predictor_mode == "same_domain") {
+            for (dm in domain_map[c("kom", "fdd", "soc")]) {
+               for (target in dm) {
+                  siblings <- setdiff(dm, target)
+                  pred[target, ] <- 0
+                  pred[target, c(siblings, "agemo")] <- 1
+               }
+            }
+         }
+
          meth <- rep("pmm", ncol(mi_data))
          names(meth) <- names(mi_data)
          meth["agemo"] <- ""
 
          imp <- mice::mice(mi_data, m = m, maxit = maxit, method = meth,
-                           predictorMatrix = pred, seed = seed, printFlag = FALSE)
+                           predictorMatrix = pred, donors = donors,
+                           seed = seed, printFlag = FALSE)
 
          # poolet værdi pr. imputeret celle = gennemsnit over de m imputationer,
          # afrundet til nærmeste heltal (SS-score er per definition et heltal)
